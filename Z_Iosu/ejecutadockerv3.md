@@ -10,7 +10,7 @@ This section centralizes the 3 things you asked for:
 Clean build pulling latest base layers and fixing architecture / CUDA arches (adjust `CUDA_ARCHES` if your GPU differs; 86 covers Ampere e.g. RTX 30xx):
 
 ```powershell
-Set-Location C:\IA\test\memorydoc\ollama
+Set-Location C:\IA\test\ollama\ollama
 $Env:DOCKER_BUILDKIT = "1"  # optional but faster & reproducible caching metadata
 docker build --pull `
   --platform linux/amd64 `

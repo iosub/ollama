@@ -67,6 +67,41 @@ Lastly, run Ollama:
 go run . serve
 ```
 
+## Windows (CUDA rápido con script)
+
+Para acelerar un build local con GPU CUDA en Windows, usa el script incluido:
+
+```powershell
+# Ejemplo: arquitectura compute 89 (Ada Lovelace), instalar libs y binario Go
+pwsh -File scripts/build-windows-cuda.ps1 -CudaArch "89" -Install -Verbose
+
+# Múltiples arquitecturas (separadas por ; )
+pwsh -File scripts/build-windows-cuda.ps1 -CudaArch "86;89" -Install
+
+# Usar Ninja (si instalado) y omitir build Go para sólo libs
+pwsh -File scripts/build-windows-cuda.ps1 -CudaArch "89" -UseNinja -SkipGo
+```
+
+Parámetros clave:
+- `-CudaArch`: Lista de arquitecturas CUDA (equivalente a `CMAKE_CUDA_ARCHITECTURES`).
+- `-UseNinja`: Usa Ninja como generador (más rápido si disponible).
+- `-Install`: Ejecuta `cmake --install` para colocar libs en `dist/lib/ollama`.
+- `-SkipGo`: No compila el binario Go (útil si sólo trabajas en backend C/C++).
+- `-Reconfigure`: Borra y regenera el directorio `build`.
+
+Una vez compilado:
+```powershell
+./ollama.exe serve
+```
+
+Si no se detecta la GPU:
+```powershell
+nvidia-smi
+Get-ChildItem "$Env:CUDA_PATH\bin" | Select-String cudart
+```
+
+Asegúrate de que las DLLs copiadas están en `./lib/ollama`.
+
 ## Windows (ARM)
 
 Windows ARM does not support additional acceleration libraries at this time.  Do not use cmake, simply `go run` or `go build`.
@@ -98,54 +133,10 @@ Lastly, run Ollama:
 go run . serve
 ```
 
-## Helper scripts (Z_Iosu)
-
-For the custom workflow consolidated under `Z_Iosu/` there are helper PowerShell scripts:
-
-| Script | Purpose |
-| ------ | ------- |
-| `Z_Iosu/scripts/build-simple.ps1` | Wrapper to build Docker image from `Z_Iosu/docker/Dockerfile.simple` (args: `-Tag`, `-NoCache`, `-Push`). |
-| `Z_Iosu/scripts/hot-swap.ps1` | Build (WSL or builder container) and replace running container binary (`/usr/bin/ollama`). |
-| `Z_Iosu/scripts/package-release.ps1` | Produce a lightweight Windows release folder (+ optional zip) with `ollama.exe`. |
-| `Z_Iosu/scripts/run-server.ps1` | (If present) Start local server quickly with optional API smoke test. |
-
-### Example usage
-
-```powershell
-# Build simplified image
-pwsh Z_Iosu/scripts/build-simple.ps1 -Tag ollama:dev-latest
-
-# Hot-swap binary inside existing container
-pwsh Z_Iosu/scripts/hot-swap.ps1 -Restart -Verify
-
-# Package Windows release (zip)
-pwsh Z_Iosu/scripts/package-release.ps1 -Zip -Name ollama-win64-dev
-```
-
-### run-server extended options
-If `run-server.ps1` includes flags like `-TestAPI -ModelName llama3 -Prompt "hola"`, it will:
-1. Build `ollama.exe` if missing.
-2. Start `ollama.exe serve`.
-3. Perform a health wait on port 11434.
-4. Issue a POST `/api/generate` request.
-
-Adjust or extend the script in `Z_Iosu/scripts/` as needed.
-
 ## Docker
 
 ```shell
 docker build .
-```
-
-### Simplified custom Dockerfile
-
-To build the consolidated simple image (uses official base + overrides):
-```powershell
-docker build -f Z_Iosu/docker/Dockerfile.simple -t ollama:0.11.10-custom .
-```
-Or with the helper:
-```powershell
-pwsh Z_Iosu/scripts/build-simple.ps1 -Tag ollama:0.11.10-custom
 ```
 
 ### ROCm
