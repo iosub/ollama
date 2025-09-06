@@ -68,7 +68,8 @@ if ($ResetGoEnv) {
 $cl = Find-Exe @('cl.exe')
 $clangcl = Find-Exe @('clang-cl.exe','clang-cl')
 $clangGnu = Find-Exe @('clang.exe')
-$clangTriple = Find-Exe @('x86_64-w64-mingw32-clang.exe','x86_64-w64-mingw32-clang')
+$clangTriple = Find-Exe @('x86_64-w64-mingw32-clang.exe','x86_64-w64-mingw32-clang','llvm-mingw-clang.exe')
+$gccLike = Find-Exe @('x86_64-w64-mingw32-gcc.exe','x86_64-w64-mingw32-gcc','gcc.exe','gcc')
 $chosen = $null
 if ($cl) { $chosen = 'cl' }
 elseif ($clangcl) { $chosen = 'clang-cl' }
@@ -82,14 +83,16 @@ if ($ForceClangGnu) {
   if ($goArch -eq 'amd64' -and $clangTriple) { $ccPath = $clangTriple }
   elseif ($clangGnu) { $ccPath = $clangGnu }
   elseif ($clangTriple) { $ccPath = $clangTriple } # por si GOARCH no es amd64
+  elseif ($gccLike) { $ccPath = $gccLike }
   if (-not $ccPath) {
-    Write-Warning 'No se encontró clang.exe (ni variante con triple) en PATH pese a usar -ForceClangGnu.'
+  Write-Warning 'No se encontró clang (gnu) ni gcc en PATH pese a usar -ForceClangGnu.'
     Write-Host 'Instala llvm-mingw y añade su carpeta bin al PATH. Ejemplo:' -ForegroundColor Cyan
     Write-Host '  C:\llvm-mingw\bin (ver https://github.com/mstorsjo/llvm-mingw/releases)' -ForegroundColor DarkCyan
     Write-Host 'Luego reintenta:  .\Z_Iosu\scripts\dev-run.ps1 -ForceClangGnu -ResetGoEnv -Clean -ShowEnv' -ForegroundColor Cyan
     exit 1
   }
   $chosen = 'clang'
+  if ($ccPath -match 'gcc') { $chosen = 'gcc' }
   $env:CC = $ccPath
   # Derivar CXX desde el mismo prefijo
   if ($ccPath -match 'x86_64-w64-mingw32-clang') {
