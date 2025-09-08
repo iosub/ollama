@@ -1,12 +1,11 @@
 package model
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	_ "image/jpeg"
 	_ "image/png"
-	"log/slog"
+	"math"
 	"os"
 	"reflect"
 	"strconv"
@@ -105,6 +104,10 @@ func New(modelPath string, params ml.BackendParams) (Model, error) {
 	}
 
 	arch := b.Config().Architecture()
+	if b.Config().Uint("pooling_type", math.MaxUint32) != math.MaxUint32 {
+		arch = arch + "_embed"
+	}
+
 	f, ok := models[arch]
 	if !ok {
 		return nil, fmt.Errorf("unsupported model architecture %q", arch)
@@ -198,7 +201,7 @@ func populateFields(base Base, v reflect.Value, tags ...Tag) reflect.Value {
 				names := fn(tagsCopy)
 				for _, name := range names {
 					if tensor := base.Backend().Get(strings.Join(name, ".")); tensor != nil {
-						slog.Log(context.TODO(), logutil.LevelTrace, "found tensor", "", tensor)
+						logutil.Trace("found tensor", "", tensor)
 						vv.Set(reflect.ValueOf(tensor))
 						break
 					}
