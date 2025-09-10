@@ -35,6 +35,7 @@ import (
 	"github.com/ollama/ollama/logutil"
 	"github.com/ollama/ollama/ml"
 	"github.com/ollama/ollama/model"
+	"github.com/ollama/ollama/parser"
 )
 
 type filteredEnv []string
@@ -172,6 +173,8 @@ func NewLlamaServer(gpus discover.GpuInfoList, modelPath string, f *ggml.GGML, a
 		slog.Warn("requested context size too large for model", "num_ctx", opts.NumCtx, "n_ctx_train", trainCtx)
 		opts.NumCtx = int(trainCtx)
 	}
+
+	opts.NumBatch = min(opts.NumBatch, opts.NumCtx)
 
 	loadRequest := LoadRequest{LoraPath: adapters, KvSize: opts.NumCtx * numParallel, BatchSize: opts.NumBatch, Parallel: numParallel, MultiUserCache: envconfig.MultiUserCache()}
 
@@ -1347,7 +1350,9 @@ type CompletionRequest struct {
 	Images  []ImageData
 	Options *api.Options
 
-	Grammar string // set before sending the request to the subprocess
+	Grammar       string // set before sending the request to the subprocess
+	ParserType    parser.TokenParserType
+	PrefillString string
 }
 
 // DoneReason represents the reason why a completion response is done
@@ -1374,13 +1379,15 @@ func (d DoneReason) String() string {
 }
 
 type CompletionResponse struct {
-	Content            string        `json:"content"`
-	DoneReason         DoneReason    `json:"done_reason"`
-	Done               bool          `json:"done"`
-	PromptEvalCount    int           `json:"prompt_eval_count"`
-	PromptEvalDuration time.Duration `json:"prompt_eval_duration"`
-	EvalCount          int           `json:"eval_count"`
-	EvalDuration       time.Duration `json:"eval_duration"`
+	Content            string         `json:"content"`
+	Thinking           string         `json:"thinking"`
+	ToolCalls          []api.ToolCall `json:"tool_calls"`
+	DoneReason         DoneReason     `json:"done_reason"`
+	Done               bool           `json:"done"`
+	PromptEvalCount    int            `json:"prompt_eval_count"`
+	PromptEvalDuration time.Duration  `json:"prompt_eval_duration"`
+	EvalCount          int            `json:"eval_count"`
+	EvalDuration       time.Duration  `json:"eval_duration"`
 }
 
 func (s *llmServer) Completion(ctx context.Context, req CompletionRequest, fn func(CompletionResponse)) error {
@@ -1498,7 +1505,8 @@ func (s *llmServer) Completion(ctx context.Context, req CompletionRequest, fn fu
 				return fmt.Errorf("error unmarshalling llm prediction response: %v", err)
 			}
 			switch {
-			case strings.TrimSpace(c.Content) == lastToken:
+			// TODO(parthsareen): token repeat limit is now handled in the runner, this currently support legacy model and can be removed in the future
+			case strings.TrimSpace(c.Content) == lastToken && c.Content != "":
 				tokenRepeat++
 			default:
 				lastToken = strings.TrimSpace(c.Content)
@@ -1511,15 +1519,13 @@ func (s *llmServer) Completion(ctx context.Context, req CompletionRequest, fn fu
 				return ctx.Err()
 			}
 
-			if c.Content != "" {
-				fn(CompletionResponse{
-					Content: c.Content,
-				})
-			}
-
 			if c.Done {
 				fn(c)
 				return nil
+			}
+
+			if c.Content != "" || c.Thinking != "" || len(c.ToolCalls) > 0 {
+				fn(c)
 			}
 		}
 	}
