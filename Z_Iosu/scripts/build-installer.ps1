@@ -16,8 +16,9 @@ Simplificaciones: funciones claras, sin here-strings problemáticos.
     [switch]$ForceClangGnu,
     [switch]$SkipWrapper,
     [switch]$DebugGo,
-    [switch]$Portable,
-    [switch]$AlsoPortable,
+  [switch]$Portable,
+  [switch]$AlsoPortable,
+  [switch]$NoAlsoPortable,
     [switch]$Quiet,
     [switch]$Verbose
   )
@@ -200,7 +201,7 @@ Simplificaciones: funciones claras, sin here-strings problemáticos.
     Copy-Item $setup.FullName $final -Force
     LogInfo "Instalador listo: $final"
 
-    if ($AlsoPortable) {
+    if ($AlsoPortable -or (-not $NoAlsoPortable)) {
       $zipName = "Ollama-portable-$Version.zip"
       $zipPath = Join-Path $OutDir $zipName
       LogInfo "Creando paquete portable adicional: $zipPath"

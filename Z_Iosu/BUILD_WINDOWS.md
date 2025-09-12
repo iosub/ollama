@@ -153,7 +153,8 @@ Parámetros clave:
 - `-InnoPath C:\ruta\ISCC.exe` Ruta directa a `ISCC.exe`.
 - `-SkipWrapper`    No (re)crea `windows-amd64-app.exe`.
 - `-Portable`       Genera zip portable en lugar de instalador.
-- `-AlsoPortable`   Genera el zip portable además del instalador.
+- `-AlsoPortable`   Fuerza generar zip además del instalador.
+- `-NoAlsoPortable` No generar zip adicional (por defecto ahora se crea si hay instalador).
 - `-Verbose`        Log extendido (muestra versión limpia, rutas, etc.).
 
 Requisitos para el instalador:
