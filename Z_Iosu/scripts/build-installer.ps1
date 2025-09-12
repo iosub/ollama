@@ -17,6 +17,7 @@ Simplificaciones: funciones claras, sin here-strings problemáticos.
     [switch]$SkipWrapper,
     [switch]$DebugGo,
     [switch]$Portable,
+    [switch]$AlsoPortable,
     [switch]$Quiet,
     [switch]$Verbose
   )
@@ -79,7 +80,7 @@ Simplificaciones: funciones claras, sin here-strings problemáticos.
     if ($Arch -ne 'amd64'){ Fail 'Solo amd64 implementado' }
     $devScript = Join-Path (Join-Path (Join-Path $root 'Z_Iosu') 'scripts') 'dev-run.ps1'
     if (-not (Test-Path $devScript)) { Fail 'dev-run.ps1 no encontrado' }
-    $devArgs = @('-GoRelease','-Clean')
+  $devArgs = @('-GoRelease','-Clean','-BuildOnly')
     if ($DebugGo) { $devArgs = @('-Clean') }
     if ($ForceClangGnu){ $devArgs += @('-ForceClangGnu','-ResetGoEnv') }
     if ($DebugGo) { $devArgs += @('-ShowEnv') }
@@ -198,6 +199,23 @@ Simplificaciones: funciones claras, sin here-strings problemáticos.
     $final = Join-Path $OutDir ("OllamaSetup-$Version.exe")
     Copy-Item $setup.FullName $final -Force
     LogInfo "Instalador listo: $final"
+
+    if ($AlsoPortable) {
+      $zipName = "Ollama-portable-$Version.zip"
+      $zipPath = Join-Path $OutDir $zipName
+      LogInfo "Creando paquete portable adicional: $zipPath"
+      $tempPort = Join-Path $env:TEMP ('ollama_port_' + [guid]::NewGuid().ToString('N'))
+      New-Item -ItemType Directory -Path $tempPort | Out-Null
+      Copy-Item (Join-Path $distArch 'ollama.exe') (Join-Path $tempPort 'ollama.exe') -Force
+      if (Test-Path $wrapperTarget) { Copy-Item $wrapperTarget (Join-Path $tempPort 'ollama-app.exe') -Force }
+      if (Test-Path $welcome){ Copy-Item $welcome (Join-Path $tempPort 'ollama_welcome.ps1') -Force }
+      if (Test-Path (Join-Path $distArch 'lib')) { Copy-Item -Recurse -Force (Join-Path $distArch 'lib') (Join-Path $tempPort 'lib') }
+      if (Test-Path (Join-Path $root 'LICENSE')) { Copy-Item (Join-Path $root 'LICENSE') (Join-Path $tempPort 'LICENSE') }
+      if (Test-Path (Join-Path $root 'README.md')) { Copy-Item (Join-Path $root 'README.md') (Join-Path $tempPort 'README.md') }
+      if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+      Compress-Archive -Path (Join-Path $tempPort '*') -DestinationPath $zipPath
+      LogInfo "Paquete portable listo: $zipPath"
+    }
   }
 
   Pop-Location

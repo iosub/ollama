@@ -15,6 +15,7 @@ Esta guía resume cómo instalar el binario generado (modo desarrollador) y cóm
 
 ## 3. Obtener Artefactos
 Los artefactos se generan con el script `Z_Iosu/scripts/build-installer.ps1`.
+powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build-installer.ps1 -AutoVersion -ForceClangGnu -Verbose
 
 Ejemplos de generación:
 ```powershell

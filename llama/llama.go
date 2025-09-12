@@ -515,34 +515,33 @@ func (c *MtmdContext) NewEmbed(llamaContext *Context, data []byte) ([][]float32,
 	}
 	nChunks := C.mtmd_input_chunks_size(ic)
 	numEmbed := llamaContext.Model().NEmbd()
-	lastChunkSize := 0
+	embed := make([][]float32, 0)
 	for i := range int(nChunks) {
 		chunk := C.mtmd_input_chunks_get(ic, C.size_t(i))
 		numTokens := int(C.mtmd_input_chunk_get_n_tokens(chunk))
-		// lastChunkSize = numTokens
-		lastChunkSize = max(lastChunkSize, numTokens)
+		slog.Debug("chunk tokens", "index", i, "numTokens", numTokens)
 
 		// Encode the chunk
 		if C.int32_t(0) != C.mtmd_encode_chunk(c.c, chunk) {
 			return nil, errors.New("unable to encode mtmd image chunk")
 		}
-	}
 
-	// Get the embeddings
-	embed := make([][]float32, lastChunkSize)
-	embd := C.mtmd_get_output_embd(c.c)
-	if nil == embd {
-		return nil, errors.New("failed to get image embedding")
+		// Get the embeddings for this chunk
+		chunkEmbd := C.mtmd_get_output_embd(c.c)
+		if chunkEmbd == nil {
+			// Some tokens might not produce embeddings; keep state but skip appending
+			continue
+		}
+		chunkEmbed := make([][]float32, numTokens)
+		s := unsafe.Slice((*float32)(chunkEmbd), numTokens*numEmbed)
+		rows := make([]float32, len(s))
+		copy(rows, s)
+		for j := range numTokens {
+			chunkEmbed[j] = rows[j*numEmbed : (j+1)*numEmbed]
+		}
+		embed = append(embed, chunkEmbed...)
 	}
-
-	// Extend the embedding array for each token
-	s := unsafe.Slice((*float32)(embd), numEmbed*lastChunkSize)
-	rows := make([]float32, len(s))
-	copy(rows, s)
-	for i := range lastChunkSize {
-		embed[i] = rows[i*numEmbed : (i+1)*numEmbed]
-	}
-
+	slog.Debug("image embeddings", "totalEmbeddings", len(embed))
 	return embed, nil
 }
 

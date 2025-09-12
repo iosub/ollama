@@ -47,12 +47,17 @@ Si ninguno aparece: aborta indicando instalar llvm-mingw.
 ```powershell
 powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\dev-run.ps1 -ForceClangGnu -ResetGoEnv -Clean -ShowEnv
 ```
+IosuUltimo
+powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\dev-run.ps1 -ForceClangGnu -ResetGoEnv -GoRelease -Clean -ShowEnv
+
 Esto:
 1. Limpia CC/CXX persistentes.
 2. Detecta `x86_64-w64-mingw32-clang.exe` (si existe) y lo asigna a `CC` y su par `clang++.exe` a `CXX`.
 3. Traduce flags MSVC si apareciesen (/std:c++17, /EHsc) a formato GCC.
 4. Inyecta: `--target=x86_64-w64-windows-gnu -fuse-ld=lld` y asegura `-std=c++17`.
 5. Ejecuta `go run . serve`.
+Iosu  FINAL
+powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build-installer.ps1 -Version 0.11.102 -ForceClangGnu -InnoPath "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" -AlsoPortable -Verbose
 
 ## 5. Build Optimizado (GoRelease)
 ```powershell
@@ -123,9 +128,14 @@ Ejemplos:
 ```powershell
 # Versión automática (fecha+commit), compilando con clang gnu
 powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build-installer.ps1 -ForceClangGnu -AutoVersion
+powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build-installer.ps1 -AutoVersion -ForceClangGnu -Verbose
 
 # Versión fija y reutilizando binarios existentes
+powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build-installer.ps1 -Version 0.11.101  -ForceClangGnu -Verbose
 powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build-installer.ps1 -Version 0.1.0 -SkipBuild
+
+# Generar instalador y también ZIP portable
+powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build-installer.ps1 -Version 0.11.101 -ForceClangGnu -AlsoPortable -Verbose
 
 # Con salida verbosa
 powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build-installer.ps1 -ForceClangGnu -AutoVersion -Verbose
@@ -133,7 +143,7 @@ powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build-installer.ps1 -For
 Salida:
 - Instalador base (cuando se usa Inno): `dist/OllamaSetup.exe` (o `%LOCALAPPDATA%\dist\OllamaSetup.exe` si el OutputDir relativo cae allí).
 - Copia versionada: `Z_Iosu/release/installer/OllamaSetup-<VERSION>.exe`
-- Paquete portable (sin Inno): `Z_Iosu/release/installer/Ollama-portable-<VERSION>.zip`
+- Paquete portable (sin Inno con `-Portable` o adicional con `-AlsoPortable`): `Z_Iosu/release/installer/Ollama-portable-<VERSION>.zip`
 
 Parámetros clave:
 - `-AutoVersion`    Usa `YYYY.MM.DD+<shortCommit>`.
@@ -143,6 +153,7 @@ Parámetros clave:
 - `-InnoPath C:\ruta\ISCC.exe` Ruta directa a `ISCC.exe`.
 - `-SkipWrapper`    No (re)crea `windows-amd64-app.exe`.
 - `-Portable`       Genera zip portable en lugar de instalador.
+- `-AlsoPortable`   Genera el zip portable además del instalador.
 - `-Verbose`        Log extendido (muestra versión limpia, rutas, etc.).
 
 Requisitos para el instalador:

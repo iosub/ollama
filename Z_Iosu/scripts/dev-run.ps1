@@ -39,7 +39,8 @@ param(
   [switch]$ResetGoEnv,
   [switch]$PreferClangCL,
   [switch]$ForceClangGnu,
-  [switch]$GoRelease
+  [switch]$GoRelease,
+  [switch]$BuildOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -99,6 +100,9 @@ if ($ForceClangGnu) {
     $env:CXX = ($ccPath -replace 'clang.exe','clang++.exe')
   } elseif ($ccPath -match 'clang.exe$') {
     $cxxPath = $ccPath -replace 'clang.exe','clang++.exe'
+    if (Test-Path $cxxPath) { $env:CXX = $cxxPath } else { $env:CXX = $ccPath }
+  } elseif ($ccPath -match 'gcc(.exe)?$') {
+    $cxxPath = $ccPath -replace 'gcc.exe','g++.exe' -replace 'gcc$','g++'
     if (Test-Path $cxxPath) { $env:CXX = $cxxPath } else { $env:CXX = $ccPath }
   }
   if ($ShowEnv) {
@@ -210,16 +214,29 @@ if ($ForceClangGnu -and $chosen -eq 'clang') {
 
 # Inyección de flags extra para clang gnu en modo release u optimizado
 if ($ForceClangGnu) {
-  $tFlags = '--target=x86_64-w64-windows-gnu -fuse-ld=lld'
-  foreach ($pair in @('CGO_CFLAGS','CGO_CXXFLAGS','CGO_LDFLAGS')) {
-    $cur = (Get-Item Env:$pair -ErrorAction SilentlyContinue | ForEach-Object { $_.Value })
-    if (-not $cur) { $cur = '' }
-    if ($cur -notmatch '--target=x86_64-w64-windows-gnu') { $cur = "$tFlags $cur" }
-    if ($GoRelease -and $pair -ne 'CGO_LDFLAGS') {
-      if ($cur -notmatch '-O3') { $cur = "-O3 -DNDEBUG $cur" }
+  if ($chosen -eq 'clang') {
+    $tFlags = '--target=x86_64-w64-windows-gnu -fuse-ld=lld'
+    foreach ($pair in @('CGO_CFLAGS','CGO_CXXFLAGS','CGO_LDFLAGS')) {
+      $cur = (Get-Item Env:$pair -ErrorAction SilentlyContinue | ForEach-Object { $_.Value })
+      if (-not $cur) { $cur = '' }
+      if ($cur -notmatch '--target=x86_64-w64-windows-gnu') { $cur = "$tFlags $cur" }
+      if ($GoRelease -and $pair -ne 'CGO_LDFLAGS') {
+        if ($cur -notmatch '-O3') { $cur = "-O3 -DNDEBUG $cur" }
+      }
+      $cur = ($cur -replace '\s+',' ').Trim()
+      Set-Item -Path "Env:$pair" -Value $cur
     }
-    $cur = ($cur -replace '\s+',' ').Trim()
-    Set-Item -Path "Env:$pair" -Value $cur
+  } elseif ($chosen -eq 'gcc') {
+    # Para GCC mingw: no usar --target ni -fuse-ld=lld (no válidos). Sólo optimizaciones y std si aplica.
+    foreach ($pair in @('CGO_CFLAGS','CGO_CXXFLAGS')) {
+      $cur = (Get-Item Env:$pair -ErrorAction SilentlyContinue | ForEach-Object { $_.Value })
+      if (-not $cur) { $cur = '' }
+      if ($GoRelease -and $cur -notmatch '-O3') { $cur = "-O3 -DNDEBUG $cur" }
+      if ($pair -eq 'CGO_CXXFLAGS' -and ($cur -notmatch '-std=c\+\+')) { $cur = ("$cur -std=c++17" -replace '\s+',' ').Trim() }
+      $cur = ($cur -replace '\s+',' ').Trim()
+      Set-Item -Path "Env:$pair" -Value $cur
+    }
+    # CGO_LDFLAGS: dejar vacío o respetar existente para mingw-gcc
   }
   if ($ShowEnv) {
     Write-Host "[dev-run] Flags finales: CGO_CFLAGS='$($env:CGO_CFLAGS)'" -ForegroundColor Yellow
@@ -234,8 +251,12 @@ if ($GoRelease) {
   $exe = 'ollama-dev.exe'
   $buildCmd = "go build -trimpath -ldflags '-s -w' -o $exe ."
   Write-Host "[dev-run] Compilando binario Release Go: $buildCmd" -ForegroundColor Cyan
-  if (-not $DryRun) { & go build -trimpath -ldflags '-s -w' -o $exe . }
+  if (-not $DryRun) { & go build -trimpath -ldflags '-s -w' -o $exe .; $rc=$LASTEXITCODE; if ($rc -ne 0) { Write-Error "go build falló con código $rc"; exit $rc } }
   $runCmd = "./$exe serve"
+  if ($BuildOnly) {
+    Write-Host '[dev-run] BuildOnly activo: finalizando sin ejecutar el servidor' -ForegroundColor Yellow
+    exit 0
+  }
 }
 Write-Host "[dev-run] Ejecutando: $runCmd" -ForegroundColor Green
 if ($DryRun) {
@@ -243,5 +264,9 @@ if ($DryRun) {
   exit 0
 }
 
-# Ejecutar servidor
-& go run . serve
+# Ejecutar servidor según modo
+if ($GoRelease) {
+  & .\ollama-dev.exe serve
+} else {
+  & go run . serve
+}
