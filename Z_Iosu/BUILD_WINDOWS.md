@@ -56,8 +56,15 @@ Esto:
 3. Traduce flags MSVC si apareciesen (/std:c++17, /EHsc) a formato GCC.
 4. Inyecta: `--target=x86_64-w64-windows-gnu -fuse-ld=lld` y asegura `-std=c++17`.
 5. Ejecuta `go run . serve`.
+===================================================================================
+===================================================================================
+===================================================================================
 Iosu  FINAL
 powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build-installer.ps1 -Version 0.11.102 -ForceClangGnu -InnoPath "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" -AlsoPortable -Verbose
+===================================================================================
+===================================================================================
+===================================================================================
+
 
 ## 5. Build Optimizado (GoRelease)
 ```powershell

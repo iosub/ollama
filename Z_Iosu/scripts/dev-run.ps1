@@ -54,14 +54,32 @@ function Find-Exe($names) {
 }
 
 Write-Host "[dev-run] Detectando toolchain..." -ForegroundColor Cyan
-$goCC = (go env CC) 2>$null
-$goCXX = (go env CXX) 2>$null
+
+# Asegurar que el directorio de configuración de Go existe
+$goEnvDir = "$env:APPDATA\go"
+if (-not (Test-Path $goEnvDir)) {
+  Write-Host "[dev-run] Creando directorio de configuración Go: $goEnvDir" -ForegroundColor Cyan
+  New-Item -ItemType Directory -Path $goEnvDir -Force | Out-Null
+}
+
+$goCC = ''
+$goCXX = ''
+try {
+  $goCC = (go env CC) 2>$null
+  $goCXX = (go env CXX) 2>$null
+} catch {
+  Write-Host "[dev-run] Advertencia: Error leyendo configuración Go, continuando..." -ForegroundColor Yellow
+}
 
 if ($ResetGoEnv) {
   Write-Host '[dev-run] Limpiando CC/CXX persistentes en go env' -ForegroundColor Cyan
   if (-not $DryRun) {
-    go env -u CC 2>$null | Out-Null
-    go env -u CXX 2>$null | Out-Null
+    try {
+      go env -u CC 2>$null | Out-Null
+      go env -u CXX 2>$null | Out-Null
+    } catch {
+      Write-Host "[dev-run] Advertencia: Error limpiando variables Go env, continuando..." -ForegroundColor Yellow
+    }
   }
   $goCC = ''
   $goCXX = ''
@@ -94,16 +112,26 @@ if ($ForceClangGnu) {
   }
   $chosen = 'clang'
   if ($ccPath -match 'gcc') { $chosen = 'gcc' }
-  $env:CC = $ccPath
+  # Citar rutas que contienen espacios para evitar problemas con Go
+  if ($ccPath -match '\s') { $env:CC = "`"$ccPath`"" } else { $env:CC = $ccPath }
   # Derivar CXX desde el mismo prefijo
   if ($ccPath -match 'x86_64-w64-mingw32-clang') {
-    $env:CXX = ($ccPath -replace 'clang.exe','clang++.exe')
+    $cxxPath = ($ccPath -replace 'clang.exe','clang++.exe')
+    if ($cxxPath -match '\s') { $env:CXX = "`"$cxxPath`"" } else { $env:CXX = $cxxPath }
   } elseif ($ccPath -match 'clang.exe$') {
     $cxxPath = $ccPath -replace 'clang.exe','clang++.exe'
-    if (Test-Path $cxxPath) { $env:CXX = $cxxPath } else { $env:CXX = $ccPath }
+    if (Test-Path $cxxPath) { 
+      if ($cxxPath -match '\s') { $env:CXX = "`"$cxxPath`"" } else { $env:CXX = $cxxPath }
+    } else { 
+      if ($ccPath -match '\s') { $env:CXX = "`"$ccPath`"" } else { $env:CXX = $ccPath }
+    }
   } elseif ($ccPath -match 'gcc(.exe)?$') {
     $cxxPath = $ccPath -replace 'gcc.exe','g++.exe' -replace 'gcc$','g++'
-    if (Test-Path $cxxPath) { $env:CXX = $cxxPath } else { $env:CXX = $ccPath }
+    if (Test-Path $cxxPath) { 
+      if ($cxxPath -match '\s') { $env:CXX = "`"$cxxPath`"" } else { $env:CXX = $cxxPath }
+    } else { 
+      if ($ccPath -match '\s') { $env:CXX = "`"$ccPath`"" } else { $env:CXX = $ccPath }
+    }
   }
   if ($ShowEnv) {
     $archMsg = if ($goArch) { " GOARCH=$goArch" } else { '' }
