@@ -42,6 +42,7 @@ import (
 	_ "github.com/ollama/ollama/llama/llama.cpp/common"
 	_ "github.com/ollama/ollama/llama/llama.cpp/src"
 	_ "github.com/ollama/ollama/llama/llama.cpp/tools/mtmd"
+	"github.com/ollama/ollama/ml"
 	ggml "github.com/ollama/ollama/ml/backend/ggml/ggml/src"
 )
 
@@ -62,8 +63,8 @@ func BackendInit() {
 	C.llama_backend_init()
 }
 
-func EnumerateGPUs() []string {
-	var ids []string
+func EnumerateGPUs() []ml.DeviceID {
+	var ids []ml.DeviceID
 
 	for i := range C.ggml_backend_dev_count() {
 		device := C.ggml_backend_dev_get(i)
@@ -71,7 +72,10 @@ func EnumerateGPUs() []string {
 		if C.ggml_backend_dev_type(device) == C.GGML_BACKEND_DEVICE_TYPE_GPU {
 			var props C.struct_ggml_backend_dev_props
 			C.ggml_backend_dev_get_props(device, &props)
-			ids = append(ids, C.GoString(props.id))
+			ids = append(ids, ml.DeviceID{
+				ID:      C.GoString(props.id),
+				Library: C.GoString(props.library),
+			})
 		}
 	}
 
@@ -527,17 +531,18 @@ func (c *MtmdContext) NewEmbed(llamaContext *Context, data []byte) ([][]float32,
 		}
 
 		// Get the embeddings for this chunk
+		chunkEmbed := make([][]float32, numTokens)
 		chunkEmbd := C.mtmd_get_output_embd(c.c)
-		if chunkEmbd == nil {
-			// Some tokens might not produce embeddings; keep state but skip appending
+		if nil == chunkEmbd {
 			continue
 		}
-		chunkEmbed := make([][]float32, numTokens)
+
+		// Extend the embedding array for each token
 		s := unsafe.Slice((*float32)(chunkEmbd), numTokens*numEmbed)
 		rows := make([]float32, len(s))
 		copy(rows, s)
-		for j := range numTokens {
-			chunkEmbed[j] = rows[j*numEmbed : (j+1)*numEmbed]
+		for i := range numTokens {
+			chunkEmbed[i] = rows[i*numEmbed : (i+1)*numEmbed]
 		}
 		embed = append(embed, chunkEmbed...)
 	}
