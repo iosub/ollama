@@ -83,6 +83,12 @@
 ```
 **Razón**: Conflicto entre MSVC runtime y MinGW
 
+### 6. Warnings de C++ Deprecation (No Crítico)
+**Mensaje**: `'codecvt_utf8<wchar_t>' is deprecated` en `common.cpp:784`
+**Causa**: llama.cpp usa `std::wstring_convert` que está deprecated en C++17
+**Impacto**: Go devuelve exit code 1 pero **ollama.exe se compila correctamente**
+**Solución**: Script modificado para verificar existencia de `ollama.exe` en lugar de confiar en exit code
+
 ---
 
 ## 📝 Configuración de Compilación
