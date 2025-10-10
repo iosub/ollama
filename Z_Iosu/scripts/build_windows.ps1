@@ -263,11 +263,37 @@ function buildOllama() {
 }
 
 function buildApp() {
-    write-host "Building Ollama App"
+    write-host "Building Ollama App with MSVC (NOT llvm-mingw to avoid context menu bug)"
     cd "${script:SRC_DIR}\app"
+    
+    # Clean previous build artifacts
+    Remove-Item "ollama.syso" -ErrorAction SilentlyContinue
+    Remove-Item "${script:SRC_DIR}\dist\windows-${script:TARGET_ARCH}-app.exe" -ErrorAction SilentlyContinue
+    
+    # Generate Windows resources
     & windres -l 0 -o ollama.syso ollama.rc
+    if ($LASTEXITCODE -ne 0) { 
+        write-error "windres failed"
+        exit($LASTEXITCODE)
+    }
+    
+    # CRITICAL: Clear llvm-mingw environment to use MSVC for Win32 API compatibility
+    # llvm-mingw produces broken context menus in system tray apps
+    $env:CGO_ENABLED="1"
+    $env:CC=""
+    $env:CXX=""
+    Remove-Item env:\CGO_CFLAGS -ErrorAction SilentlyContinue
+    Remove-Item env:\CGO_CXXFLAGS -ErrorAction SilentlyContinue
+    
+    write-host "Compiling GUI app with MSVC (ensures working context menus)"
     & go build -trimpath -ldflags "-s -w -H windowsgui -X=github.com/ollama/ollama/version.Version=$script:VERSION -X=github.com/ollama/ollama/server.mode=release" -o "${script:SRC_DIR}\dist\windows-${script:TARGET_ARCH}-app.exe" .
-    if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
+    if ($LASTEXITCODE -ne 0) { 
+        write-error "App build failed"
+        exit($LASTEXITCODE)
+    }
+    
+    $appSize = [math]::Round((Get-Item "${script:SRC_DIR}\dist\windows-${script:TARGET_ARCH}-app.exe").Length/1MB, 2)
+    write-host "App built successfully with MSVC (size: ${appSize} MB)" -ForegroundColor Green
 }
 
 function gatherDependencies() {
