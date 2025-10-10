@@ -4,7 +4,7 @@ package ggml
 // #cgo CPPFLAGS: -DNDEBUG -DGGML_USE_CPU -DGGML_VERSION=0x0 -DGGML_COMMIT=0x0
 // #cgo CPPFLAGS: -I${SRCDIR}/../include -I${SRCDIR}/ggml-cpu
 // #cgo windows CFLAGS: -Wno-dll-attribute-on-redeclaration
-// #cgo windows LDFLAGS: -lmsvcrt -static -static-libgcc -static-libstdc++
+// #cgo windows LDFLAGS: -static -static-libgcc -static-libstdc++
 // #include <stdlib.h>
 // #include "ggml-backend.h"
 // extern void sink(int level, char *text, void *user_data);
