@@ -1,13 +1,13 @@
-# COMANDO COMPLETO DE COMPILACIÓN - Ollama 0.12.41 (test-llamacpp-bump)
+# COMANDO COMPLETO DE COMPILACIÓN - Ollama 0.12.51 (test-llamacpp-bump)
 # ============================================================================
-# Branch: test-llamacpp-bump (PR #12552 - Granite/Docling Support)
-# Versión: 0.12.41
-# llama.cpp: 1deee0f8
+# Branch: test-llamacpp-bump (v0.12.5 merged)
+# Versión: 0.12.51
+# Compilador: llvm-mingw-20240619-ucrt-x86_64 (clang 18.1.8)
 # ============================================================================
 
 # COMANDO ÚNICO (recomendado):
 # -----------------------------------------------------------------------------
-$env:VERSION = "0.12.41"; powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildCPU buildCUDA12 buildCUDA13 buildOllama buildApp buildInstaller
+powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_v0.12.51.ps1
 
 # RESULTADO:
 #   - dist\OllamaSetup.exe (420 MB) - Instalador completo
