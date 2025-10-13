@@ -664,7 +664,7 @@ struct clip_graph {
 
     // Qwen2VL and Qwen2.5VL use M-RoPE
     ggml_cgraph * build_qwen2vl() {
-        GGML_ASSERT(model.patch_bias == nullptr);
+        // GGML_ASSERT(model.patch_bias == nullptr); // Removed: Qwen3VL models have patch_bias
         GGML_ASSERT(model.class_embedding == nullptr);
 
         const int batch_size       = 1;
