@@ -177,6 +177,129 @@ Si SÍ aparece el menú → ✅ Compilación correcta con MSVC
 
 ---
 
+## 🔧 PROBLEMA SOLUCIONADO: Aplicación de Windows no arranca (DLLs faltantes)
+
+### ❌ Síntoma Original
+Antes solo copiabas `ollama.exe` y funcionaba, pero ahora:
+- ✅ El ejecutable `ollama.exe` existe y funciona en directorio de compilación
+- ❌ Al copiar solo `ollama.exe` a tu aplicación de Windows: **servidor no arranca**
+- ❌ Logs del servidor están "a cero" (vacíos)
+- ❌ El proceso se cierra inmediatamente sin generar logs
+
+### 🔍 Causa Raíz
+**Las versiones anteriores** de Ollama tenían bibliotecas compiladas **estáticamente** (incluidas dentro del .exe).
+
+**Ollama 0.12.59 con CUDA** usa bibliotecas **dinámicas** (.dll) separadas que deben estar presentes en runtime.
+
+### ✅ Solución DEFINITIVA
+
+**ANTES** (incorrecto - solo ejecutable):
+```
+App_Windows/
+└── ollama.exe ← Solo esto NO funciona
+```
+
+**AHORA** (correcto - estructura completa):
+```
+App_Windows/
+├── ollama.exe                    ← Ejecutable principal
+└── lib/
+    └── ollama/
+        ├── ggml-cuda.dll         ← Backend CUDA (293 MB)
+        ├── ggml-base.dll         ← Backend base
+        ├── ggml-cpu-*.dll        ← Backends CPU optimizados (8 archivos)
+        ├── cublas64_13.dll       ← Bibliotecas CUDA cuBLAS
+        ├── cublasLt64_13.dll     ← Bibliotecas CUDA cuBLASLt  
+        ├── msvcp140*.dll         ← Runtime Visual C++ (5 archivos)
+        ├── vcruntime140*.dll     ← Runtime Visual C++ (2 archivos)
+        └── api-ms-win-*.dll      ← APIs Windows Runtime (10 archivos)
+```
+
+### 📋 Pasos de Migración para tu Aplicación de Windows
+
+1. **Detener servidor existente** (si está corriendo):
+   ```powershell
+   taskkill /F /IM ollama.exe
+   ```
+
+2. **Eliminar archivo único anterior**:
+   ```powershell
+   del "C:\tu_app\ollama.exe"
+   ```
+
+3. **Copiar TODA la estructura** desde compilación:
+   ```powershell
+   # Origen (compilación exitosa)
+   $origen = "C:\IA\tools\ollama\dist\windows-amd64"
+   
+   # Destino (tu aplicación de Windows)  
+   $destino = "C:\tu_app"
+   
+   # Copiar estructura completa
+   robocopy "$origen" "$destino" /E /R:3 /W:1
+   ```
+
+4. **Verificar estructura** (script de diagnóstico):
+   ```powershell
+   # Copiar script de diagnóstico
+   copy "C:\IA\tools\ollama\dist\windows-amd64\diagnose_ollama_fixed.ps1" "C:\tu_app\"
+   
+   # Ejecutar desde tu aplicación
+   cd "C:\tu_app"
+   .\diagnose_ollama_fixed.ps1
+   ```
+
+5. **Resultado esperado**:
+   ```
+   ✅ ollama.exe encontrado (31.18 MB)
+   ✅ 28 bibliotecas encontradas  
+   ✅ Servidor inicia correctamente
+   ✅ API responde correctamente
+   ```
+
+### 🎯 Por qué es CRÍTICO mantener la estructura
+
+| Componente | Ubicación Requerida | Razón |
+|------------|-------------------|-------|
+| `ollama.exe` | Raíz aplicación | Ejecutable principal |
+| `lib\ollama\*.dll` | **Relativo al .exe** | ollama.exe busca DLLs en esta ruta específica |
+| `OLLAMA_LIBRARY_PATH` | Variable entorno | Override manual (opcional) |
+
+**NOTA:** El ejecutable `ollama.exe` busca automáticamente las bibliotecas en `lib\ollama\` **relativo a su ubicación**. Si cambias esta estructura, el servidor no arrancará.
+
+### 📊 Verificación Post-Migración
+
+**Script de verificación automática**:
+```powershell
+# Verificar que tu aplicación de Windows funciona
+cd "C:\tu_app"
+
+# 1. Verificar archivos críticos
+$criticos = @("ollama.exe", "lib\ollama\ggml-cuda.dll", "lib\ollama\ggml-base.dll")
+foreach ($file in $criticos) {
+    if (Test-Path $file) { Write-Host "✅ $file" } 
+    else { Write-Host "❌ $file FALTANTE" }
+}
+
+# 2. Configurar entorno (por si acaso)
+$env:OLLAMA_LIBRARY_PATH = (Get-Location).Path + "\lib\ollama"
+
+# 3. Probar versión
+.\ollama.exe --version
+
+# 4. Probar servidor (2 segundos de prueba)
+$proceso = Start-Process -FilePath "ollama.exe" -ArgumentList "serve" -PassThru -NoNewWindow
+Start-Sleep 2
+if (-not $proceso.HasExited) {
+    Write-Host "✅ Servidor funciona correctamente"
+    Stop-Process -Id $proceso.Id -Force
+} else {
+    Write-Host "❌ Servidor falló - revisar logs"
+}
+```
+
+---
+
 ## 🔧 Troubleshooting
 
 ### 1. "Build Failed" pero ollama.exe existe
