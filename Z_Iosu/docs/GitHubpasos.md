@@ -1,6 +1,6 @@
-1. comprueba que en local tengo la carpeta z_iosu de mi branch test-llamacpp-bump
-2.- el upstrean es ollama/mail y mi origin es test-llamacpp-bump, nigun otro origen
-3. ahora manteniendo el z_iosu actualiza desde  upstrean es ollama/mail  , mandan todos los cambios del upstream
+1. comprueba que en local tengo la carpeta z_iosu de mi branch 0.12.6-bi
+2.- el upstrean es ollama/main y mi origin es 0.12.6-bi nigun otro origen
+3. ahora manteniendo el z_iosu actualiza desde  upstrean es ollama/main  , mandan todos los cambios del upstream
 4. NINGUN PR AL UPSTREAM
 5. EXCLUYE LOS ARCHIVOS GRANDES DE Z_IOSU
 
