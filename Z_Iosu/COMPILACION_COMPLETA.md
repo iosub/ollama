@@ -1,4 +1,51 @@
-# GUÍA COMPLETA: Compilación Ollama 0.12.41 con Interfaz Gráfica Funcional
+# GUÍA COMPLETA: Compilación Ollama 0.12.59 con Interfaz Gráfica Funcional
+
+## 🚀 CONFIGURACIÓN PREVIA: ccache (RECOMENDADO)
+
+### ⚡ ¿Por qué ccache?
+- **Primera compilación**: ~10 minutos (llena el cache)
+- **Recompilaciones**: ~3-5 minutos (50-80% más rápido)
+- **Especialmente útil**: Para desarrollo y pruebas múltiples
+
+### 📋 Configuración Automática de ccache
+
+**Ejecuta ANTES de compilar (solo una vez):**
+
+```powershell
+# Verificar que ccache está instalado
+ccache --version
+# Debe mostrar: ccache version 4.12.1
+
+# Configurar ccache para máximo rendimiento
+ccache --set-config compression=true
+ccache --set-config compression_level=1
+ccache --set-config max_size=10G
+ccache --set-config sloppiness=time_macros
+
+# Limpiar estadísticas para seguimiento limpio
+ccache -z
+
+# Verificar configuración
+ccache --show-config | Select-String "compression|max_size|sloppiness"
+```
+
+### ✅ Resultado esperado:
+```
+(config) compression = true
+(config) compression_level = 1  
+(config) max_size = 10.0 GB
+(config) sloppiness = time_macros
+```
+
+### 📊 Monitoreo durante compilación (opcional):
+```powershell
+# En otra ventana de PowerShell
+ccache -s    # Ver estadísticas en tiempo real
+```
+
+**NOTA:** Si no tienes ccache instalado, la compilación funcionará normalmente pero será más lenta en recompilaciones.
+
+---
 
 ## ✅ SOLUCIÓN FINAL - COPY & PASTE
 
@@ -7,7 +54,7 @@
 **Copia y pega esto en PowerShell desde `C:\IA\tools\ollama`:**
 
 ```powershell
-$env:VERSION = "0.12.41"
+$env:VERSION = "0.12.59"
 powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildCPU buildCUDA13 gatherDependencies buildOllama buildApp buildInstaller
 ```
 
@@ -21,7 +68,7 @@ powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildC
 # ============================================================================
 # PASO 1: Bibliotecas CPU y CUDA con MSVC
 # ============================================================================
-$env:VERSION = "0.12.41"
+$env:VERSION = "0.12.59"
 powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildCPU buildCUDA13 gatherDependencies
 
 # ============================================================================
@@ -78,7 +125,7 @@ if (Test-Path "$env:LOCALAPPDATA\Programs\Ollama\unins000.exe") {
 
 # 4. Verificar
 ollama --version
-# Output: ollama version is 0.12.41
+# Output: ollama version is 0.12.59
 ```
 
 ---
@@ -157,7 +204,7 @@ Get-ChildItem "$env:LOCALAPPDATA\Programs\Ollama\lib\ollama" -Recurse -Filter "*
 
 ### Variables de Entorno
 ```powershell
-$env:VERSION = "0.12.41"
+$env:VERSION = "0.12.59"
 $env:CUDA_PATH_V13_0 = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.0"
 ```
 
@@ -167,7 +214,7 @@ $env:CUDA_PATH_V13_0 = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.0
 
 ### Compilación Completa Automática (Un Solo Comando)
 ```powershell
-$env:VERSION = "0.12.41"
+$env:VERSION = "0.12.59"
 powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildCPU buildCUDA13 gatherDependencies buildOllama buildApp buildInstaller
 ```
 
@@ -188,7 +235,7 @@ Start-Process "$env:LOCALAPPDATA\Programs\Ollama\unins000.exe" -ArgumentList "/S
 
 ## ✅ Resultado Final
 
-- **Versión:** Ollama 0.12.41 (test-llamacpp-bump)
+- **Versión:** Ollama 0.12.59 (test-llamacpp-bump)
 - **Soporte:** Granite + Docling (llama.cpp 1deee0f8)
 - **Backend:** CUDA 13.0 (arquitecturas 86, 89, 90)
 - **Interfaz:** App de bandeja 100% funcional con menú contextual

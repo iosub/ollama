@@ -186,6 +186,10 @@ function buildCUDA13() {
             $hashEnv.Keys | foreach { if ($_.Contains("CUDA_PATH_V13")) { $x=$hashEnv[$_]; if (test-path -literalpath "$x\bin\nvcc.exe" ) { $cuda=$x}  }}
             $env:CUDAToolkit_ROOT=$cuda
             write-host "Building CUDA v13 backend libraries $cuda"
+            # Enable ccache for CMake
+            $env:CMAKE_C_COMPILER_LAUNCHER="ccache"
+            $env:CMAKE_CXX_COMPILER_LAUNCHER="ccache"
+            $env:CMAKE_CUDA_COMPILER_LAUNCHER="ccache"
             & cmake --fresh --preset "CUDA 13" -G "Visual Studio 17 2022" -T cuda="$cuda" --install-prefix $script:DIST_DIR -DOLLAMA_RUNNER_DIR="cuda_v13"
             if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
             & cmake --build --preset "CUDA 13"  --config Release --parallel $script:JOBS
@@ -258,8 +262,12 @@ function buildOllama() {
         write-error "Build failed: ollama.exe not found"
         exit 1
     }
-    write-host "ollama.exe built successfully (size: $([math]::Round((Get-Item ollama.exe).Length/1MB, 2)) MB)"
+    write-host "ollama.exe built successfully (size: $([math]::Round((Get-Item ollama.exe).Length/1MB, 2)) MB)" -ForegroundColor Green
+    
+    # Ensure target directory exists and copy ollama.exe to the correct location
+    mkdir -Force -path "${script:DIST_DIR}" > $null
     cp .\ollama.exe "${script:DIST_DIR}\"
+    write-host "ollama.exe copied to ${script:DIST_DIR}" -ForegroundColor Green
 }
 
 function buildApp() {
