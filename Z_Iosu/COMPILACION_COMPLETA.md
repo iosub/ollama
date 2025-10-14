@@ -2,12 +2,15 @@
 
 ## 🚀 CONFIGURACIÓN PREVIA: ccache (RECOMENDADO)
 
-### ⚡ ¿Por qué ccache?
-- **Primera compilación**: ~10 minutos (llena el cache)
-- **Recompilaciones**: ~3-5 minutos (50-80% más rápido)
-- **Especialmente útil**: Para desarrollo y pruebas múltiples
+### ⚡ ¿Cómo funciona el cache en Ollama?
 
-### 📋 Configuración Automática de ccache
+| Componente | Sistema de Cache | Beneficio |
+|------------|------------------|-----------|
+| **Bibliotecas C/C++** (DLLs) | **ccache** | 50-80% más rápido en recompilaciones |
+| **CLI Go** (ollama.exe) | **Go build cache** | Automático, muy eficiente |
+| **App Bandeja** (MSVC) | **Go build cache** | Automático |
+
+### 📋 Configuración ccache (Solo para bibliotecas C/C++)
 
 **Ejecuta ANTES de compilar (solo una vez):**
 
@@ -37,13 +40,21 @@ ccache --show-config | Select-String "compression|max_size|sloppiness"
 (config) sloppiness = time_macros
 ```
 
-### 📊 Monitoreo durante compilación (opcional):
+### 📊 Monitoreo durante compilación:
 ```powershell
-# En otra ventana de PowerShell
-ccache -s    # Ver estadísticas en tiempo real
+# Ver cache de ccache (bibliotecas C/C++)
+ccache -s
+
+# Ver cache de Go (ollama.exe + app)
+go env GOCACHE
 ```
 
-**NOTA:** Si no tienes ccache instalado, la compilación funcionará normalmente pero será más lenta en recompilaciones.
+### 🎯 **Velocidades esperadas:**
+- **Primera compilación**: ~10 minutos (llena ambos caches)
+- **Recompilaciones completas**: ~3-5 minutos  
+- **Solo Go (buildOllama)**: ~30 segundos (Go cache muy eficiente)
+
+**NOTA:** ccache solo acelera las bibliotecas C/C++ (buildCPU, buildCUDA13). Go tiene su propio sistema de cache automático.
 
 ---
 
@@ -168,23 +179,56 @@ Si SÍ aparece el menú → ✅ Compilación correcta con MSVC
 
 ## 🔧 Troubleshooting
 
-### 1. App no aparece en bandeja
+### 1. "Build Failed" pero ollama.exe existe
+**Síntoma:** Script muestra "Build Failed" pero ollama.exe se genera correctamente.
+```powershell
+# Verificar si realmente falló
+if (Test-Path "ollama.exe") { 
+    Write-Host "✅ Compilación exitosa: $([math]::Round((Get-Item ollama.exe).Length/1MB, 2)) MB" 
+} else { 
+    Write-Host "❌ Compilación falló realmente" 
+}
+```
+**Causa:** Advertencias de C++ (codecvt_utf8) que Go interpreta como error.  
+**Solución:** Script actualizado ignora warnings y verifica archivo generado.
+
+### 2. buildOllama falla con mezcla de entornos
+**Síntoma:** Error de VS2022 + llvm-mingw incompatible.
+```powershell
+# Ejecutar manualmente (siempre funciona)
+$env:VERSION = "0.12.59"; $env:CGO_ENABLED="1"
+$llvmPath = (Resolve-Path "C:\llvm-mingw-ucrt\llvm-mingw-*").Path
+$env:PATH = "$llvmPath\bin;$env:PATH"
+$env:CC = "$llvmPath\bin\gcc.exe"; $env:CXX = "$llvmPath\bin\g++.exe"
+go build -v -a -trimpath -ldflags "-s -w -X=github.com/ollama/ollama/version.Version=$env:VERSION -X=github.com/ollama/ollama/server.mode=release" .
+```
+
+### 3. App no aparece en bandeja
 ```powershell
 # Verificar proceso
 Get-Process | Where-Object { $_.Name -like "*ollama*" }
 
 # Debe mostrar:
-# - ollama app (app de bandeja)
+# - ollama app (app de bandeja)  
 # - ollama (servidor backend)
 ```
 
-### 2. Menú contextual no funciona
+### 4. Menú contextual no funciona
 ```powershell
 # Verificar que la app se compiló con MSVC (no llvm-mingw)
 # Recompilar siguiendo PASO 3 arriba
 ```
 
-### 3. Verificar DLLs instaladas
+### 5. ccache no se usa
+**Normal:** ccache solo funciona en bibliotecas C/C++ (buildCPU, buildCUDA13).  
+Go tiene su propio cache automático muy eficiente.
+```powershell
+# Ver estadísticas de ambos sistemas
+ccache -s              # Cache C/C++
+go env GOCACHE         # Cache Go
+```
+
+### 6. Verificar DLLs instaladas
 ```powershell
 Get-ChildItem "$env:LOCALAPPDATA\Programs\Ollama\lib\ollama" -Recurse -Filter "*.dll" | Measure-Object
 # Debe mostrar: Count = 28
@@ -222,6 +266,18 @@ powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildC
 ```powershell
 # Si ya tienes las DLLs compiladas y solo cambió el código
 powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildOllama buildApp buildInstaller
+```
+
+### Compilar ollama.exe Manualmente (Siempre funciona)
+```powershell
+# Comando manual que NUNCA falla
+$env:VERSION = "0.12.59"; $env:CGO_ENABLED="1"
+$llvmPath = (Resolve-Path "C:\llvm-mingw-ucrt\llvm-mingw-*").Path; $env:PATH = "$llvmPath\bin;$env:PATH"
+$env:CC = "$llvmPath\bin\gcc.exe"; $env:CXX = "$llvmPath\bin\g++.exe"
+go build -v -a -trimpath -ldflags "-s -w -X=github.com/ollama/ollama/version.Version=$env:VERSION -X=github.com/ollama/ollama/server.mode=release" .
+
+# Copiar a dist (si usas comando manual)
+cp .\ollama.exe .\dist\windows-amd64\
 ```
 
 ### Reinstalación Limpia

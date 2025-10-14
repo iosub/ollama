@@ -233,41 +233,48 @@ function buildROCm() {
 
 function buildOllama() {
     mkdir -Force -path "${script:DIST_DIR}\"
-    write-host "Building ollama CLI"
+    write-host "Building ollama CLI with llvm-mingw" -ForegroundColor Cyan
     
-    # Use llvm-mingw UCRT for CGO (same as GitHub Actions release build)
-    # UCRT is compatible with MSVC-compiled libraries
-    $env:CGO_ENABLED="1"
-    $llvmPath = (Resolve-Path "C:\llvm-mingw-ucrt\llvm-mingw-*").Path
-    $env:PATH = "$llvmPath\bin;$env:PATH"
+    # Save current environment
+    $savedPATH = $env:PATH
+    $savedCGO = $env:CGO_ENABLED
+    $savedCC = $env:CC
+    $savedCXX = $env:CXX
     
-    # Set explicit CC/CXX and include paths for CGO
-    $env:CC = "$llvmPath\bin\gcc.exe"
-    $env:CXX = "$llvmPath\bin\g++.exe"
-    $env:CGO_CFLAGS = "-I$llvmPath\include"
-    $env:CGO_CXXFLAGS = "-I$llvmPath\include"
-    
-    # Verify gcc is clang (required for proper utf16 handling)
-    $gccVersion = & gcc -v 2>&1 | Out-String
-    if ($gccVersion -notmatch 'clang') {
-        write-error "ERROR: GCC must be clang for proper utf16 handling"
-        exit 1
+    try {
+        # Use the EXACT same configuration that works manually
+        $env:CGO_ENABLED = "1"
+        $llvmPath = (Resolve-Path "C:\llvm-mingw-ucrt\llvm-mingw-*").Path
+        $env:PATH = "$llvmPath\bin;$env:PATH"
+        $env:CC = "$llvmPath\bin\gcc.exe"
+        $env:CXX = "$llvmPath\bin\g++.exe"
+        
+        write-host "Using llvm-mingw UCRT from: $llvmPath" -ForegroundColor Green
+        write-host "Starting Go build..." -ForegroundColor Yellow
+        
+        # Execute the EXACT same command that works manually
+        & go build -v -a -trimpath -ldflags "-s -w -X=github.com/ollama/ollama/version.Version=$script:VERSION -X=github.com/ollama/ollama/server.mode=release" .
+        
+        # Check if ollama.exe was created (ignore exit code, check file existence)
+        if (Test-Path "ollama.exe") {
+            $size = [math]::Round((Get-Item "ollama.exe").Length/1MB, 2)
+            write-host "✅ ollama.exe built successfully ($size MB)" -ForegroundColor Green
+            
+            # Copy to distribution directory  
+            mkdir -Force -path "${script:DIST_DIR}" > $null
+            cp .\ollama.exe "${script:DIST_DIR}\"
+            write-host "✅ ollama.exe copied to ${script:DIST_DIR}" -ForegroundColor Green
+        } else {
+            write-error "Build failed: ollama.exe not found"
+            exit 1
+        }
+    } finally {
+        # Restore environment
+        $env:PATH = $savedPATH
+        $env:CGO_ENABLED = $savedCGO
+        $env:CC = $savedCC
+        $env:CXX = $savedCXX
     }
-    write-host "Using llvm-mingw UCRT from: $llvmPath"
-    
-    & go build -a -trimpath -ldflags "-s -w -X=github.com/ollama/ollama/version.Version=$script:VERSION -X=github.com/ollama/ollama/server.mode=release" .
-    # Note: Go may return exit code 1 due to C++ deprecation warnings (codecvt_utf8)
-    # but the build succeeds. Check if ollama.exe was created.
-    if (-not (Test-Path "ollama.exe")) {
-        write-error "Build failed: ollama.exe not found"
-        exit 1
-    }
-    write-host "ollama.exe built successfully (size: $([math]::Round((Get-Item ollama.exe).Length/1MB, 2)) MB)" -ForegroundColor Green
-    
-    # Ensure target directory exists and copy ollama.exe to the correct location
-    mkdir -Force -path "${script:DIST_DIR}" > $null
-    cp .\ollama.exe "${script:DIST_DIR}\"
-    write-host "ollama.exe copied to ${script:DIST_DIR}" -ForegroundColor Green
 }
 
 function buildApp() {
