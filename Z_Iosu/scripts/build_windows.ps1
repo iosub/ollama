@@ -6,6 +6,17 @@
 
 $ErrorActionPreference = "Stop"
 
+# Auto-cargar entorno Vulkan si existe configuración local
+try {
+    $vulkanEnvPath = Join-Path (Split-Path $PSScriptRoot -Parent) "config\vulkan-env.ps1"
+    if (Test-Path $vulkanEnvPath) {
+        . $vulkanEnvPath
+        Write-Host "[INFO] Vulkan env cargado: $vulkanEnvPath" -ForegroundColor Gray
+    }
+} catch {
+    Write-Host "[WARN] No se pudo cargar vulkan-env.ps1: $($_.Exception.Message)" -ForegroundColor Yellow
+}
+
 function initVS2022Env() {
     # Initialize Visual Studio 2022 Developer Environment using vcvarsall.bat
     $vcvarsPath = "C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvarsall.bat"
@@ -231,6 +242,57 @@ function buildROCm() {
     }
 }
 
+function buildVulkan() {
+    mkdir -Force -path "${script:DIST_DIR}\"
+    if ($script:ARCH -ne "arm64") {
+        # Verificar si Vulkan SDK está disponible
+        if (-not $env:VULKAN_SDK) {
+            # Intentar encontrar Vulkan SDK automáticamente
+            $vulkanPaths = @(
+                "C:\VulkanSDK\1.4.321.1",
+                (Get-ChildItem -Path "C:\VulkanSDK\*" -Directory | Sort-Object Name -Descending | Select-Object -First 1).FullName
+            )
+            
+            foreach ($path in $vulkanPaths) {
+                if ($path -and (Test-Path $path)) {
+                    $env:VULKAN_SDK = $path
+                    break
+                }
+            }
+        }
+        
+        if ($env:VULKAN_SDK) {
+            write-host "Building Vulkan backend libraries using SDK: $env:VULKAN_SDK" -ForegroundColor Cyan
+            
+            # Configurar variables de entorno para Vulkan
+            $vulkanBin = Join-Path $env:VULKAN_SDK "bin"
+            if (Test-Path $vulkanBin) {
+                $env:PATH = "$vulkanBin;$env:PATH"
+            }
+            $env:CMAKE_PREFIX_PATH = $env:VULKAN_SDK
+            
+            # Enable ccache for CMake
+            $env:CMAKE_C_COMPILER_LAUNCHER="ccache"
+            $env:CMAKE_CXX_COMPILER_LAUNCHER="ccache"
+            
+            # Configurar y compilar con Vulkan habilitado
+            & cmake --fresh -B build -DGGML_USE_VULKAN=ON -DCMAKE_BUILD_TYPE=Release -A x64 --install-prefix $script:DIST_DIR
+            if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
+            
+            & cmake --build build --config Release --target ggml-vulkan --parallel $script:JOBS
+            if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
+            
+            & cmake --install build --component Vulkan --strip
+            if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
+            
+            write-host "✅ Vulkan backend compiled successfully" -ForegroundColor Green
+        } else {
+            write-host "⚠️  Vulkan SDK not found - skipping Vulkan backend" -ForegroundColor Yellow
+            write-host "   Install Vulkan SDK with: powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\install-vulkan-sdk.ps1" -ForegroundColor Cyan
+        }
+    }
+}
+
 function buildOllama() {
     mkdir -Force -path "${script:DIST_DIR}\"
     write-host "Building ollama CLI with llvm-mingw" -ForegroundColor Cyan
@@ -344,6 +406,14 @@ function gatherDependencies() {
         copy-item -path "${env:VCToolsRedistDir}\vc_redist.arm64.exe" -destination "${script:DIST_DIR}" -verbose
     }
 
+    # Copiar bibliotecas Vulkan si están disponibles
+    $vulkanDll = "build\lib\ggml-vulkan.dll"
+    if (Test-Path $vulkanDll) {
+        write-host "Copying Vulkan backend: $vulkanDll → ${script:DIST_DIR}\lib\ollama\"
+        cp $vulkanDll "${script:DIST_DIR}\lib\ollama\"
+        write-host "✅ ggml-vulkan.dll copied" -ForegroundColor Green
+    }
+
     cp "${script:SRC_DIR}\app\ollama_welcome.ps1" "${script:SRC_DIR}\dist\"
 }
 
@@ -408,6 +478,7 @@ try {
         buildCPU
         buildCUDA12
         buildCUDA13
+        buildVulkan
         buildROCm
         buildOllama
         buildApp

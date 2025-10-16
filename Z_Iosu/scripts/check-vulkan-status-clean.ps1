@@ -50,9 +50,10 @@ foreach ($file in $vulkanFiles) {
 }
 
 # 3. Verificar Vulkan SDK
+# Priorizar la variable de entorno VULKAN_SDK si está configurada
 $vulkanSdkPaths = @(
-    "C:\VulkanSDK",
-    "$env:VULKAN_SDK"
+    "$env:VULKAN_SDK",
+    "C:\VulkanSDK"
 )
 
 $vulkanSdkFound = $false
@@ -72,23 +73,47 @@ $vulkanSdkVar = [bool]$env:VULKAN_SDK
 Show-Check "Variable VULKAN_SDK" $vulkanSdkVar $(if ($vulkanSdkVar) { $env:VULKAN_SDK } else { "No configurada" })
 
 # 5. Verificar herramientas Vulkan
-$vulkanTools = @()
-if ($vulkanSdkFound -and $vulkanSdkPath) {
-    $binPath = Join-Path $vulkanSdkPath "bin"
-    if (Test-Path $binPath) {
-        $vulkaninfo = Get-Command (Join-Path $binPath "vulkaninfo.exe") -ErrorAction SilentlyContinue
-        $vulkanTools += [bool]$vulkaninfo
+$hasVulkanTools = $false
+$toolDetails = "No disponibles"
+
+# Candidatos de rutas a bin
+$binCandidates = @()
+if ($env:VULKAN_SDK) {
+    $binCandidates += (Join-Path $env:VULKAN_SDK "bin")
+}
+if (Test-Path "C:\VulkanSDK") {
+    $versionDirs = Get-ChildItem "C:\VulkanSDK" -Directory -ErrorAction SilentlyContinue | Sort-Object Name -Descending
+    foreach ($d in $versionDirs) {
+        $binCandidates += (Join-Path $d.FullName "bin")
     }
 }
-$hasVulkanTools = $vulkanTools.Count -gt 0 -and $vulkanTools[0]
-Show-Check "Herramientas Vulkan" $hasVulkanTools $(if ($hasVulkanTools) { "vulkaninfo.exe disponible" } else { "No disponibles" })
+
+# Comprobar vulkaninfo por rutas conocidas y por PATH
+$vulkaninfoCmd = $null
+foreach ($binPath in $binCandidates | Get-Unique) {
+    if (Test-Path (Join-Path $binPath "vulkaninfo.exe")) {
+        $vulkaninfoCmd = Join-Path $binPath "vulkaninfo.exe"
+        break
+    }
+}
+if (-not $vulkaninfoCmd) {
+    $vulkaninfoCmd = Get-Command vulkaninfo.exe -ErrorAction SilentlyContinue
+}
+
+if ($vulkaninfoCmd) {
+    $hasVulkanTools = $true
+    $toolDetails = "vulkaninfo.exe disponible en $($vulkaninfoCmd | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue)"
+}
+Show-Check "Herramientas Vulkan" $hasVulkanTools $toolDetails
 
 # 6. Verificar commit actual
 try {
     $currentCommit = git rev-parse --short HEAD 2>$null
     $targetCommit = "2aba569"
-    $hasTargetCommit = git cat-file -e "$targetCommit" 2>$null; $LASTEXITCODE -eq 0
-    Show-Check "Commit Vulkan disponible" $hasTargetCommit $(if ($hasTargetCommit) { "Commit $targetCommit accesible" } else { "Commit $targetCommit no encontrado" })
+    $hasTargetCommit = $false
+    git cat-file -e "$targetCommit" 2>$null
+    if ($LASTEXITCODE -eq 0) { $hasTargetCommit = $true }
+    Show-Check "Commit Vulkan disponible" $hasTargetCommit $(if ($hasTargetCommit) { "Commit $targetCommit accesible" } else { "Commit $targetCommit no encontrado (puede no ser necesario si ya se hizo merge)" })
 } catch {
     Show-Check "Git repository" $false "Error accediendo a git"
 }

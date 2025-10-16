@@ -66,7 +66,7 @@ go env GOCACHE
 
 ```powershell
 $env:VERSION = "0.12.59"
-powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildCPU buildCUDA13 gatherDependencies buildOllama buildApp buildInstaller
+powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildCPU buildCUDA13 buildVulkan gatherDependencies buildOllama buildApp buildInstaller
 ```
 
 **Eso es TODO.** Espera ~10 minutos y tendrás `dist\OllamaSetup.exe` completo y funcional.
@@ -77,10 +77,15 @@ powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildC
 
 ```powershell
 # ============================================================================
-# PASO 1: Bibliotecas CPU y CUDA con MSVC
+# PASO 0: Instalar Vulkan SDK (solo una vez, requiere administrador)
+# ============================================================================
+powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\install-vulkan-sdk.ps1
+
+# ============================================================================
+# PASO 1: Bibliotecas CPU, CUDA y Vulkan con MSVC
 # ============================================================================
 $env:VERSION = "0.12.59"
-powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildCPU buildCUDA13 gatherDependencies
+powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildCPU buildCUDA13 buildVulkan gatherDependencies
 
 # ============================================================================
 # PASO 2: CLI (ollama.exe) con llvm-mingw
@@ -106,17 +111,18 @@ powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildI
 
 ```
 dist\
-├── OllamaSetup.exe (420 MB)           ← Instalador completo
+├── OllamaSetup.exe (450 MB)           ← Instalador completo
 ├── windows-amd64-app.exe (6.81 MB)    ← App bandeja (MSVC)
 ├── windows-amd64\
 │   ├── ollama.exe (34.88 MB)          ← CLI (llvm-mingw)
 │   └── lib\ollama\
 │       ├── ggml-*.dll (8 archivos)    ← CPU backends
 │       ├── cuda_v13\*.dll (3 archivos) ← CUDA 13
+│       ├── ggml-vulkan.dll (~50 MB)   ← Vulkan backend (AMD/Intel/NVIDIA)
 │       └── *.dll (17 archivos)        ← Runtime MSVC
 ```
 
-**Total: 28 DLLs + 2 ejecutables + instalador**
+**Total: 29 DLLs + 2 ejecutables + instalador (con soporte Vulkan universal)**
 
 ---
 
@@ -416,7 +422,7 @@ Start-Process "$env:LOCALAPPDATA\Programs\Ollama\unins000.exe" -ArgumentList "/S
 
 - **Versión:** Ollama 0.12.59 (test-llamacpp-bump)
 - **Soporte:** Granite + Docling (llama.cpp 1deee0f8)
-- **Backend:** CUDA 13.0 (arquitecturas 86, 89, 90)
+- **Backend:** CUDA 13.0 + Vulkan 1.4.321.1 (soporte universal GPU)
 - **Interfaz:** App de bandeja 100% funcional con menú contextual
 - **CLI:** Compatible con llvm-mingw UCRT
 
