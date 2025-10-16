@@ -245,46 +245,38 @@ function buildROCm() {
 function buildVulkan() {
     mkdir -Force -path "${script:DIST_DIR}\"
     if ($script:ARCH -ne "arm64") {
-        # Verificar si Vulkan SDK está disponible
         if (-not $env:VULKAN_SDK) {
-            # Intentar encontrar Vulkan SDK automáticamente
-            $vulkanPaths = @(
-                "C:\VulkanSDK\1.4.321.1",
-                (Get-ChildItem -Path "C:\VulkanSDK\*" -Directory | Sort-Object Name -Descending | Select-Object -First 1).FullName
-            )
-            
-            foreach ($path in $vulkanPaths) {
-                if ($path -and (Test-Path $path)) {
-                    $env:VULKAN_SDK = $path
-                    break
+            $defaultVulkanSdk = "C:\VulkanSDK\1.4.328.1"
+            if (Test-Path $defaultVulkanSdk) {
+                $env:VULKAN_SDK = $defaultVulkanSdk
+            } else {
+                $latestSdk = Get-ChildItem -Path "C:\VulkanSDK\*" -Directory -ErrorAction SilentlyContinue |
+                    Sort-Object Name -Descending |
+                    Select-Object -First 1
+                if ($latestSdk) {
+                    $env:VULKAN_SDK = $latestSdk.FullName
                 }
             }
         }
-        
+
         if ($env:VULKAN_SDK) {
             write-host "Building Vulkan backend libraries using SDK: $env:VULKAN_SDK" -ForegroundColor Cyan
-            
-            # Configurar variables de entorno para Vulkan
-            $vulkanBin = Join-Path $env:VULKAN_SDK "bin"
+
+            $vulkanBin = Join-Path $env:VULKAN_SDK "Bin"
             if (Test-Path $vulkanBin) {
                 $env:PATH = "$vulkanBin;$env:PATH"
             }
             $env:CMAKE_PREFIX_PATH = $env:VULKAN_SDK
-            
-            # Enable ccache for CMake
-            $env:CMAKE_C_COMPILER_LAUNCHER="ccache"
-            $env:CMAKE_CXX_COMPILER_LAUNCHER="ccache"
-            
-            # Configurar y compilar con Vulkan habilitado
-            & cmake --fresh -B build -DGGML_USE_VULKAN=ON -DCMAKE_BUILD_TYPE=Release -A x64 --install-prefix $script:DIST_DIR
+
+            & cmake --fresh --preset Vulkan --install-prefix $script:DIST_DIR -DOLLAMA_RUNNER_DIR="vulkan"
             if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
-            
-            & cmake --build build --config Release --target ggml-vulkan --parallel $script:JOBS
+
+            & cmake --build --preset Vulkan --config Release --parallel $script:JOBS
             if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
-            
+
             & cmake --install build --component Vulkan --strip
             if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
-            
+
             write-host "✅ Vulkan backend compiled successfully" -ForegroundColor Green
         } else {
             write-host "⚠️  Vulkan SDK not found - skipping Vulkan backend" -ForegroundColor Yellow
@@ -412,6 +404,31 @@ function gatherDependencies() {
         write-host "Copying Vulkan backend: $vulkanDll → ${script:DIST_DIR}\lib\ollama\"
         cp $vulkanDll "${script:DIST_DIR}\lib\ollama\"
         write-host "✅ ggml-vulkan.dll copied" -ForegroundColor Green
+    }
+
+    if ($env:VULKAN_SDK) {
+        $runtimeDirs = @(
+            (Join-Path $env:VULKAN_SDK "RuntimeInstaller"),
+            (Join-Path $env:VULKAN_SDK "Redist"),
+            (Join-Path $env:VULKAN_SDK "Bin"))
+        $runtimeInstaller = $null
+        foreach ($dir in $runtimeDirs) {
+            if (-not (Test-Path $dir)) { continue }
+            $candidate = Get-ChildItem -Path $dir -Filter "Vulkan*.exe" -ErrorAction SilentlyContinue |
+                Sort-Object LastWriteTime -Descending |
+                Select-Object -First 1
+            if ($candidate) {
+                $runtimeInstaller = $candidate
+                break
+            }
+        }
+        if ($runtimeInstaller) {
+            $destInstaller = Join-Path "${script:SRC_DIR}\dist" "vulkan_runtime_installer.exe"
+            Copy-Item -Path $runtimeInstaller.FullName -Destination $destInstaller -Force
+            write-host "Including Vulkan runtime installer: $($runtimeInstaller.FullName)" -ForegroundColor Cyan
+        } else {
+            write-host "Vulkan runtime installer not found under $env:VULKAN_SDK" -ForegroundColor Yellow
+        }
     }
 
     cp "${script:SRC_DIR}\app\ollama_welcome.ps1" "${script:SRC_DIR}\dist\"
