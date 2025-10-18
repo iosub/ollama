@@ -17,3 +17,7 @@ llama/vendor
 /ollama
 .ccache
 logs
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
