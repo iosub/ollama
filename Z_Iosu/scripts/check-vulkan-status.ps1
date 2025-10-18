@@ -23,10 +23,12 @@ Write-Host "🔍 VERIFICACIÓN DE ESTADO VULKAN (SIN MODIFICAR ARCHIVOS)" -Foreg
 Write-Host "══════════════════════════════════════════════════════════" -ForegroundColor Cyan
 
 # Función para mostrar resultado
-function Show-Check($name, $result, $details = "") {
+function Show-Check($name, $result, $details = "") 
+{
     $icon = if ($result) { "✅" } else { "❌" }
     Write-Host "$icon $name" -ForegroundColor $(if ($result) { "Green" } else { "Red" })
-    if ($ShowDetails -and $details) {
+    if ($ShowDetails -and $details) 
+    {
         Write-Host "   └─ $details" -ForegroundColor Gray
     }
 }

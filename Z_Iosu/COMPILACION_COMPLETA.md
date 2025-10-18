@@ -1,4 +1,4 @@
-# GUÍA COMPLETA: Compilación Ollama 0.12.6 con Interfaz Gráfica Funcional
+# GUÍA COMPLETA: Compilación Ollama 0.12.6.99 con Interfaz Gráfica Funcional
 
 ## 🚀 CONFIGURACIÓN PREVIA: ccache (RECOMENDADO)
 
@@ -65,7 +65,7 @@ go env GOCACHE
 **Copia y pega esto en PowerShell desde `C:\IA\tools\ollama`:**
 
 ```powershell
-$env:VERSION = "0.12.6"
+$env:VERSION = "0.12.6.99"
 powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildCPU buildCUDA13 buildVulkan gatherDependencies buildOllama buildApp buildInstaller
 ```
 
@@ -84,7 +84,7 @@ powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\install-vulkan-sdk.ps1
 # ============================================================================
 # PASO 1: Bibliotecas CPU, CUDA y Vulkan con MSVC
 # ============================================================================
-$env:VERSION = "0.12.6"
+$env:VERSION = "0.12.6.99"
 powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildCPU buildCUDA13 buildVulkan gatherDependencies
 
 # ============================================================================
@@ -142,7 +142,7 @@ if (Test-Path "$env:LOCALAPPDATA\Programs\Ollama\unins000.exe") {
 
 # 4. Verificar
 ollama --version
-# Output: ollama version is 0.12.6
+# Output: ollama version is 0.12.6.99
 ```
 
 ---
@@ -195,7 +195,7 @@ Antes solo copiabas `ollama.exe` y funcionaba, pero ahora:
 ### 🔍 Causa Raíz
 **Las versiones anteriores** de Ollama tenían bibliotecas compiladas **estáticamente** (incluidas dentro del .exe).
 
-**Ollama 0.12.6 con CUDA** usa bibliotecas **dinámicas** (.dll) separadas que deben estar presentes en runtime.
+**Ollama 0.12.6.99 con CUDA** usa bibliotecas **dinámicas** (.dll) separadas que deben estar presentes en runtime.
 
 ### ✅ Solución DEFINITIVA
 
@@ -325,7 +325,7 @@ if (Test-Path "ollama.exe") {
 **Síntoma:** Error de VS2022 + llvm-mingw incompatible.
 ```powershell
 # Ejecutar manualmente (siempre funciona)
-$env:VERSION = "0.12.6"; $env:CGO_ENABLED="1"
+$env:VERSION = "0.12.6.99"; $env:CGO_ENABLED="1"
 $llvmPath = (Resolve-Path "C:\llvm-mingw-ucrt\llvm-mingw-*").Path
 $env:PATH = "$llvmPath\bin;$env:PATH"
 $env:CC = "$llvmPath\bin\gcc.exe"; $env:CXX = "$llvmPath\bin\g++.exe"
@@ -377,7 +377,7 @@ Get-ChildItem "$env:LOCALAPPDATA\Programs\Ollama\lib\ollama" -Recurse -Filter "*
 
 ### Variables de Entorno
 ```powershell
-$env:VERSION = "0.12.6"
+$env:VERSION = "0.12.6.99"
 $env:CUDA_PATH_V13_0 = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.0"
 ```
 
@@ -387,7 +387,7 @@ $env:CUDA_PATH_V13_0 = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.0
 
 ### Compilación Completa Automática (Un Solo Comando)
 ```powershell
-$env:VERSION = "0.12.6"
+$env:VERSION = "0.12.6.99"
 powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildCPU buildCUDA13 gatherDependencies buildOllama buildApp buildInstaller
 ```
 
@@ -400,7 +400,7 @@ powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildO
 ### Compilar ollama.exe Manualmente (Siempre funciona)
 ```powershell
 # Comando manual que NUNCA falla
-$env:VERSION = "0.12.6"; $env:CGO_ENABLED="1"
+$env:VERSION = "0.12.6.99"; $env:CGO_ENABLED="1"
 $llvmPath = (Resolve-Path "C:\llvm-mingw-ucrt\llvm-mingw-*").Path; $env:PATH = "$llvmPath\bin;$env:PATH"
 $env:CC = "$llvmPath\bin\gcc.exe"; $env:CXX = "$llvmPath\bin\g++.exe"
 go build -v -a -trimpath -ldflags "-s -w -X=github.com/ollama/ollama/version.Version=$env:VERSION -X=github.com/ollama/ollama/server.mode=release" .
@@ -420,7 +420,7 @@ Start-Process "$env:LOCALAPPDATA\Programs\Ollama\unins000.exe" -ArgumentList "/S
 
 ## ✅ Resultado Final
 
-- **Versión:** Ollama 0.12.6 (test-llamacpp-bump)
+- **Versión:** Ollama 0.12.6.99 (test-llamacpp-bump)
 - **Soporte:** Granite + Docling (llama.cpp 1deee0f8)
 - **Backend:** CUDA 13.0 + Vulkan 1.4.321.1 (soporte universal GPU)
 - **Interfaz:** App de bandeja 100% funcional con menú contextual
