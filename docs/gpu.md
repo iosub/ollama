@@ -125,11 +125,3 @@ accessing the AMD GPU devices.  On the host system you can run
 
 ### Metal (Apple GPUs)
 Ollama supports GPU acceleration on Apple devices via the Metal API.
-
-### Integrated GPUs (Vulkan)
-When Vulkan detects both an integrated GPU and a discrete GPU, you can optionally cap the working memory reported for the integrated device to avoid overcommitting shared system memory. By default Ollama leaves the integrated GPU uncapped (matching previous releases). To enable the clamp, use:
-
-- `OLLAMA_VK_IGPU_MEMORY_LIMIT_MB` – Working-memory budget in MiB (for example `4096` for 4 GiB). Any positive value enables the clamp.
-- `OLLAMA_VK_DISABLE_IGPU_CLAMP` – Forces the clamp to stay disabled (useful for temporary testing).
-
-Restart the Ollama service after changing these environment variables.

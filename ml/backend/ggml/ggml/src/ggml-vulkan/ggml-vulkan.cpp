@@ -37,7 +37,6 @@ DispatchLoaderDynamic & ggml_vk_default_dispatcher();
 #include <mutex>
 #include <future>
 #include <thread>
-#include <cstdlib>
 
 #if defined(_MSC_VER)
 # define NOMINMAX 1
@@ -3706,7 +3705,6 @@ static void ggml_vk_load_shaders(vk_device& device) {
 }
 
 static bool ggml_vk_khr_cooperative_matrix_support(const vk::PhysicalDeviceProperties& props, const vk::PhysicalDeviceDriverProperties& driver_props, vk_device_architecture arch);
-static uint64_t ggml_backend_vk_get_integrated_memory_limit_bytes();
 
 static vk_device ggml_vk_get_device(size_t idx) {
     VK_LOG_DEBUG("ggml_vk_get_device(" << idx << ")");
@@ -3891,14 +3889,6 @@ static vk_device ggml_vk_get_device(size_t idx) {
 
         device->subgroup_size = subgroup_props.subgroupSize;
         device->uma = device->properties.deviceType == vk::PhysicalDeviceType::eIntegratedGpu;
-        if (device->uma) {
-            uint64_t igpu_limit = ggml_backend_vk_get_integrated_memory_limit_bytes();
-            if (igpu_limit > 0) {
-                device->max_memory_allocation_size = std::min(device->max_memory_allocation_size, igpu_limit);
-                device->max_buffer_size = std::min(device->max_buffer_size, igpu_limit);
-                device->suballocation_block_size = std::min<uint64_t>(device->suballocation_block_size, igpu_limit);
-            }
-        }
         if (sm_builtins) {
             device->shader_core_count = sm_props.shaderSMCount;
         } else if (amd_shader_core_properties2) {
@@ -12432,39 +12422,11 @@ std::string ggml_backend_vk_get_device_id(int device) {
 
 //////////////////////////
 
-static uint64_t ggml_backend_vk_get_integrated_memory_limit_bytes() {
-    static std::once_flag once;
-    static uint64_t limit = 0;
-
-    std::call_once(once, []() {
-        const char *disable_env = getenv("OLLAMA_VK_DISABLE_IGPU_CLAMP");
-        if (disable_env != nullptr) {
-            limit = 0;
-            return;
-        }
-
-        if (const char *limit_env = getenv("OLLAMA_VK_IGPU_MEMORY_LIMIT_MB")) {
-            char *endptr = nullptr;
-            unsigned long long limit_mb = strtoull(limit_env, &endptr, 10);
-            if (endptr != limit_env && limit_mb > 0) {
-                constexpr unsigned long long kBytesPerMb = 1024ull * 1024ull;
-                if (limit_mb > (std::numeric_limits<uint64_t>::max() / kBytesPerMb)) {
-                    limit_mb = std::numeric_limits<uint64_t>::max() / kBytesPerMb;
-                }
-                limit = limit_mb * kBytesPerMb;
-            }
-        }
-    });
-
-    return limit;
-}
-
 struct ggml_backend_vk_device_context {
     size_t device;
     std::string name;
     std::string description;
     bool is_integrated_gpu;
-    uint64_t integrated_memory_limit;
     // Combined string id in the form "dddd:bb:dd.f" (domain:bus:device.function)
     std::string pci_id;
     std::string id;
@@ -12539,17 +12501,6 @@ void ggml_backend_vk_get_device_memory(ggml_backend_vk_device_context *ctx, size
             *free += mem_budget_props.heapBudget[i];
         }
     }
-
-    if (ctx->is_integrated_gpu && ctx->integrated_memory_limit > 0) {
-        size_t limit = static_cast<size_t>(ctx->integrated_memory_limit);
-        if (*total > limit) {
-            *total = limit;
-        }
-        if (*free > limit) {
-            *free = limit;
-        }
-    }
-
     if (*total > 0 && *free > 0) {
         return;
     } else if (*total > 0) {
@@ -12562,15 +12513,6 @@ void ggml_backend_vk_get_device_memory(ggml_backend_vk_device_context *ctx, size
         if (heap.flags & vk::MemoryHeapFlagBits::eDeviceLocal) {
             *total = heap.size;
             *free = heap.size;
-            if (ctx->is_integrated_gpu && ctx->integrated_memory_limit > 0) {
-                size_t limit = static_cast<size_t>(ctx->integrated_memory_limit);
-                if (*total > limit) {
-                    *total = limit;
-                }
-                if (*free > limit) {
-                    *free = limit;
-                }
-            }
             break;
         }
     }
@@ -13137,7 +13079,6 @@ static ggml_backend_dev_t ggml_backend_vk_reg_get_device(ggml_backend_reg_t reg,
                 ctx->name = GGML_VK_NAME + std::to_string(i);
                 ctx->description = desc;
                 ctx->is_integrated_gpu = ggml_backend_vk_get_device_type(i) == vk::PhysicalDeviceType::eIntegratedGpu;
-                ctx->integrated_memory_limit = ctx->is_integrated_gpu ? ggml_backend_vk_get_integrated_memory_limit_bytes() : 0;
                 ctx->pci_id = ggml_backend_vk_get_device_pci_id(i);
                 ctx->id = ggml_backend_vk_get_device_id(i);
                 devices.push_back(new ggml_backend_device {
