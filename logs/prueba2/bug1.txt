@@ -1,0 +1,35 @@
+Source
+Windows
+
+Summary
+Shut down unexpectedly
+
+Date
+‎10/‎17/‎2025 11:47
+
+Status
+Not reported
+
+Problem signature
+Problem Event Name:	BlueScreen
+Code:	10e
+Parameter 1:	2e
+Parameter 2:	ffffd686b368dcf0
+Parameter 3:	ffffd686ec003000
+Parameter 4:	ffff810ebadd7610
+OS version:	10_0_26220
+Service Pack:	0_0
+Product:	256_1
+OS Version:	10.0.26220.2.0.0.256.161
+Locale ID:	1033
+
+Files that help describe the problem
+101725-11796-01.dmp
+sysdata.xml
+MEMORY.DMP
+WERInternalMetadata.xml
+memory.csv
+sysinfo.txt
+WERInternalRequest.xml
+
+The computer has rebooted from a bugcheck.  The bugcheck was: 0x0000010e (0x000000000000002e, 0xffffd686b368dcf0, 0xffffd686ec003000, 0xffff810ebadd7610). A dump was saved in: C:\WINDOWS\MEMORY.DMP. Report Id: 88f840e0-6e31-4aef-88ec-91a923f08341.

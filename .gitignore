@@ -15,3 +15,15 @@ __debug_bin*
 llama/build
 llama/vendor
 /ollama
+.ccache
+.zip
+*.log
+*.out
+*.pid
+*.aux
+logs/prueba2/memory.csv
+logs/prueba2/sysdata.xml
+logs/prueba2/sysinfo.txt
+logs/prueba2/WERInternalMetadata.xml
+logs/prueba2/WERInternalRequest.xml
+logs/prueba2/101725-11796-01.dmp
