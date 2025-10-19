@@ -811,9 +811,86 @@ func (c *Context) ComputeWithNotify(cb func(), tensors ...ml.Tensor) {
 	if cb != nil {
 		go cb()
 	}
-	if status := C.ggml_backend_sched_graph_compute_async(c.b.sched, c.graph); status != C.GGML_STATUS_SUCCESS {
-		panic(fmt.Errorf("error computing ggml graph: %v", status))
+	
+	status := C.ggml_backend_sched_graph_compute_async(c.b.sched, c.graph)
+	
+	// If compute fails, attempt fallback to alternative backends
+	if status != C.GGML_STATUS_SUCCESS {
+		// Log which backend failed
+		var failedBackend string
+		if len(c.b.schedBackends) > 0 {
+			dev := C.ggml_backend_get_device(c.b.schedBackends[0])
+			var props C.struct_ggml_backend_dev_props
+			C.ggml_backend_dev_get_props(dev, &props)
+			failedBackend = C.GoString(props.name) + " (" + C.GoString(props.library) + ")"
+		}
+		
+		// Try fallback: if we have multiple backends, try excluding the first one
+		if len(c.b.schedBackends) > 1 {
+			slog.Warn("compute failed on primary backend, attempting fallback",
+				"failed_backend", failedBackend,
+				"status", status,
+				"available_backends", len(c.b.schedBackends))
+			
+			// Create new scheduler with remaining backends (excluding the failed one)
+			fallbackBackends := c.b.schedBackends[1:]
+			fallbackBufts := c.b.schedBufts[1:]
+			
+			fallbackSched := C.ggml_backend_sched_new_ext(
+				(*C.ggml_backend_t)(unsafe.Pointer(&fallbackBackends[0])),
+				(*C.ggml_backend_buffer_type_t)(unsafe.Pointer(&fallbackBufts[0])),
+				C.int(len(fallbackBackends)),
+				C.size_t(c.b.maxGraphNodes),
+				C._Bool(false),
+				C._Bool(false),
+				C._Bool(c.b.allocMemory),
+			)
+			
+			// Try compute with fallback scheduler
+			fallbackStatus := C.ggml_backend_sched_graph_compute_async(fallbackSched, c.graph)
+			
+			if fallbackStatus == C.GGML_STATUS_SUCCESS {
+				// Fallback succeeded! Update to use the working scheduler
+				slog.Info("fallback to alternative backend succeeded",
+					"new_backend", C.GoString(C.ggml_backend_name(fallbackBackends[0])))
+				
+				// Free old scheduler and update to use fallback
+				C.ggml_backend_sched_free(c.b.sched)
+				c.b.sched = fallbackSched
+				c.b.schedBackends = fallbackBackends
+				c.b.schedBufts = fallbackBufts
+				
+				C.ggml_backend_sched_reset(c.b.sched)
+				
+				needSync := true
+				sync := func() {
+					if needSync {
+						C.ggml_backend_sched_synchronize(c.b.sched)
+						needSync = false
+					}
+				}
+				
+				for _, t := range tensors {
+					if C.ggml_nbytes(t.(*Tensor).t) > 0 {
+						t.(*Tensor).sync = sync
+					}
+				}
+				return
+			}
+			
+			// Fallback also failed, clean up and panic
+			C.ggml_backend_sched_free(fallbackSched)
+		}
+		
+		// No fallback available or all backends failed
+		slog.Error("compute graph failed on all available backends",
+			"failed_backend", failedBackend,
+			"status", status,
+			"total_backends", len(c.b.schedBackends))
+		
+		panic(fmt.Errorf("error computing ggml graph: status=%v on %s, no working backend found", status, failedBackend))
 	}
+	
 	C.ggml_backend_sched_reset(c.b.sched)
 
 	needSync := true
