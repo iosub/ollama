@@ -315,9 +315,16 @@ function buildOllama() {
             write-host "✅ ollama.exe built successfully ($size MB)" -ForegroundColor Green
             
             # Copy to distribution directory  
-            mkdir -Force -path "${script:DIST_DIR}" > $null
-            cp .\ollama.exe "${script:DIST_DIR}\"
-            write-host "✅ ollama.exe copied to ${script:DIST_DIR}" -ForegroundColor Green
+            New-Item -ItemType Directory -Force -Path "${script:DIST_DIR}" | Out-Null
+            Copy-Item -Path ".\ollama.exe" -Destination "${script:DIST_DIR}\ollama.exe" -Force
+            
+            # Verify copy was successful
+            if (Test-Path "${script:DIST_DIR}\ollama.exe") {
+                write-host "✅ ollama.exe copied to ${script:DIST_DIR}" -ForegroundColor Green
+            } else {
+                write-error "Failed to copy ollama.exe to ${script:DIST_DIR}"
+                exit 1
+            }
         } else {
             write-error "Build failed: ollama.exe not found"
             exit 1

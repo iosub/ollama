@@ -68,7 +68,9 @@ go env GOCACHE
 $env:VERSION = "0.12.7.99"
 powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildCPU buildCUDA13 buildVulkan gatherDependencies buildOllama buildApp buildInstaller
 ```
+$env:VERSION = "0.12.7.99"; powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\smart_build.ps1 -Verbose
 
+$env:VERSION = "0.12.7.99"; powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\smart_build.ps1 -Verbose
 **Eso es TODO.** Espera ~10 minutos y tendrás `dist\OllamaSetup.exe` completo y funcional.
 
 ---
