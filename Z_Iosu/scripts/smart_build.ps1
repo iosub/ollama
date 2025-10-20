@@ -18,29 +18,28 @@
 .PARAMETER Force
     Force full rebuild of all components, ignoring change detection.
 
-.PARAMETER Verbose
-    Show detailed information about file changes and build decisions.
-
 .EXAMPLE
     .\smart_build.ps1
-    Automatically detect changes and build only necessary components.
+    Automatically detect changes and build only necessary components (verbose mode enabled by default).
 
 .EXAMPLE
     .\smart_build.ps1 -Force
     Force full rebuild of all components.
 
 .EXAMPLE
-    .\smart_build.ps1 -Verbose
-    Show detailed change detection information.
+    .\smart_build.ps1 -Force
+    Force full rebuild of all components.
 #>
 
 param(
-    [switch]$Force,
-    [switch]$Verbose
+    [switch]$Force
 )
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
+
+# Always enable verbose mode by default
+$VerbosePreference = "Continue"
 
 # ============================================================================
 # Configuration
@@ -155,9 +154,8 @@ function Test-ComponentChanged {
     
     $result = Get-FilesLastWriteTime -Patterns $patterns
     
-    if ($Verbose) {
-        Write-ColorOutput ("  " + $ComponentName + ": " + $result.Count + " files, last modified: " + $result.MaxTime) "DarkGray"
-    }
+    # Always show file information (verbose mode is always on)
+    Write-ColorOutput ("  " + $ComponentName + ": " + $result.Count + " files, last modified: " + $result.MaxTime) "DarkGray"
     
     return ($result.MaxTime -gt $LastBuildTime)
 }
@@ -276,8 +274,8 @@ function Invoke-BuildStep {
 function Start-SmartBuild {
     Write-Section "Ollama Smart Incremental Build"
     
-    # Set verbose flag from script parameter
-    $script:ShowVerbose = $Verbose
+    # Always enable verbose mode
+    $script:ShowVerbose = $true
     
     # Ensure VERSION environment variable is set
     if (-not $env:VERSION) {
@@ -288,13 +286,7 @@ function Start-SmartBuild {
     Write-ColorOutput "Version: $env:VERSION" "White"
     Write-ColorOutput "Project: $script:ProjectRoot" "White"
     Write-ColorOutput "Build Script: $script:BuildScriptPath" "White"
-    
-    if ($script:ShowVerbose) {
-        Write-ColorOutput "Verbose Mode: ENABLED (showing all build output)" "Cyan"
-    }
-    else {
-        Write-ColorOutput "Verbose Mode: Disabled (quiet mode, use -Verbose to see details)" "DarkGray"
-    }
+    Write-ColorOutput "Verbose Mode: ALWAYS ENABLED (showing all build output)" "Cyan"
     
     # Load previous build state
     $buildState = Get-BuildState

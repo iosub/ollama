@@ -870,7 +870,15 @@ func (s *ollamaServer) createLayout(systemInfo discover.SystemInfo, systemGPUs d
 	}
 
 	gpus := append(make(discover.GpuInfoList, 0, len(systemGPUs)), systemGPUs...)
-	sort.Sort(sort.Reverse(discover.ByFreeMemory(gpus)))
+	// Respect Vulkan device enumeration order (ID 0, 1, 2...) instead of reordering by VRAM
+	sort.Slice(gpus, func(i, j int) bool {
+		return gpus[i].ID < gpus[j].ID
+	})
+	
+	// Debug log to verify GPU ordering
+	for idx, gpu := range gpus {
+		slog.Debug("GPU order in createLayout", "index", idx, "ID", gpu.ID, "name", gpu.Name, "free", format.HumanBytes2(gpu.FreeMemory))
+	}
 
 	if memory == nil {
 		memory = &ml.BackendMemory{CPU: ml.DeviceMemory{

@@ -74,7 +74,8 @@ $env:VERSION = "0.12.7.99"; powershell -ExecutionPolicy Bypass -File Z_Iosu\scri
 **Eso es TODO.** Espera ~10 minutos y tendrás `dist\OllamaSetup.exe` completo y funcional.
 
 ---
-
+ powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\start_ollama_vulkan_intel.ps1 *> C:\IA\tools\ollama\logs\ollama.log    
+ 
 ### Compilación Paso a Paso (Si prefieres ver el progreso)
 
 ```powershell
