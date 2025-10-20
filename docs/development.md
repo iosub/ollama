@@ -161,3 +161,9 @@ Ollama looks for acceleration libraries in the following paths relative to the `
 * `build/lib/ollama` (for development)
 
 If the libraries are not found, Ollama will not run with any acceleration libraries.
+
+
+## Vulkan
+
+To build with Vulkan support on Linux or Windows, you will need to install the [VulkanSDK](https://vulkan.lunarg.com/) and set
+the environment variables as described in the install instructions.  Note: a recent SDK version is required (tested with 1.4.321.1)
