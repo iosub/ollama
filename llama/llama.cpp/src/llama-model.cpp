@@ -1014,6 +1014,17 @@ void llama_model::load_hparams(llama_model_loader & ml) {
                     default: type = LLM_TYPE_UNKNOWN;
                 }
             } break;
+        case LLM_ARCH_QWEN3VL:
+            {
+                ml.get_key(LLM_KV_ATTENTION_LAYERNORM_RMS_EPS, hparams.f_norm_rms_eps);
+                type = LLM_TYPE_UNKNOWN;
+            } break;
+        case LLM_ARCH_QWEN3VLMOE:
+            {
+                ml.get_key(LLM_KV_EXPERT_FEED_FORWARD_LENGTH, hparams.n_ff_exp, false);
+                ml.get_key(LLM_KV_ATTENTION_LAYERNORM_RMS_EPS, hparams.f_norm_rms_eps);
+                type = LLM_TYPE_UNKNOWN;
+            } break;
         case LLM_ARCH_PHI2:
             {
                 ml.get_key(LLM_KV_ATTENTION_LAYERNORM_EPS, hparams.f_norm_eps);
@@ -3239,6 +3250,7 @@ bool llama_model::load_tensors(llama_model_loader & ml) {
                     }
                 } break;
             case LLM_ARCH_QWEN3:
+            case LLM_ARCH_QWEN3VL:
                 {
                     tok_embd = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), {n_embd, n_vocab}, 0);
 
@@ -3273,6 +3285,7 @@ bool llama_model::load_tensors(llama_model_loader & ml) {
                     }
                 } break;
             case LLM_ARCH_QWEN3MOE:
+            case LLM_ARCH_QWEN3VLMOE:
                 {
                     tok_embd = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), {n_embd, n_vocab}, 0);
 
@@ -19814,6 +19827,14 @@ ggml_cgraph * llama_model::build_graph(const llm_graph_params & params) const {
             {
                 llm = std::make_unique<llm_build_qwen3moe>(*this, params);
             } break;
+        case LLM_ARCH_QWEN3VL:
+            {
+                llm = std::make_unique<llm_build_qwen3>(*this, params);
+            } break;
+        case LLM_ARCH_QWEN3VLMOE:
+            {
+                llm = std::make_unique<llm_build_qwen3moe>(*this, params);
+            } break;
         case LLM_ARCH_PHI2:
             {
                 llm = std::make_unique<llm_build_phi2>(*this, params);
@@ -20289,6 +20310,8 @@ llama_rope_type llama_model_rope_type(const llama_model * model) {
         case LLM_ARCH_QWEN2MOE:
         case LLM_ARCH_QWEN3:
         case LLM_ARCH_QWEN3MOE:
+        case LLM_ARCH_QWEN3VL:
+        case LLM_ARCH_QWEN3VLMOE:
         case LLM_ARCH_LLADA_MOE:
         case LLM_ARCH_OLMO2:
         case LLM_ARCH_OLMOE:
