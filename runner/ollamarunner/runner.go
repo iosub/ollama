@@ -17,6 +17,7 @@ import (
 	"reflect"
 	"regexp"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -502,6 +503,7 @@ func (s *Server) forwardBatch(pendingBatch batchState) (nextBatch batchState, er
 
 		batchSize := s.batchSize
 
+		initialPosition := input.LastPosition(slices.Concat(seq.cache.Inputs, seq.pendingInputs)) + 1
 		for i, inp := range seq.inputs {
 			// If we are required to put following inputs into a single batch then extend the
 			// batch size. Since we are only extending the size the minimum amount possible, this
@@ -562,9 +564,6 @@ func (s *Server) forwardBatch(pendingBatch batchState) (nextBatch batchState, er
 				batch.Multimodal = append(batch.Multimodal, input.MultimodalIndex{Index: len(batchInputs) - 1, Multimodal: mm})
 			}
 
-			batch.Positions = append(batch.Positions, int32(len(seq.cache.Inputs)+len(seq.pendingInputs)))
-			batch.Sequences = append(batch.Sequences, seq.cache.Id)
-
 			seq.iBatch = len(batchOutputs)
 			if i+1 == len(seq.inputs) || seq.embeddingOnly {
 				batchOutputs = append(batchOutputs, int32(len(batchInputs)-1))
@@ -572,6 +571,9 @@ func (s *Server) forwardBatch(pendingBatch batchState) (nextBatch batchState, er
 			logutil.Trace("forwardBatch iBatch", "batchID", s.batchID, "seqIdx", seqIdx, "seq.iBatch", seq.iBatch, "i+1", i+1, "len(seq.inputs)", len(seq.inputs))
 			seq.pendingInputs = append(seq.pendingInputs, inp)
 		}
+
+		batch.Positions = append(batch.Positions, slices.Collect(input.Positions(initialPosition, seq.pendingInputs))...)
+		batch.Sequences = append(batch.Sequences, slices.Repeat([]int{seq.cache.Id}, len(seq.pendingInputs))...)
 
 		seq.inputs = seq.inputs[len(seq.pendingInputs):]
 	}
@@ -946,14 +948,7 @@ func (s *Server) embeddings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	seq, err := s.NewSequence(req.Content, nil, NewSequenceParams{
-		embedding: true,
-
-		// TODO (jmorganca): this should be provided by the server via the
-		// request options and truncated here in the runner, instead of relying on
-		// the server's truncate logic
-		truncate: true,
-	})
+	seq, err := s.NewSequence(req.Content, nil, NewSequenceParams{embedding: true})
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to create new sequence: %v", err), http.StatusInternalServerError)
 		return

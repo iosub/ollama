@@ -6,52 +6,6 @@
 
 $ErrorActionPreference = "Stop"
 
-# Auto-cargar entorno Vulkan si existe configuración local
-try {
-    $vulkanEnvPath = Join-Path (Split-Path $PSScriptRoot -Parent) "config\vulkan-env.ps1"
-    if (Test-Path $vulkanEnvPath) {
-        . $vulkanEnvPath
-        Write-Host "[INFO] Vulkan env cargado: $vulkanEnvPath" -ForegroundColor Gray
-    }
-} catch {
-    Write-Host "[WARN] No se pudo cargar vulkan-env.ps1: $($_.Exception.Message)" -ForegroundColor Yellow
-}
-
-function initVS2022Env() {
-    # Initialize Visual Studio 2022 Developer Environment using vcvarsall.bat
-    $vcvarsPath = "C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvarsall.bat"
-    if (Test-Path $vcvarsPath) {
-        Write-Host "Initializing Visual Studio 2022 environment..."
-        # Execute vcvarsall.bat and capture environment variables
-        $tempFile = [System.IO.Path]::GetTempFileName()
-        cmd /c "`"$vcvarsPath`" amd64 && set > `"$tempFile`""
-        Get-Content $tempFile | ForEach-Object {
-            if ($_ -match '^([^=]+)=(.*)$') {
-                [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2])
-            }
-        }
-        Remove-Item $tempFile
-        Write-Host "Visual Studio 2022 environment initialized successfully"
-    } else {
-        Write-Host "Warning: VS 2022 vcvarsall.bat not found at $vcvarsPath"
-        $MSVC_INSTALL=(Get-CimInstance MSFT_VSInstance -Namespace root/cimv2/vs | Where-Object {$_.InstallLocation -like "*2022*"})[0].InstallLocation
-        if ($MSVC_INSTALL) {
-            $vcvarsAlt = "$MSVC_INSTALL\VC\Auxiliary\Build\vcvarsall.bat"
-            if (Test-Path $vcvarsAlt) {
-                $tempFile = [System.IO.Path]::GetTempFileName()
-                cmd /c "`"$vcvarsAlt`" amd64 && set > `"$tempFile`""
-                Get-Content $tempFile | ForEach-Object {
-                    if ($_ -match '^([^=]+)=(.*)$') {
-                        [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2])
-                    }
-                }
-                Remove-Item $tempFile
-                Write-Host "Visual Studio 2022 environment initialized from $MSVC_INSTALL"
-            }
-        }
-    }
-}
-
 function checkEnv() {
     if ($null -ne $env:ARCH ) {
         $script:ARCH = $env:ARCH
@@ -130,15 +84,11 @@ function buildCPU() {
         Remove-Item -ea 0 -recurse -force -path "${script:SRC_DIR}\dist\windows-${script:ARCH}"
         New-Item "${script:SRC_DIR}\dist\windows-${script:ARCH}\lib\ollama\" -ItemType Directory -ea 0
 
-        # Enable ccache for CMake
-        $env:CMAKE_C_COMPILER_LAUNCHER="ccache"
-        $env:CMAKE_CXX_COMPILER_LAUNCHER="ccache"
-        
-        & cmake -B build\cpu --preset CPU --install-prefix $script:DIST_DIR
+        & cmake --fresh --preset CPU --install-prefix $script:DIST_DIR
         if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
-        & cmake --build build\cpu --target ggml-cpu --config Release --parallel $script:JOBS
+        & cmake --build --preset CPU  --config Release --parallel $script:JOBS
         if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
-        & cmake --install build\cpu --component CPU --strip
+        & cmake --install build --component CPU --strip
         if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
     }
 }
@@ -155,11 +105,11 @@ function buildCUDA11() {
             $hashEnv.Keys | foreach { if ($_.Contains("CUDA_PATH_V11")) { $x=$hashEnv[$_]; if (test-path -literalpath "$x\bin\nvcc.exe" ) { $cuda=$x}  }}
             write-host "Building CUDA v11 backend libraries $cuda"
             $env:CUDAToolkit_ROOT=$cuda
-            & cmake -B build\cuda_v11 --preset "CUDA 11" -T cuda="$cuda" -DCMAKE_CUDA_COMPILER="$cuda\bin\nvcc.exe" -G "Visual Studio 16 2019" --install-prefix $script:DIST_DIR -DOLLAMA_RUNNER_DIR="cuda_v11"
+            & cmake --fresh --preset "CUDA 11" -T cuda="$cuda" -DCMAKE_CUDA_COMPILER="$cuda\bin\nvcc.exe" -G "Visual Studio 16 2019" --install-prefix $script:DIST_DIR -DOLLAMA_RUNNER_DIR="cuda_v11"
             if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
-            & cmake --build build\cuda_v11 --target ggml-cuda --config Release --parallel $script:JOBS
+            & cmake --build --preset "CUDA 11"  --config Release --parallel $script:JOBS
             if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
-            & cmake --install build\cuda_v11 --component "CUDA" --strip
+            & cmake --install build --component "CUDA" --strip
             if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
         }
     }
@@ -170,19 +120,15 @@ function buildCUDA12() {
     if ($script:ARCH -ne "arm64") {
         $hashEnv = @{}
         Get-ChildItem env: | foreach { $hashEnv[$_.Name] = $_.Value }
-        if ("$script:CUDA_DIRS".Contains("v13")) {
-            $hashEnv.Keys | foreach { if ($_.Contains("CUDA_PATH_V13")) { $x=$hashEnv[$_]; if (test-path -literalpath "$x\bin\nvcc.exe" ) { $cuda=$x}  }}
-            write-host "Building CUDA v13 backend libraries $cuda"
+        if ("$script:CUDA_DIRS".Contains("v12.8")) {
+            $hashEnv.Keys | foreach { if ($_.Contains("CUDA_PATH_V12_8")) { $x=$hashEnv[$_]; if (test-path -literalpath "$x\bin\nvcc.exe" ) { $cuda=$x}  }}
+            write-host "Building CUDA v12 backend libraries $cuda"
             $env:CUDAToolkit_ROOT=$cuda
-            # Enable ccache for CMake
-            $env:CMAKE_C_COMPILER_LAUNCHER="ccache"
-            $env:CMAKE_CXX_COMPILER_LAUNCHER="ccache"
-            $env:CMAKE_CUDA_COMPILER_LAUNCHER="ccache"
-            & cmake -B build\cuda_v13 --preset "CUDA 13" -G "Visual Studio 17 2022" -T cuda="$cuda" --install-prefix $script:DIST_DIR -DOLLAMA_RUNNER_DIR="cuda_v13"
+            & cmake --fresh --preset "CUDA 12" -T cuda="$cuda" --install-prefix $script:DIST_DIR -DOLLAMA_RUNNER_DIR="cuda_v12"
             if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
-            & cmake --build build\cuda_v13 --target ggml-cuda --config Release --parallel $script:JOBS
+            & cmake --build --preset "CUDA 12"  --config Release --parallel $script:JOBS
             if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
-            & cmake --install build\cuda_v13 --component "CUDA" --strip
+            & cmake --install build --component "CUDA" --strip
             if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
         }
     }
@@ -197,11 +143,7 @@ function buildCUDA13() {
             $hashEnv.Keys | foreach { if ($_.Contains("CUDA_PATH_V13")) { $x=$hashEnv[$_]; if (test-path -literalpath "$x\bin\nvcc.exe" ) { $cuda=$x}  }}
             $env:CUDAToolkit_ROOT=$cuda
             write-host "Building CUDA v13 backend libraries $cuda"
-            # Enable ccache for CMake
-            $env:CMAKE_C_COMPILER_LAUNCHER="ccache"
-            $env:CMAKE_CXX_COMPILER_LAUNCHER="ccache"
-            $env:CMAKE_CUDA_COMPILER_LAUNCHER="ccache"
-            & cmake --fresh --preset "CUDA 13" -G "Visual Studio 17 2022" -T cuda="$cuda" --install-prefix $script:DIST_DIR -DOLLAMA_RUNNER_DIR="cuda_v13"
+            & cmake --fresh --preset "CUDA 13" -T cuda="$cuda" --install-prefix $script:DIST_DIR -DOLLAMA_RUNNER_DIR="cuda_v13"
             if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
             & cmake --build --preset "CUDA 13"  --config Release --parallel $script:JOBS
             if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
@@ -242,134 +184,32 @@ function buildROCm() {
     }
 }
 
-function buildVulkan() {
-    mkdir -Force -path "${script:DIST_DIR}\"
-    if ($script:ARCH -ne "arm64") {
-        if (-not $env:VULKAN_SDK) {
-            $defaultVulkanSdk = "C:\VulkanSDK\1.4.328.1"
-            if (Test-Path $defaultVulkanSdk) {
-                $env:VULKAN_SDK = $defaultVulkanSdk
-            } else {
-                $latestSdk = Get-ChildItem -Path "C:\VulkanSDK\*" -Directory -ErrorAction SilentlyContinue |
-                    Sort-Object Name -Descending |
-                    Select-Object -First 1
-                if ($latestSdk) {
-                    $env:VULKAN_SDK = $latestSdk.FullName
-                }
-            }
-        }
-
-        if ($env:VULKAN_SDK) {
-            write-host "Building Vulkan backend libraries using SDK: $env:VULKAN_SDK" -ForegroundColor Cyan
-
-            $vulkanBin = Join-Path $env:VULKAN_SDK "Bin"
-            if (Test-Path $vulkanBin) {
-                $env:PATH = "$vulkanBin;$env:PATH"
-            }
-            $env:CMAKE_PREFIX_PATH = $env:VULKAN_SDK
-
-            & cmake -B build\vulkan --preset Vulkan --install-prefix $script:DIST_DIR -DOLLAMA_RUNNER_DIR="vulkan"
-            if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
-
-            & cmake --build build\vulkan --target ggml-vulkan --config Release --parallel $script:JOBS
-            if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
-
-            & cmake --install build\vulkan --component Vulkan --strip
-            if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
-
-            write-host "✅ Vulkan backend compiled successfully" -ForegroundColor Green
-        } else {
-            write-host "⚠️  Vulkan SDK not found - skipping Vulkan backend" -ForegroundColor Yellow
-            write-host "   Install Vulkan SDK with: powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\install-vulkan-sdk.ps1" -ForegroundColor Cyan
-        }
+function buildVulkan(){
+    if ($env:VULKAN_SDK) {
+        write-host "Building Vulkan backend libraries"
+        & cmake --fresh --preset Vulkan --install-prefix $script:DIST_DIR -DOLLAMA_RUNNER_DIR="vulkan"
+        if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
+        & cmake --build --preset Vulkan  --config Release --parallel $script:JOBS
+        if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
+        & cmake --install build --component Vulkan --strip
+        if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
     }
 }
 
 function buildOllama() {
     mkdir -Force -path "${script:DIST_DIR}\"
-    write-host "Building ollama CLI with llvm-mingw" -ForegroundColor Cyan
-    
-    # Save current environment
-    $savedPATH = $env:PATH
-    $savedCGO = $env:CGO_ENABLED
-    $savedCC = $env:CC
-    $savedCXX = $env:CXX
-    
-    try {
-        # Use the EXACT same configuration that works manually
-        $env:CGO_ENABLED = "1"
-        $llvmPath = (Resolve-Path "C:\llvm-mingw-ucrt\llvm-mingw-*").Path
-        $env:PATH = "$llvmPath\bin;$env:PATH"
-        $env:CC = "$llvmPath\bin\gcc.exe"
-        $env:CXX = "$llvmPath\bin\g++.exe"
-        
-        write-host "Using llvm-mingw UCRT from: $llvmPath" -ForegroundColor Green
-        write-host "Starting Go build..." -ForegroundColor Yellow
-        
-        # Execute the EXACT same command that works manually
-        & go build -v -a -trimpath -ldflags "-s -w -X=github.com/ollama/ollama/version.Version=$script:VERSION -X=github.com/ollama/ollama/server.mode=release" .
-        
-        # Check if ollama.exe was created (ignore exit code, check file existence)
-        if (Test-Path "ollama.exe") {
-            $size = [math]::Round((Get-Item "ollama.exe").Length/1MB, 2)
-            write-host "✅ ollama.exe built successfully ($size MB)" -ForegroundColor Green
-            
-            # Copy to distribution directory  
-            New-Item -ItemType Directory -Force -Path "${script:DIST_DIR}" | Out-Null
-            Copy-Item -Path ".\ollama.exe" -Destination "${script:DIST_DIR}\ollama.exe" -Force
-            
-            # Verify copy was successful
-            if (Test-Path "${script:DIST_DIR}\ollama.exe") {
-                write-host "✅ ollama.exe copied to ${script:DIST_DIR}" -ForegroundColor Green
-            } else {
-                write-error "Failed to copy ollama.exe to ${script:DIST_DIR}"
-                exit 1
-            }
-        } else {
-            write-error "Build failed: ollama.exe not found"
-            exit 1
-        }
-    } finally {
-        # Restore environment
-        $env:PATH = $savedPATH
-        $env:CGO_ENABLED = $savedCGO
-        $env:CC = $savedCC
-        $env:CXX = $savedCXX
-    }
+    write-host "Building ollama CLI"
+    & go build -trimpath -ldflags "-s -w -X=github.com/ollama/ollama/version.Version=$script:VERSION -X=github.com/ollama/ollama/server.mode=release" .
+    if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
+    cp .\ollama.exe "${script:DIST_DIR}\"
 }
 
 function buildApp() {
-    write-host "Building Ollama App with MSVC (NOT llvm-mingw to avoid context menu bug)"
+    write-host "Building Ollama App"
     cd "${script:SRC_DIR}\app"
-    
-    # Clean previous build artifacts
-    Remove-Item "ollama.syso" -ErrorAction SilentlyContinue
-    Remove-Item "${script:SRC_DIR}\dist\windows-${script:TARGET_ARCH}-app.exe" -ErrorAction SilentlyContinue
-    
-    # Generate Windows resources
     & windres -l 0 -o ollama.syso ollama.rc
-    if ($LASTEXITCODE -ne 0) { 
-        write-error "windres failed"
-        exit($LASTEXITCODE)
-    }
-    
-    # CRITICAL: Clear llvm-mingw environment to use MSVC for Win32 API compatibility
-    # llvm-mingw produces broken context menus in system tray apps
-    $env:CGO_ENABLED="1"
-    $env:CC=""
-    $env:CXX=""
-    Remove-Item env:\CGO_CFLAGS -ErrorAction SilentlyContinue
-    Remove-Item env:\CGO_CXXFLAGS -ErrorAction SilentlyContinue
-    
-    write-host "Compiling GUI app with MSVC (ensures working context menus)"
     & go build -trimpath -ldflags "-s -w -H windowsgui -X=github.com/ollama/ollama/version.Version=$script:VERSION -X=github.com/ollama/ollama/server.mode=release" -o "${script:SRC_DIR}\dist\windows-${script:TARGET_ARCH}-app.exe" .
-    if ($LASTEXITCODE -ne 0) { 
-        write-error "App build failed"
-        exit($LASTEXITCODE)
-    }
-    
-    $appSize = [math]::Round((Get-Item "${script:SRC_DIR}\dist\windows-${script:TARGET_ARCH}-app.exe").Length/1MB, 2)
-    write-host "App built successfully with MSVC (size: ${appSize} MB)" -ForegroundColor Green
+    if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
 }
 
 function gatherDependencies() {
@@ -403,39 +243,6 @@ function gatherDependencies() {
     } else {
         # Carying the dll's doesn't seem to work, so use the redist installer
         copy-item -path "${env:VCToolsRedistDir}\vc_redist.arm64.exe" -destination "${script:DIST_DIR}" -verbose
-    }
-
-    # Copiar bibliotecas Vulkan si están disponibles
-    $vulkanDll = "build\lib\ggml-vulkan.dll"
-    if (Test-Path $vulkanDll) {
-        write-host "Copying Vulkan backend: $vulkanDll → ${script:DIST_DIR}\lib\ollama\"
-        cp $vulkanDll "${script:DIST_DIR}\lib\ollama\"
-        write-host "✅ ggml-vulkan.dll copied" -ForegroundColor Green
-    }
-
-    if ($env:VULKAN_SDK) {
-        $runtimeDirs = @(
-            (Join-Path $env:VULKAN_SDK "RuntimeInstaller"),
-            (Join-Path $env:VULKAN_SDK "Redist"),
-            (Join-Path $env:VULKAN_SDK "Bin"))
-        $runtimeInstaller = $null
-        foreach ($dir in $runtimeDirs) {
-            if (-not (Test-Path $dir)) { continue }
-            $candidate = Get-ChildItem -Path $dir -Filter "Vulkan*.exe" -ErrorAction SilentlyContinue |
-                Sort-Object LastWriteTime -Descending |
-                Select-Object -First 1
-            if ($candidate) {
-                $runtimeInstaller = $candidate
-                break
-            }
-        }
-        if ($runtimeInstaller) {
-            $destInstaller = Join-Path "${script:SRC_DIR}\dist" "vulkan_runtime_installer.exe"
-            Copy-Item -Path $runtimeInstaller.FullName -Destination $destInstaller -Force
-            write-host "Including Vulkan runtime installer: $($runtimeInstaller.FullName)" -ForegroundColor Cyan
-        } else {
-            write-host "Vulkan runtime installer not found under $env:VULKAN_SDK" -ForegroundColor Yellow
-        }
     }
 
     cp "${script:SRC_DIR}\app\ollama_welcome.ps1" "${script:SRC_DIR}\dist\"
@@ -495,15 +302,14 @@ function distZip() {
     }
 }
 
-initVS2022Env
 checkEnv
 try {
     if ($($args.count) -eq 0) {
         buildCPU
         buildCUDA12
         buildCUDA13
-        buildVulkan
         buildROCm
+        buildVulkan
         buildOllama
         buildApp
         gatherDependencies

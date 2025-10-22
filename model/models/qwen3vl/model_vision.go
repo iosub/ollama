@@ -124,12 +124,6 @@ func makeSlice[T int32 | float32](dim, n int) iter.Seq[[]T] {
 }
 
 func (m *VisionPositionEmbedding) Forward(ctx ml.Context, hiddenStates ml.Tensor, grid *Grid, opts VisionOptions) ml.Tensor {
-	// Validate grid dimensions to prevent panic
-	if grid == nil || grid.Height <= 0 || grid.Width <= 0 {
-		// Return hiddenStates unchanged if grid is invalid
-		return hiddenStates
-	}
-
 	indexSlice := slices.Collect(makeSlice[int32](4, grid.Height*grid.Width))
 	weightSlice := slices.Collect(makeSlice[float32](4, grid.Height*grid.Width))
 

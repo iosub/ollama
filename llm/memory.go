@@ -106,11 +106,22 @@ func predictServerFit(allGpus discover.GpuInfoList, f *ggml.GGML, adapters, proj
 			}
 		}
 
-		if len(gpus) == 1 && gpus[0].Library == "cpu" && estimate.TotalSize <= gpus[0].FreeMemory {
-			return true, estimatedVRAM
-		}
 	}
 	return false, estimatedVRAM
+}
+
+func verifyCPUFit(f *ggml.GGML, modelPath string, projectors, adapters []string, opts api.Options, systemInfo ml.SystemInfo, numParallel int) bool {
+	estimate := estimateGPULayers(nil, f, projectors, opts, numParallel)
+	if estimate.TotalSize > systemInfo.FreeMemory {
+		return false
+	}
+	slog.Info(
+		"new model will fit in available system memory for CPU inference, loading",
+		"model", modelPath,
+		"parallel", numParallel,
+		"required", format.HumanBytes2(estimate.TotalSize),
+	)
+	return true
 }
 
 type MemoryEstimate struct {
@@ -274,18 +285,11 @@ func estimateGPULayers(gpus []discover.GpuInfo, f *ggml.GGML, projectors []strin
 		}
 		// Only include GPUs that can fit the graph, gpu minimum, the layer buffer and at least more layer
 		if gpus[i].FreeMemory < overhead+gzo+max(graphPartialOffload, graphFullOffload)+gpus[i].MinimumMemory+2*layerSize {
-			var compute string
-			if gpus[i].Library == "ROCm" {
-				compute = fmt.Sprintf("gfx%x%02x", gpus[i].ComputeMajor, gpus[i].ComputeMinor)
-			} else {
-				compute = fmt.Sprintf("%d.%d", gpus[i].ComputeMajor, gpus[i].ComputeMinor)
-			}
-
 			slog.Debug("gpu has too little memory to allocate any layers",
 				"id", gpus[i].ID,
 				"library", gpus[i].Library,
 				"variant", gpus[i].Variant,
-				"compute", compute,
+				"compute", gpus[i].Compute(),
 				"driver", fmt.Sprintf("%d.%d", gpus[i].DriverMajor, gpus[i].DriverMinor),
 				"name", gpus[i].Name,
 				"total", format.HumanBytes2(gpus[i].TotalMemory),

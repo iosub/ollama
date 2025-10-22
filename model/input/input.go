@@ -1,6 +1,11 @@
 package input
 
-import "github.com/ollama/ollama/ml"
+import (
+	"iter"
+	"slices"
+
+	"github.com/ollama/ollama/ml"
+)
 
 // Multimodal is a multimodal embedding or a component of one.
 // For example, it could be a row of an image that can be processed
@@ -37,6 +42,8 @@ type Input struct {
 	// Useful for things like images that must be processed in one
 	// shot.
 	SameBatch int
+
+	NextPositionFunc func(int32) int32
 }
 
 // MultimodalIndex is a multimodal element (such as an image)
@@ -69,4 +76,28 @@ type Batch struct {
 	// EncodeMultimodal, along with an index into Inputs. Unused for text-only
 	// models or for batches without multimodal elements.
 	Multimodal []MultimodalIndex
+}
+
+func Positions(offset int32, inputs []*Input) iter.Seq[int32] {
+	return func(yield func(int32) bool) {
+		position := offset
+		for _, inp := range inputs {
+			if !yield(position) {
+				return
+			}
+
+			if fn := inp.NextPositionFunc; fn != nil {
+				position = fn(position)
+			} else {
+				position++
+			}
+		}
+	}
+}
+
+func LastPosition(inputs []*Input) int32 {
+	if s := slices.Collect(Positions(0, inputs)); len(s) > 0 {
+		return s[len(s)-1]
+	}
+	return -1
 }

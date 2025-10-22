@@ -504,17 +504,23 @@ func (s *llamaServer) Load(ctx context.Context, gpus discover.GpuInfoList, requi
 	systemSwapFreeMemory := systemInfo.System.FreeSwap
 	slog.Info("system memory", "total", format.HumanBytes2(systemTotalMemory), "free", format.HumanBytes2(systemFreeMemory), "free_swap", format.HumanBytes2(systemSwapFreeMemory))
 
-	g := pickBestFullFitByLibrary(s.ggml, s.modelPath, []string{s.loadRequest.ProjectorPath}, s.loadRequest.LoraPath, s.options, gpus, s.numParallel)
-	if g == nil {
-		if !requireFull {
-			g = pickBestPartialFitByLibrary(s.ggml, []string{s.loadRequest.ProjectorPath}, s.loadRequest.LoraPath, s.options, gpus, s.numParallel)
-		} else {
+	if len(gpus) == 0 || s.options.NumGPU == 0 {
+		if !verifyCPUFit(s.ggml, s.modelPath, []string{s.loadRequest.ProjectorPath}, s.loadRequest.LoraPath, s.options, systemInfo, s.numParallel) {
 			slog.Info("model requires more memory than is currently available, evicting a model to make space", "estimate", s.estimate)
-			return nil, ErrLoadRequiredFull
+			return nil, fmt.Errorf("model requires more system memory than is currently available %w", ErrLoadRequiredFull)
 		}
+	} else {
+		g := pickBestFullFitByLibrary(s.ggml, s.modelPath, []string{s.loadRequest.ProjectorPath}, s.loadRequest.LoraPath, s.options, gpus, s.numParallel)
+		if g == nil {
+			if !requireFull {
+				g = pickBestPartialFitByLibrary(s.ggml, []string{s.loadRequest.ProjectorPath}, s.loadRequest.LoraPath, s.options, gpus, s.numParallel)
+			} else {
+				slog.Info("model requires more memory than is currently available, evicting a model to make space", "estimate", s.estimate)
+				return nil, ErrLoadRequiredFull
+			}
+		}
+		gpus = g
 	}
-
-	gpus = g
 	s.estimate = estimateGPULayers(gpus, s.ggml, []string{s.loadRequest.ProjectorPath}, s.options, s.numParallel)
 
 	if len(gpus) > 1 || gpus[0].Library != "cpu" {
@@ -698,13 +704,33 @@ func (s *ollamaServer) Load(ctx context.Context, gpus discover.GpuInfoList, requ
 	pastAllocations := make(map[uint64]struct{})
 	var backoff float32
 
-	gpuLayers, err := s.createLayout(systemInfo, gpus, s.mem, requireFull, backoff)
+	gpuLayers, cpuSize, err := s.createLayout(systemInfo, gpus, s.mem, requireFull, backoff)
 	if err != nil {
 		return nil, err
 	}
 
 	if err := s.waitUntilRunnerLaunched(ctx); err != nil {
 		return nil, err
+	}
+
+	// On linux and windows, over-allocating CPU memory will almost always result in an error
+	// Darwin has fully dynamic swap so has no direct concept of free swap space
+	if runtime.GOOS != "darwin" {
+		available := systemInfo.System.FreeMemory + systemInfo.System.FreeSwap
+		if len(gpus) == 0 || s.options.NumGPU == 0 {
+			resp, err := s.initModel(ctx, s.loadRequest, LoadOperationFit)
+			if err != nil {
+				return nil, err
+			}
+			if resp.Memory.CPU.Size() > systemInfo.FreeMemory {
+				return nil, fmt.Errorf("insufficient available system memory %s to load model %s - %w", format.HumanBytes2(systemInfo.FreeMemory), format.HumanBytes2(resp.Memory.CPU.Size()), ErrLoadRequiredFull)
+			}
+		}
+
+		if cpuSize > available {
+			slog.Warn("model request too large for system", "requested", format.HumanBytes2(cpuSize), "available", format.HumanBytes2(available), "total", format.HumanBytes2(systemInfo.System.TotalMemory), "free", format.HumanBytes2(systemInfo.System.FreeMemory), "swap", format.HumanBytes2(systemInfo.System.FreeSwap))
+			return nil, fmt.Errorf("model requires more system memory (%s) than is available (%s) - %w", format.HumanBytes2(cpuSize), format.HumanBytes2(available), ErrLoadRequiredFull)
+		}
 	}
 
 nextOperation:
@@ -724,7 +750,7 @@ nextOperation:
 			s.mem = &resp.Memory
 
 			for {
-				newGPULayers, err := s.createLayout(systemInfo, gpus, s.mem, requireFull, backoff)
+				newGPULayers, _, err := s.createLayout(systemInfo, gpus, s.mem, requireFull, backoff)
 				if err != nil {
 					return nil, err
 				}
@@ -757,7 +783,7 @@ nextOperation:
 						slog.Debug("exploring intermediate layers", "layer", i)
 
 						s.options.NumGPU = i
-						newGPULayers, err = s.createLayout(systemInfo, gpus, s.mem, requireFull, backoff)
+						newGPULayers, _, err = s.createLayout(systemInfo, gpus, s.mem, requireFull, backoff)
 						s.options.NumGPU = -1
 						if err != nil {
 							return nil, err
@@ -771,16 +797,16 @@ nextOperation:
 							return nil, err
 						}
 
-						resp.Memory.Log(slog.LevelDebug)
-						slog.Debug("memory", "success", resp.Success, "required", resp.Memory)
+					resp.Memory.Log(slog.LevelDebug)
+					slog.Debug("memory", "success", resp.Success, "required", resp.Memory)
 
-						if resp.Success {
-							verifyGPULayers, err := s.createLayout(systemInfo, gpus, &resp.Memory, requireFull, backoff)
-							if err != nil {
-								return nil, err
-							}
+					if resp.Success {
+						verifyGPULayers, _, err := s.createLayout(systemInfo, gpus, &resp.Memory, requireFull, backoff)
+						if err != nil {
+							return nil, err
+						}
 
-							slog.Debug("verifying layout", "layers", verifyGPULayers)
+						slog.Debug("verifying layout", "layers", verifyGPULayers)
 
 							if newGPULayers.Sum() <= verifyGPULayers.Sum() {
 								gpuLayers = newGPULayers
@@ -864,9 +890,14 @@ func uniqueDeviceIDs(gpuLayers ml.GPULayersList) []ml.DeviceID {
 // - Calculating how much space each GPU has available for layers, based on free memory and space occupied by the graph
 // - Assigning layers
 // - Ensuring that we don't exceed limits, such as requirements about partial offloading or system memory
-func (s *ollamaServer) createLayout(systemInfo discover.SystemInfo, systemGPUs discover.GpuInfoList, memory *ml.BackendMemory, requireFull bool, backoff float32) (ml.GPULayersList, error) {
+// createLayout distributes model layers across available GPUs
+// - Calculating how much space each layer requires
+// - Calculating how much space each GPU has available for layers, based on free memory and space occupied by the graph
+// - Assigning layers
+// - For partial offloads, it returns the size loaded into CPU
+func (s *ollamaServer) createLayout(systemInfo discover.SystemInfo, systemGPUs discover.GpuInfoList, memory *ml.BackendMemory, requireFull bool, backoff float32) (ml.GPULayersList, uint64, error) {
 	if s.totalLayers == 0 || s.options.NumGPU == 0 || len(systemGPUs) == 0 || (len(systemGPUs) == 1 && systemGPUs[0].Library == "cpu") {
-		return ml.GPULayersList{}, nil
+		return ml.GPULayersList{}, 0, nil
 	}
 
 	gpus := append(make(discover.GpuInfoList, 0, len(systemGPUs)), systemGPUs...)
@@ -969,36 +1000,26 @@ nextLayer:
 
 	if requireFull {
 		if gpuLayers.Sum() < len(layers) && (s.options.NumGPU < 0 || gpuLayers.Sum() < s.options.NumGPU) {
-			return nil, ErrLoadRequiredFull
+			return nil, cpuSize, ErrLoadRequiredFull
 		}
 
 		if cpuSize > systemInfo.System.FreeMemory {
-			return nil, ErrLoadRequiredFull
+			return nil, cpuSize, ErrLoadRequiredFull
 		}
 	}
 
-	// On linux and windows, over-allocating CPU memory will almost always result in an error
-	// Darwin has fully dynamic swap so has no direct concept of free swap space
-	if runtime.GOOS != "darwin" {
-		available := systemInfo.System.FreeMemory + systemInfo.System.FreeSwap
-		if cpuSize > available {
-			slog.Warn("model request too large for system", "requested", format.HumanBytes2(cpuSize), "available", format.HumanBytes2(available), "total", format.HumanBytes2(systemInfo.System.TotalMemory), "free", format.HumanBytes2(systemInfo.System.FreeMemory), "swap", format.HumanBytes2(systemInfo.System.FreeSwap))
-			return nil, fmt.Errorf("model requires more system memory (%s) than is available (%s)", format.HumanBytes2(cpuSize), format.HumanBytes2(available))
-		}
-	} else {
-		if vramSize > systemInfo.System.TotalMemory {
-			// disable partial offloading when model is greater than total system memory as this
-			// can lead to locking up the system
-			s.options.NumGPU = 0
-			gpuLayers = ml.GPULayersList{}
-		}
+	if runtime.GOOS == "darwin" && vramSize > systemInfo.System.TotalMemory {
+		// disable partial offloading when model is greater than total system memory as this
+		// can lead to locking up the system
+		s.options.NumGPU = 0
+		gpuLayers = ml.GPULayersList{}
 	}
 
 	if gpuLayers.Sum() == 0 {
 		slog.Debug("insufficient VRAM to load any model layers")
 	}
 
-	return gpuLayers, nil
+	return gpuLayers, cpuSize, nil
 }
 
 // assignLayers packs the maximum number of layers onto the smallest set of GPUs and comes up with a layer assignment
