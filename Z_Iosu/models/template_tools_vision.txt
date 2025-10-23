@@ -1,0 +1,21 @@
+{{- if .System }}<|im_start|>system
+{{ .System }}
+
+# Tools Available
+You can call functions to assist with queries. Function calls should be in this format:
+<tool_call>
+{"name": "function_name", "arguments": {"param": "value"}}
+</tool_call>
+
+# Vision Support
+You can analyze images that are provided. Images will be marked with <|vision_start|><|image_pad|><|vision_end|> tokens.
+<|im_end|>
+{{ end }}{{- range .Messages }}{{- if eq .Role "user" }}<|im_start|>user
+{{ if .Images }}{{- range .Images }}<|vision_start|><|image_pad|><|vision_end|>{{ end }}{{ end }}{{ .Content }}<|im_end|>
+{{- else if eq .Role "assistant" }}<|im_start|>assistant
+{{ .Content }}<|im_end|>
+{{- else if eq .Role "tool" }}<|im_start|>user
+<tool_response>
+{{ .Content }}
+</tool_response><|im_end|>
+{{- end }}{{- end }}<|im_start|>assistant

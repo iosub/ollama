@@ -27,3 +27,4 @@ logs/prueba2/sysinfo.txt
 logs/prueba2/WERInternalMetadata.xml
 logs/prueba2/WERInternalRequest.xml
 logs/prueba2/101725-11796-01.dmp
+*.gguf
