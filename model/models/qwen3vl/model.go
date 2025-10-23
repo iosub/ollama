@@ -39,7 +39,7 @@ func (m *Model) EncodeMultimodal(ctx ml.Context, multimodalData []byte) ([]input
 
 	// Calculate tensor dimensions
 	visionOutputs, deepstackVisualEmbeds := m.VisionModel.Forward(ctx, pixelValues, grid)
-	mm := []input.Multimodal{{Tensor: visionOutputs}}
+	mm := []input.Multimodal{{Tensor: visionOutputs, Data: grid}}
 	for i := range deepstackVisualEmbeds {
 		mm = append(mm, input.Multimodal{Tensor: deepstackVisualEmbeds[i]})
 	}
@@ -48,48 +48,104 @@ func (m *Model) EncodeMultimodal(ctx ml.Context, multimodalData []byte) ([]input
 }
 
 var (
-	inputTokenImagePad    = &input.Input{Token: 151655}
-	inputTokenVisionStart = &input.Input{Token: 151652}
-	inputTokenVisionEnd   = &input.Input{Token: 151653}
+	tokenVision      int32 = 151655
+	tokenVisionStart int32 = 151652
+	tokenVisionEnd   int32 = 151653
 )
+
+var positions []int32
+
+type modelInput struct {
+	*input.Input
+	position int32
+}
+
+func makeSlice2D[T any](rows, cols int) iter.Seq[[]T] {
+	return func(yield func([]T) bool) {
+		for range rows {
+			if !yield(make([]T, cols)) {
+				return
+			}
+		}
+	}
+}
 
 // PostTokenize arranges Qwen 3 VL's inputs for the forward pass
 func (m *Model) PostTokenize(inputs []*input.Input) ([]*input.Input, error) {
 	return slices.Collect(func(yield func(*input.Input) bool) {
+		positions = make([]int32, 0)
 		for i := range inputs {
-			s := []*input.Input{inputs[i]}
-			if inputs[i].Multimodal != nil {
-				t := inputs[i].Multimodal[0].Tensor
-				s = slices.Repeat([]*input.Input{inputTokenImagePad}, t.Dim(1)+1+1)
-				s[0] = inputTokenVisionStart
-				s[len(s)-1] = inputTokenVisionEnd
-				s[1] = &input.Input{
-					Token:          inputTokenImagePad.Token,
-					Multimodal:     inputs[i].Multimodal,
-					MultimodalHash: inputs[i].MultimodalHash,
-					SameBatch:      t.Dim(1),
-				}
-			}
+			s := []modelInput{{Input: inputs[i]}}
+			if mm := inputs[i].Multimodal; mm != nil {
+				t := mm[0].Tensor
+				s = slices.Repeat([]modelInput{
+					{
+						position: int32(i + 1),
+						Input:    &input.Input{Token: tokenVision},
+					},
+				}, t.Dim(1)+1+1)
 
-			for _, e := range s {
-				if !yield(e) {
-					return
+				s[0] = modelInput{
+					Input:    &input.Input{Token: tokenVisionStart},
+					position: int32(i),
 				}
-			}
-		}
-	}), nil
-}
 
 func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
+	positionSlice := slices.Collect(makeSlice2D[int32](4, len(batch.Positions)))
+	for i, id := range batch.Positions {
+		if id < int32(len(positions)) {
+			id = int32(positions[id])
+		} else if len(positions) > 0 {
+			id = id - int32(len(positions)) + int32(positions[len(positions)-1]+1)
+		}
+
+		positionSlice[0][i] = id
+		positionSlice[1][i] = id
+		positionSlice[2][i] = id
+	}
+
 	hiddenStates := m.TextModel.TokenEmbedding.Forward(ctx, batch.Inputs).Duplicate(ctx)
 
 	var deepstackVisualEmbeds []ml.Tensor
 	for _, mi := range batch.Multimodal {
 		visionOutputs := mi.Multimodal[0].Tensor
-		for _, mm := range mi.Multimodal[1:] {
-			deepstackVisualEmbeds = append(deepstackVisualEmbeds, mm.Tensor)
-		}
 		ctx.Forward(visionOutputs.Copy(ctx, hiddenStates.View(ctx, mi.Index*hiddenStates.Stride(1), visionOutputs.Dim(0)*visionOutputs.Dim(1))))
+
+		if grid, ok := mi.Multimodal[0].Data.(*Grid); ok {
+			for i := 0; i < visionOutputs.Dim(1); i++ {
+				w := grid.Width / m.VisionModel.spatialMergeSize
+				positionSlice[1][mi.Index+i] += int32(i / w)
+				positionSlice[2][mi.Index+i] += int32(i % w)
+			}
+		}
+
+		deepstackVisualEmbeds = make([]ml.Tensor, len(mi.Multimodal[1:]))
+		for i, mm := range mi.Multimodal[1:] {
+			deepstackVisualEmbeds[i] = ctx.Input().Zeros(mm.Tensor.DType(), hiddenStates.Shape()...)
+			ctx.Forward(mm.Tensor.Copy(ctx, deepstackVisualEmbeds[i].View(ctx, mi.Index*deepstackVisualEmbeds[i].Stride(1), mm.Tensor.Dim(0)*mm.Tensor.Dim(1))))
+		}
+	}
+
+	positions := ctx.Input().FromIntSlice(slices.Concat(positionSlice...), len(positionSlice[0])*len(positionSlice))
+	for i, layer := range m.TextModel.Layers {
+		if m.Cache != nil {
+			m.Cache.SetLayer(i)
+		}
+
+		var outputs ml.Tensor
+		if i == len(m.TextModel.Layers)-1 {
+			outputs = batch.Outputs
+		}
+
+		hiddenStates = layer.Forward(ctx, hiddenStates, positions, outputs, m.TextModel.Cache, m.TextModel.Options)
+		if j := slices.Index(m.deepstackVisualIndexes, int32(i)); len(deepstackVisualEmbeds) > 0 && j >= 0 {
+			hiddenStates = hiddenStates.Add(ctx, deepstackVisualEmbeds[j])
+		}
+	}
+
+	hiddenStates = m.OutputNorm.Forward(ctx, hiddenStates, 1e-06)
+	return m.Output.Forward(ctx, hiddenStates), nil
+}	ctx.Forward(visionOutputs.Copy(ctx, hiddenStates.View(ctx, mi.Index*hiddenStates.Stride(1), visionOutputs.Dim(0)*visionOutputs.Dim(1))))
 	}
 
 	positionIDs := make([]int32, len(batch.Positions)*4)

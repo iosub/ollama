@@ -874,13 +874,11 @@ func (s *ollamaServer) createLayout(systemInfo discover.SystemInfo, systemGPUs d
 	sort.Slice(gpus, func(i, j int) bool {
 		return gpus[i].ID < gpus[j].ID
 	})
-	
+
 	// Debug log to verify GPU ordering
 	for idx, gpu := range gpus {
 		slog.Debug("GPU order in createLayout", "index", idx, "ID", gpu.ID, "name", gpu.Name, "free", format.HumanBytes2(gpu.FreeMemory))
-	}
-
-	if memory == nil {
+	}	if memory == nil {
 		memory = &ml.BackendMemory{CPU: ml.DeviceMemory{
 			Weights: make([]uint64, s.totalLayers),
 			Cache:   make([]uint64, s.totalLayers),
