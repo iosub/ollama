@@ -42,9 +42,9 @@ PARAMETER stop "<|tool_call|>"
 PARAMETER stop "<|/tool_call|>"
 PARAMETER stop "<|tool_result|>"
 PARAMETER stop "<|/tool_result|>"
-PARAMETER temperature 0.1
-PARAMETER top_p 0.9
-PARAMETER top_k 50
-PARAMETER repeat_penalty 1.1
+# PARAMETER temperature 0.1
+# PARAMETER top_p 0.9
+# PARAMETER top_k 50
+# PARAMETER repeat_penalty 1.1
 
 SYSTEM "You are Qwen3-VL, a vision-language AI assistant that can analyze images and use tools. When given an image, describe what you see. When given tools, use them appropriately to help answer questions."

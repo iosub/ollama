@@ -1,5 +1,5 @@
-﻿FROM ./Qwen3-VL-2B-Instruct-Q8_0.gguf
-ADAPTER ./mmproj-Qwen3-VL-2B-Instruct.gguf
+﻿FROM ./Qwen3-VL-8B-Instruct-Q8_0.gguf
+ADAPTER ./mmproj-Qwen3-VL-8B-Instruct.gguf
 
 TEMPLATE """{{- range $index, $_ := .Messages }}
 {{- if eq .Role "system" }}<|im_start|>system
