@@ -306,27 +306,19 @@ function buildOllama() {
         write-host "Using llvm-mingw UCRT from: $llvmPath" -ForegroundColor Green
         write-host "Starting Go build..." -ForegroundColor Yellow
         
-        # Execute the EXACT same command that works manually
-        & go build -v -a -trimpath -ldflags "-s -w -X=github.com/ollama/ollama/version.Version=$script:VERSION -X=github.com/ollama/ollama/server.mode=release" .
+        # Build directly to the distribution directory to avoid cluttering root
+        New-Item -ItemType Directory -Force -Path "${script:DIST_DIR}" | Out-Null
+        $outputPath = "${script:DIST_DIR}\ollama.exe"
         
-        # Check if ollama.exe was created (ignore exit code, check file existence)
-        if (Test-Path "ollama.exe") {
-            $size = [math]::Round((Get-Item "ollama.exe").Length/1MB, 2)
-            write-host "✅ ollama.exe built successfully ($size MB)" -ForegroundColor Green
-            
-            # Copy to distribution directory  
-            New-Item -ItemType Directory -Force -Path "${script:DIST_DIR}" | Out-Null
-            Copy-Item -Path ".\ollama.exe" -Destination "${script:DIST_DIR}\ollama.exe" -Force
-            
-            # Verify copy was successful
-            if (Test-Path "${script:DIST_DIR}\ollama.exe") {
-                write-host "✅ ollama.exe copied to ${script:DIST_DIR}" -ForegroundColor Green
-            } else {
-                write-error "Failed to copy ollama.exe to ${script:DIST_DIR}"
-                exit 1
-            }
+        # Execute build command with output directly to distribution directory
+        & go build -v -a -trimpath -ldflags "-s -w -X=github.com/ollama/ollama/version.Version=$script:VERSION -X=github.com/ollama/ollama/server.mode=release" -o "$outputPath" .
+        
+        # Check if ollama.exe was created in the correct location
+        if (Test-Path "$outputPath") {
+            $size = [math]::Round((Get-Item "$outputPath").Length/1MB, 2)
+            write-host "✅ ollama.exe built successfully ($size MB) at $outputPath" -ForegroundColor Green
         } else {
-            write-error "Build failed: ollama.exe not found"
+            write-error "Build failed: ollama.exe not found at $outputPath"
             exit 1
         }
     } finally {

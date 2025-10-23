@@ -60,48 +60,54 @@ type modelInput struct {
 	position int32
 }
 
-func makeSlice2D[T any](rows, cols int) iter.Seq[[]T] {
-	return func(yield func([]T) bool) {
-		for range rows {
-			if !yield(make([]T, cols)) {
-				return
-			}
-		}
-	}
-}
-
 // PostTokenize arranges Qwen 3 VL's inputs for the forward pass
 func (m *Model) PostTokenize(inputs []*input.Input) ([]*input.Input, error) {
-	return slices.Collect(func(yield func(*input.Input) bool) {
-		positions = make([]int32, 0)
-		for i := range inputs {
-			s := []modelInput{{Input: inputs[i]}}
-			if mm := inputs[i].Multimodal; mm != nil {
-				t := mm[0].Tensor
-				s = slices.Repeat([]modelInput{
-					{
-						position: int32(i + 1),
-						Input:    &input.Input{Token: tokenVision},
-					},
-				}, t.Dim(1)+1+1)
-
-				s[0] = modelInput{
-					Input:    &input.Input{Token: tokenVisionStart},
-					position: int32(i),
-				}
+	positions = make([]int32, 0)
+	var result []*input.Input
+	
+	for i := range inputs {
+		if mm := inputs[i].Multimodal; mm != nil {
+			t := mm[0].Tensor
+			
+			// Add vision start token
+			result = append(result, &input.Input{Token: tokenVisionStart})
+			positions = append(positions, int32(i))
+			
+			// Add vision tokens
+			for j := 0; j < t.Dim(1); j++ {
+				result = append(result, &input.Input{Token: tokenVision})
+				positions = append(positions, int32(i+1))
+			}
+			
+			// Add vision end token
+			result = append(result, &input.Input{Token: tokenVisionEnd})
+			positions = append(positions, int32(i+1))
+		} else {
+			result = append(result, inputs[i])
+			positions = append(positions, int32(i))
+		}
+	}
+	
+	return result, nil
+}
 
 func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
-	positionSlice := slices.Collect(makeSlice2D[int32](4, len(batch.Positions)))
+	// Create position IDs array
+	positionIDs := make([]int32, len(batch.Positions)*4)
 	for i, id := range batch.Positions {
+		var actualID int32
 		if id < int32(len(positions)) {
-			id = int32(positions[id])
+			actualID = positions[id]
 		} else if len(positions) > 0 {
-			id = id - int32(len(positions)) + int32(positions[len(positions)-1]+1)
+			actualID = id - int32(len(positions)) + positions[len(positions)-1] + 1
+		} else {
+			actualID = id
 		}
-
-		positionSlice[0][i] = id
-		positionSlice[1][i] = id
-		positionSlice[2][i] = id
+		
+		positionIDs[i+len(batch.Positions)*0] = actualID
+		positionIDs[i+len(batch.Positions)*1] = actualID
+		positionIDs[i+len(batch.Positions)*2] = actualID
+		positionIDs[i+len(batch.Positions)*3] = 0
 	}
 
 	hiddenStates := m.TextModel.TokenEmbedding.Forward(ctx, batch.Inputs).Duplicate(ctx)
@@ -114,8 +120,8 @@ func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
 		if grid, ok := mi.Multimodal[0].Data.(*Grid); ok {
 			for i := 0; i < visionOutputs.Dim(1); i++ {
 				w := grid.Width / m.VisionModel.spatialMergeSize
-				positionSlice[1][mi.Index+i] += int32(i / w)
-				positionSlice[2][mi.Index+i] += int32(i % w)
+				positionIDs[mi.Index+i+len(batch.Positions)*1] += int32(i / w)
+				positionIDs[mi.Index+i+len(batch.Positions)*2] += int32(i % w)
 			}
 		}
 
@@ -124,36 +130,6 @@ func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
 			deepstackVisualEmbeds[i] = ctx.Input().Zeros(mm.Tensor.DType(), hiddenStates.Shape()...)
 			ctx.Forward(mm.Tensor.Copy(ctx, deepstackVisualEmbeds[i].View(ctx, mi.Index*deepstackVisualEmbeds[i].Stride(1), mm.Tensor.Dim(0)*mm.Tensor.Dim(1))))
 		}
-	}
-
-	positions := ctx.Input().FromIntSlice(slices.Concat(positionSlice...), len(positionSlice[0])*len(positionSlice))
-	for i, layer := range m.TextModel.Layers {
-		if m.Cache != nil {
-			m.Cache.SetLayer(i)
-		}
-
-		var outputs ml.Tensor
-		if i == len(m.TextModel.Layers)-1 {
-			outputs = batch.Outputs
-		}
-
-		hiddenStates = layer.Forward(ctx, hiddenStates, positions, outputs, m.TextModel.Cache, m.TextModel.Options)
-		if j := slices.Index(m.deepstackVisualIndexes, int32(i)); len(deepstackVisualEmbeds) > 0 && j >= 0 {
-			hiddenStates = hiddenStates.Add(ctx, deepstackVisualEmbeds[j])
-		}
-	}
-
-	hiddenStates = m.OutputNorm.Forward(ctx, hiddenStates, 1e-06)
-	return m.Output.Forward(ctx, hiddenStates), nil
-}	ctx.Forward(visionOutputs.Copy(ctx, hiddenStates.View(ctx, mi.Index*hiddenStates.Stride(1), visionOutputs.Dim(0)*visionOutputs.Dim(1))))
-	}
-
-	positionIDs := make([]int32, len(batch.Positions)*4)
-	for i, id := range batch.Positions {
-		positionIDs[i+len(batch.Positions)*0] = id
-		positionIDs[i+len(batch.Positions)*1] = id
-		positionIDs[i+len(batch.Positions)*2] = id
-		positionIDs[i+len(batch.Positions)*3] = 0
 	}
 
 	positions := ctx.Input().FromIntSlice(positionIDs, len(positionIDs))
