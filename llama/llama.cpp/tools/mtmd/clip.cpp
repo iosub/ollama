@@ -662,9 +662,15 @@ struct clip_graph {
         return gf;
     }
 
-    // Qwen2VL and Qwen2.5VL use M-RoPE
+    // Qwen2VL, Qwen2.5VL and Qwen3VL use M-RoPE
     ggml_cgraph * build_qwen2vl() {
-        GGML_ASSERT(model.patch_bias == nullptr);
+        // Debug: Print projector type to identify the issue
+        fprintf(stderr, "DEBUG: Projector type = %d (QWEN3VL=%d)\n", (int)ctx->proj_type(), (int)PROJECTOR_TYPE_QWEN3VL);
+        
+        // Only assert patch_bias == nullptr for older models, Qwen3VL supports patch bias
+        if (ctx->proj_type() != PROJECTOR_TYPE_QWEN3VL) {
+            GGML_ASSERT(model.patch_bias == nullptr);
+        }
         GGML_ASSERT(model.class_embedding == nullptr);
 
         const int batch_size       = 1;
@@ -689,6 +695,23 @@ struct clip_graph {
         {
             auto inp_1 = ggml_conv_2d(ctx0, model.patch_embeddings_1, inp_raw, patch_size, patch_size, 0, 0, 1, 1);
             inp = ggml_add(ctx0, inp, inp_1);
+
+            // Add patch bias support for Qwen3VL
+            if (ctx->proj_type() == PROJECTOR_TYPE_QWEN3VL && model.patch_bias != nullptr) {
+                fprintf(stderr, "DEBUG: Before patch_bias add - inp dimensions: [%lld, %lld, %lld, %lld]\n", 
+                    inp->ne[0], inp->ne[1], inp->ne[2], inp->ne[3]);
+                fprintf(stderr, "DEBUG: patch_bias dimensions: [%lld, %lld, %lld, %lld]\n", 
+                    model.patch_bias->ne[0], model.patch_bias->ne[1], model.patch_bias->ne[2], model.patch_bias->ne[3]);
+                
+                // Reshape patch_bias to be compatible with inp
+                // inp is [8, 8, 1024, 1], patch_bias is [1024, 1, 1, 1]
+                // We need to reshape patch_bias to [1, 1, 1024, 1] to make it broadcastable
+                ggml_tensor * reshaped_bias = ggml_reshape_4d(ctx0, model.patch_bias, 1, 1, 1024, 1);
+                fprintf(stderr, "DEBUG: reshaped_bias dimensions: [%lld, %lld, %lld, %lld]\n", 
+                    reshaped_bias->ne[0], reshaped_bias->ne[1], reshaped_bias->ne[2], reshaped_bias->ne[3]);
+                
+                inp = ggml_add(ctx0, inp, reshaped_bias);
+            }
 
             inp = ggml_permute(ctx0, inp, 1, 2, 0, 3);  // [w, h, c, b] -> [c, w, h, b]
             inp = ggml_cont_4d(
@@ -2237,7 +2260,10 @@ struct clip_model_loader {
         {
             get_string(KEY_PROJ_TYPE, proj_type, false);
             if (!proj_type.empty()) {
+                // Debug: Print what projector type string was found
+                fprintf(stderr, "DEBUG: Found projector type string: '%s'\n", proj_type.c_str());
                 model.proj_type = clip_projector_type_from_string(proj_type);
+                fprintf(stderr, "DEBUG: Resolved to projector type: %d\n", (int)model.proj_type);
             }
             if (model.proj_type == PROJECTOR_TYPE_UNKNOWN) {
                 throw std::runtime_error(string_format("%s: unknown projector type: %s\n", __func__, proj_type.c_str()));

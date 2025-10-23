@@ -68,9 +68,22 @@ go env GOCACHE
 $env:VERSION = "0.12.6.99"
 powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildCPU buildCUDA13 buildVulkan gatherDependencies buildOllama buildApp buildInstaller
 ```
-$env:VERSION = "0.12.6.99"; powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\smart_build.ps1 -Verbose
 
-$env:VERSION = "0.12.6.99"; powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\smart_build.ps1 -Verbose
+**✨ NUEVO: Compilación con mejoras Qwen3VL integradas (RECOMENDADO para modelos Qwen3VL)**
+
+```powershell
+# Integrar mejoras Qwen3VL desde LETS-BEE/llama.cpp y compilar
+powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\integrate_qwen3vl.ps1 -CompileOnly
+```
+
+**Mejoras incluidas:**
+- 🎯 **MRoPE entrelazado** optimizado para Qwen3VL (CPU + CUDA)
+- 🔧 **Conv3D temporal patches** mejorados
+- 📊 **Deepstack visual indexes** funcionales
+- ⚡ **Detección automática de activaciones** (GELU/SILU)
+- 🚀 **Embeddings especializados** para multimodal
+- 🧠 **Soporte MoE** (Mixture of Experts)
+
 **Eso es TODO.** Espera ~10 minutos y tendrás `dist\OllamaSetup.exe` completo y funcional.
 
 ---

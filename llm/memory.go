@@ -32,7 +32,9 @@ func pickBestFullFitByLibrary(f *ggml.GGML, modelPath string, projectors []strin
 		// Debug log to verify GPU ordering
 		for idx, gpu := range sgl {
 			slog.Debug("GPU order after sort", "index", idx, "ID", gpu.ID, "name", gpu.Name, "free", format.HumanBytes2(gpu.FreeMemory))
-		}		if !envconfig.SchedSpread() {
+		}
+		
+		if !envconfig.SchedSpread() {
 			// Try to pack into as few GPUs as possible, starting from 1 GPU
 			for numGPUs := 1; numGPUs <= len(sgl); numGPUs++ {
 				gpuSubset := sgl[:numGPUs]

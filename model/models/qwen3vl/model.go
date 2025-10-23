@@ -2,7 +2,9 @@ package qwen3vl
 
 import (
 	"bytes"
+	"fmt"
 	"image"
+	"iter"
 	"slices"
 
 	"github.com/ollama/ollama/fs"
@@ -89,6 +91,17 @@ func (m *Model) PostTokenize(inputs []*input.Input) ([]*input.Input, error) {
 					Input:    &input.Input{Token: tokenVisionStart},
 					position: int32(i),
 				}
+			}
+
+			for _, v := range s {
+				positions = append(positions, v.position)
+				if !yield(v.Input) {
+					return
+				}
+			}
+		}
+	}), nil
+}
 
 func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
 	positionSlice := slices.Collect(makeSlice2D[int32](4, len(batch.Positions)))
@@ -120,13 +133,16 @@ func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
 		}
 
 		deepstackVisualEmbeds = make([]ml.Tensor, len(mi.Multimodal[1:]))
+		fmt.Printf("DEBUG: Creating %d deepstack visual embeds, hiddenStates shape = %v\n", len(mi.Multimodal[1:]), hiddenStates.Shape())
 		for i, mm := range mi.Multimodal[1:] {
 			deepstackVisualEmbeds[i] = ctx.Input().Zeros(mm.Tensor.DType(), hiddenStates.Shape()...)
+			fmt.Printf("DEBUG: deepstackVisualEmbeds[%d] created with shape = %v, mm.Tensor shape = %v\n", i, deepstackVisualEmbeds[i].Shape(), mm.Tensor.Shape())
 			ctx.Forward(mm.Tensor.Copy(ctx, deepstackVisualEmbeds[i].View(ctx, mi.Index*deepstackVisualEmbeds[i].Stride(1), mm.Tensor.Dim(0)*mm.Tensor.Dim(1))))
 		}
 	}
 
 	positions := ctx.Input().FromIntSlice(slices.Concat(positionSlice...), len(positionSlice[0])*len(positionSlice))
+	fmt.Printf("DEBUG: Starting layer processing, positions shape = %v, deepstackVisualIndexes = %v\n", positions.Shape(), m.deepstackVisualIndexes)
 	for i, layer := range m.TextModel.Layers {
 		if m.Cache != nil {
 			m.Cache.SetLayer(i)
@@ -139,38 +155,60 @@ func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
 
 		hiddenStates = layer.Forward(ctx, hiddenStates, positions, outputs, m.TextModel.Cache, m.TextModel.Options)
 		if j := slices.Index(m.deepstackVisualIndexes, int32(i)); len(deepstackVisualEmbeds) > 0 && j >= 0 {
-			hiddenStates = hiddenStates.Add(ctx, deepstackVisualEmbeds[j])
-		}
-	}
-
-	hiddenStates = m.OutputNorm.Forward(ctx, hiddenStates, 1e-06)
-	return m.Output.Forward(ctx, hiddenStates), nil
-}	ctx.Forward(visionOutputs.Copy(ctx, hiddenStates.View(ctx, mi.Index*hiddenStates.Stride(1), visionOutputs.Dim(0)*visionOutputs.Dim(1))))
-	}
-
-	positionIDs := make([]int32, len(batch.Positions)*4)
-	for i, id := range batch.Positions {
-		positionIDs[i+len(batch.Positions)*0] = id
-		positionIDs[i+len(batch.Positions)*1] = id
-		positionIDs[i+len(batch.Positions)*2] = id
-		positionIDs[i+len(batch.Positions)*3] = 0
-	}
-
-	positions := ctx.Input().FromIntSlice(positionIDs, len(positionIDs))
-	for i, layer := range m.TextModel.Layers {
-		if m.Cache != nil {
-			m.Cache.SetLayer(i)
-		}
-
-		var outputs ml.Tensor
-		if i == len(m.TextModel.Layers)-1 {
-			outputs = batch.Outputs
-		}
-
-		hiddenStates = layer.Forward(ctx, hiddenStates, positions, outputs, m.TextModel.Cache, m.TextModel.Options)
-		if j := slices.Index(m.deepstackVisualIndexes, int32(i)); len(deepstackVisualEmbeds) > 0 && j >= 0 {
-			visualEmbeds := deepstackVisualEmbeds[j].Pad(ctx, 0, hiddenStates.Dim(1)-deepstackVisualEmbeds[j].Dim(1), 0, 0)
+			// Debug: Check tensor dimensions before operation
+			fmt.Printf("DEBUG: Layer %d matches deepstack index %d, processing deepstack visual embed\n", i, j)
+			fmt.Printf("DEBUG: hiddenStates shape = %v, deepstackVisualEmbeds[%d] shape = %v\n", 
+				hiddenStates.Shape(), j, deepstackVisualEmbeds[j].Shape())
+			
+			fmt.Printf("DEBUG: hiddenStates dims: [%d, %d, %d, %d]\n", 
+				hiddenStates.Dim(0), hiddenStates.Dim(1), hiddenStates.Dim(2), hiddenStates.Dim(3))
+			fmt.Printf("DEBUG: deepstackVisualEmbeds[%d] dims: [%d, %d, %d, %d]\n", 
+				j, deepstackVisualEmbeds[j].Dim(0), deepstackVisualEmbeds[j].Dim(1), deepstackVisualEmbeds[j].Dim(2), deepstackVisualEmbeds[j].Dim(3))
+			
+			// Calculate padding needed for dimension 1
+			dim1Diff := hiddenStates.Dim(1) - deepstackVisualEmbeds[j].Dim(1)
+			fmt.Printf("DEBUG: Dimension 1 difference: %d - %d = %d\n", 
+				hiddenStates.Dim(1), deepstackVisualEmbeds[j].Dim(1), dim1Diff)
+			
+			if dim1Diff < 0 {
+				fmt.Printf("ERROR: Visual embeddings dimension is larger than hidden states!\n")
+				return nil, fmt.Errorf("incompatible tensor dimensions: visual=%d > hidden=%d", 
+					deepstackVisualEmbeds[j].Dim(1), hiddenStates.Dim(1))
+			}
+			
+			var visualEmbeds ml.Tensor
+			if dim1Diff > 0 {
+				// Need padding
+				fmt.Printf("DEBUG: Applying padding to match dimensions\n")
+				visualEmbeds = deepstackVisualEmbeds[j].Pad(ctx, 0, dim1Diff, 0, 0)
+			} else {
+				// Dimensions already match
+				fmt.Printf("DEBUG: No padding needed, dimensions match\n")
+				visualEmbeds = deepstackVisualEmbeds[j]
+			}
+			
+			fmt.Printf("DEBUG: visualEmbeds dims after processing: [%d, %d, %d, %d]\n", 
+				visualEmbeds.Dim(0), visualEmbeds.Dim(1), visualEmbeds.Dim(2), visualEmbeds.Dim(3))
+			
+			// Verify all dimensions are compatible for broadcasting
+			compatible := true
+			for dim := 0; dim < 4; dim++ {
+				vDim := visualEmbeds.Dim(dim)
+				hDim := hiddenStates.Dim(dim)
+				// For broadcasting: either dimensions are equal, or one is 1, or hidden is multiple of visual
+				if vDim != hDim && vDim != 1 && hDim%vDim != 0 {
+					fmt.Printf("ERROR: Dimension %d not compatible: visual=%d, hidden=%d\n", dim, vDim, hDim)
+					compatible = false
+				}
+			}
+			
+			if !compatible {
+				return nil, fmt.Errorf("tensor dimensions not compatible for Add operation")
+			}
+			
+			fmt.Printf("DEBUG: About to perform Add operation...\n")
 			hiddenStates = hiddenStates.Add(ctx, visualEmbeds)
+			fmt.Printf("DEBUG: Add operation completed successfully\n")
 		}
 	}
 

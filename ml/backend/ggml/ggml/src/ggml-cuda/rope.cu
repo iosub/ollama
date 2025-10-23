@@ -151,18 +151,37 @@ static __global__ void rope_multi(
     const int sec_w = sections.v[1] + sections.v[0];
     const int sector = (i0 / 2) % sect_dims;
 
+    bool is_interleaved_mrope = (sections.v[0] == 24 && sections.v[1] == 20 && sections.v[2] == 20);
+
     float theta_base = 0.0;
-    if (sector < sections.v[0]) {
-        theta_base = pos[channel_x]*powf(theta_scale, i0/2.0f);
-    }
-    else if (sector >= sections.v[0] && sector < sec_w) {
-        theta_base = pos[channel_x + ne2 * 1]*powf(theta_scale, i0/2.0f);
-    }
-    else if (sector >= sec_w && sector < sec_w + sections.v[2]) {
-        theta_base = pos[channel_x + ne2 * 2]*powf(theta_scale, i0/2.0f);
-    }
-    else if (sector >= sec_w + sections.v[2]) {
-        theta_base = pos[channel_x + ne2 * 3]*powf(theta_scale, i0/2.0f);
+    if (is_interleaved_mrope) {
+        // Qwen3VL interleaved MRoPE handling
+        if (sector < sections.v[0]) {
+            theta_base = pos[channel_x]*powf(theta_scale, i0/2.0f);
+        }
+        else if (sector >= sections.v[0] && sector < sec_w) {
+            theta_base = pos[channel_x + ne2 * 1]*powf(theta_scale, i0/2.0f);
+        }
+        else if (sector >= sec_w && sector < sec_w + sections.v[2]) {
+            theta_base = pos[channel_x + ne2 * 2]*powf(theta_scale, i0/2.0f);
+        }
+        else if (sector >= sec_w + sections.v[2]) {
+            theta_base = pos[channel_x + ne2 * 3]*powf(theta_scale, i0/2.0f);
+        }
+    } else {
+        // Original MRoPE logic
+        if (sector < sections.v[0]) {
+            theta_base = pos[channel_x]*powf(theta_scale, i0/2.0f);
+        }
+        else if (sector >= sections.v[0] && sector < sec_w) {
+            theta_base = pos[channel_x + ne2 * 1]*powf(theta_scale, i0/2.0f);
+        }
+        else if (sector >= sec_w && sector < sec_w + sections.v[2]) {
+            theta_base = pos[channel_x + ne2 * 2]*powf(theta_scale, i0/2.0f);
+        }
+        else if (sector >= sec_w + sections.v[2]) {
+            theta_base = pos[channel_x + ne2 * 3]*powf(theta_scale, i0/2.0f);
+        }
     }
 
     const float freq_factor = has_ff ? freq_factors[i0/2] : 1.0f;
