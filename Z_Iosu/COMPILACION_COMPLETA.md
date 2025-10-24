@@ -1,3 +1,7 @@
+
+https://github.com/LETS-BEE/llama.cpp/tree/qwen3vl
+
+
 # GUÍA COMPLETA: Compilación Ollama 0.12.6.99 con Interfaz Gráfica Funcional
 
 ## 🚀 CONFIGURACIÓN PREVIA: ccache (RECOMENDADO)
