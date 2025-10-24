@@ -2,24 +2,33 @@
 ADAPTER ./mmproj-Qwen3-VL-4B-Instruct.gguf
 
 TEMPLATE """{{- range $index, $_ := .Messages }}
-{{- if eq .Role "system" }}[SYSTEM_PROMPT]{{ .Content }}[/SYSTEM_PROMPT]
+{{- if eq .Role "system" }}<|im_start|>system
+{{ .Content }}<|im_end|>
 {{- else if eq .Role "user" }}
 {{- if and (le (len (slice $.Messages $index)) 2) $.Tools }}[AVAILABLE_TOOLS]{{ $.Tools }}[/AVAILABLE_TOOLS]
-{{- end }}[INST]{{ .Content }}[/INST]
+{{- end }}<|im_start|>user
+{{ if .Images }}{{- range .Images }}<|vision_start|><|image_pad|><|vision_end|>{{ end }}{{ end }}{{ .Content }}<|im_end|>
 {{- else if eq .Role "assistant" }}
-{{- if .Content }}{{ .Content }}
+{{- if .Content }}<|im_start|>assistant
+{{ .Content }}
 {{- if not (eq (len (slice $.Messages $index)) 1) }}</s>
 {{- end }}
-{{- else if .ToolCalls }}[TOOL_CALLS][
-{{- range .ToolCalls }}{"name": "{{ .Function.Name }}", "arguments": {{ .Function.Arguments }}}
-{{- end }}]</s>
+{{- else if .ToolCalls }}
+{{- range $i, $_ := .ToolCalls }}<|im_start|>assistant
+[TOOL_CALLS]{{ .Function.Name }}[CALL_ID]{{ $i }}[ARGS]{{ .Function.Arguments }}
+{{- end }}</s>
 {{- end }}
-{{- else if eq .Role "tool" }}[TOOL_RESULTS]{"content": {{ .Content }}}[/TOOL_RESULTS]
+{{- else if eq .Role "tool" }}<|im_start|>user
+[TOOL_RESULTS]{"content": {{ .Content }}}[/TOOL_RESULTS]<|im_end|>
 {{- end }}
-{{- end }}"""
+{{- end }}<|im_start|>assistant
+"""
 
 
-PARAMETER stop [INST]
+PARAMETER stop "</s>"
+PARAMETER temperature 0.7
+PARAMETER top_p 0.9
+PARAMETER top_k 40
 
 SYSTEM "You are Qwen3-VL, a vision-language AI assistant created for multimodal understanding and tool usage.
 
