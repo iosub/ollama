@@ -1237,6 +1237,8 @@ void llama_kv_cache::set_input_kq_mask(ggml_tensor * dst, const llama_ubatch * u
 
                 const auto & cells = v_cells[seq_to_stream[seq_id]];
 
+                // use the provided KV position if available, otherwise use the batch index
+                const llama_pos kv_pos = ubatch->kv_position_of_token ? ubatch->kv_position_of_token[i] : i;
                 const llama_pos p1 = ubatch->pos[i];
 
                 const uint64_t idst = n_kv*(h*n_stream*n_tps_pad + s*n_tps_pad + ii);
@@ -1253,8 +1255,8 @@ void llama_kv_cache::set_input_kq_mask(ggml_tensor * dst, const llama_ubatch * u
 
                     const llama_pos p0 = cells.pos_get(j);
 
-                    // mask future tokens
-                    if (causal_attn && p0 > p1) {
+                    // mask future tokens using KV cache position
+                    if (causal_attn && p0 > kv_pos) {
                         continue;
                     }
 

@@ -4,6 +4,18 @@ https://github.com/LETS-BEE/llama.cpp/commit/b913e895a2189b9792da7709b36a36a1aed
 https://github.com/LETS-BEE/llama.cpp/commit/85107b657d187afed789df8cf9680f424e6f303b
 https://github.com/LETS-BEE/llama.cpp/commit/de0e3d3c3ce4b394746ade9263736c8edb40260e
 
+
+https://github.com/ggml-org/llama.cpp/issues/16207#issuecomment-3443868720
+https://github.com/ggml-org/llama.cpp/pull/16745
+
+
+
+
+¿Lo estás haciendo mal? Los modelos están ya bien Porque tengo la versión que está funcionando los dos modelos. El problema está Que hemos aplicado. El PR. https://github.com/LETS-BEE/llama.cpp/commits/qwen3vl/ sin creo haber aplicado https://github.com/ggml-org/llama.cpp/pull/16745 o que cuando aplicamos hace 2 dias https://github.com/ollama/ollama/pull/12665 
+
+
+
+
 to do commint
 
 # GUÍA COMPLETA: Compilación Ollama 0.12.6.99 con Interfaz Gráfica Funcional

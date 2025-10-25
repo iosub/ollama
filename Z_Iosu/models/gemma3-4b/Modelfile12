@@ -1,0 +1,2 @@
+﻿FROM oscar_while/gemma-3-12b-tools:Q4_K_M
+ADAPTER ./mmproj-F16.gguf

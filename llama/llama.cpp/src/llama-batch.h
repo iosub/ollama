@@ -39,6 +39,7 @@ struct llama_ubatch {
     llama_seq_id *  seq_id_unq; // [n_seqs_unq]       | s   | seq_id
     int32_t      *  seq_idx;    // [LLAMA_MAX_SEQ]    | -   | seq_idx
     int8_t       *  output;     // [n_tokens]         | i   | -
+    llama_pos    *  kv_position_of_token; // [n_tokens]  | i   | kv_pos (for causal masking)
 
     struct data_t {
         std::vector<llama_token>    token;
@@ -49,6 +50,7 @@ struct llama_ubatch {
         std::vector<llama_seq_id>   seq_id_unq;
         std::vector<int32_t>        seq_idx;
         std::vector<int8_t>         output;
+        std::vector<llama_pos>      kv_position_of_token;
     };
 
     // the llama_ubatch pointers above point to this data if set. otherwise - points to non-owning data

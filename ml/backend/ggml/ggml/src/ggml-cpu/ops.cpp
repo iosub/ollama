@@ -5487,11 +5487,9 @@ static void ggml_mrope_cache_init(
     int sec_e = sections[2] + sec_w;
     GGML_ASSERT(sect_dims <= ne0);
 
-    // Qwen3VL: interleaved mrope, currently judged by the number of sections
-    bool is_interleaved_mrope = false;
-    if (sections[0] == 24 && sections[1] == 20 && sections[2] == 20) {
-        is_interleaved_mrope = true;
-    }
+    // Interleaved MRoPE (used by Qwen3VL): signaled by sections[3] == -1
+    // This avoids hardcoded detection and ensures other models aren't affected
+    const bool is_interleaved_mrope = (sections[3] == -1);
 
     for (int64_t i0 = 0; i0 < ne0; i0 += 2) {
         const float ff = freq_factors ? freq_factors[i0/2] : 1.0f;

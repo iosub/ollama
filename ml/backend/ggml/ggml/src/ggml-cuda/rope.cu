@@ -151,7 +151,9 @@ static __global__ void rope_multi(
     const int sec_w = sections.v[1] + sections.v[0];
     const int sector = (i0 / 2) % sect_dims;
 
-    bool is_interleaved_mrope = (sections.v[0] == 24 && sections.v[1] == 20 && sections.v[2] == 20);
+    // Interleaved MRoPE (used by Qwen3VL): signaled by sections.v[3] == -1
+    // This avoids hardcoded detection and ensures other models aren't affected
+    const bool is_interleaved_mrope = (sections.v[3] == -1);
 
     float theta_base = 0.0;
     if (is_interleaved_mrope) {

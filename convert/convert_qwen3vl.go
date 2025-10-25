@@ -65,6 +65,10 @@ func (m *qwen3VLModel) KV(t *Tokenizer) ggml.KV {
 	kv["vision.rope.freq_base"] = cmp.Or(m.VisionModel.RopeTheta, 1e4)
 	kv["vision.temporal_patch_size"] = cmp.Or(m.VisionModel.TemporalPatchSize, 2)
 	kv["vision.deepstack_visual_indexes"] = m.VisionModel.DeepstackVisualIndexes
+	
+	// Qwen3VL uses interleaved MRoPE with specific dimension sections
+	// sections[3] = -1 signals interleaved mode to avoid hardcoded detection
+	kv[arch+".rope.dimension_sections"] = []int32{24, 20, 20, -1}
 
 	kv["vision.shortest_edge"] = m.VisionModel.Size.ShortestEdge
 	kv["vision.longest_edge"] = m.VisionModel.Size.LongestEdge
