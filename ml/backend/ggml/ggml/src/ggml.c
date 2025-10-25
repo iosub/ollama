@@ -1918,6 +1918,14 @@ static struct ggml_tensor * ggml_add_impl(
         struct ggml_tensor  * a,
         struct ggml_tensor  * b,
         bool                  inplace) {
+    if (!ggml_can_repeat(b, a)) {
+        fprintf(stderr, "[GGML DEBUG] ggml_can_repeat failed:\n");
+        fprintf(stderr, "  Tensor a: [%lld, %lld, %lld, %lld]\n", a->ne[0], a->ne[1], a->ne[2], a->ne[3]);
+        fprintf(stderr, "  Tensor b: [%lld, %lld, %lld, %lld]\n", b->ne[0], b->ne[1], b->ne[2], b->ne[3]);
+        fprintf(stderr, "  Modulo checks: [%d, %d, %d, %d]\n",
+            (int)(a->ne[0]%b->ne[0] == 0), (int)(a->ne[1]%b->ne[1] == 0),
+            (int)(a->ne[2]%b->ne[2] == 0), (int)(a->ne[3]%b->ne[3] == 0));
+    }
     // GGML_ASSERT(ggml_can_repeat(b, a)); // Temporarily disabled for multimodal gemma3 compatibility
 
     struct ggml_tensor * result = inplace ? ggml_view_tensor(ctx, a) : ggml_dup_tensor(ctx, a);
