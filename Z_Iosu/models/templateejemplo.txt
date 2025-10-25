@@ -1,0 +1,111 @@
+PS C:\IA\tools\ollama\Z_Iosu\models\Qwen3-VL-2B-Instruct> ollama show --template  hf.co/unsloth/Mistral-Small-3.1-24B-Instruct-2503-GGUF:Q3_K_XL                     
+{{- range $index, $_ := .Messages }}
+{{- if eq .Role "system" }}[SYSTEM_PROMPT]{{ .Content }}[/SYSTEM_PROMPT]
+{{- else if eq .Role "user" }}
+{{- if and (le (len (slice $.Messages $index)) 2) $.Tools }}[AVAILABLE_TOOLS]{{ $.Tools }}[/AVAILABLE_TOOLS]
+{{- end }}[INST]{{ .Content }}[/INST]
+{{- else if eq .Role "assistant" }}
+{{- if .Content }}{{ .Content }}
+{{- if not (eq (len (slice $.Messages $index)) 1) }}</s>
+{{- end }}
+{{- else if .ToolCalls }}[TOOL_CALLS][
+{{- range .ToolCalls }}{"name": "{{ .Function.Name }}", "arguments": {{ .Function.Arguments }}}
+{{- end }}]</s>
+{{- end }}
+{{- else if eq .Role "tool" }}[TOOL_RESULTS]{"content": {{ .Content }}}[/TOOL_RESULTS]
+{{- end }}
+{{- end }}
+
+
+PS C:\IA\tools\ollama\Z_Iosu\models\Qwen3-VL-2B-Instruct> ollama show hf.co/unsloth/Mistral-Small-3.1-24B-Instruct-2503-GGUF:Q3_K_XL 
+  Model
+    architecture        llama      
+    parameters          23.6B
+    context length      131072
+    embedding length    5120
+    quantization        unknown
+
+  Capabilities
+    completion
+    tools
+    vision
+
+  Projector
+    architecture        clip
+    parameters          438.96M
+    embedding length    1024
+    dimensions          5120
+
+  Parameters
+    stop    "[INST]"
+
+
+
+    ===================
+
+PS C:\IA\tools\ollama\Z_Iosu\models\Qwen3-VL-2B-Instruct> ollama show --template  qwen3_vl_2b_instruct
+{{- if .System }}<|im_start|>system
+{{ .System }}{{- if .Tools }}
+
+# Tools
+You have access to the following tools:
+{{ range .Tools }}
+- {{ .Function.Name }}: {{ .Function.Description }}
+  Parameters: {{ json .Function.Parameters }}
+{{ end }}
+
+Use tools by responding with:
+<tool_call>
+{"name": "tool_name", "arguments": {"param": "value"}}
+</tool_call>
+{{- end }}
+<|im_end|>
+{{ end }}{{- range .Messages }}{{- if eq .Role "user" }}<|im_start|>user
+{{ if .Images }}{{- range .Images }}<|vision_start|><|image_pad|><|vision_end|>{{ end }}{{ end }}{{ .Content }}<|im_end|>
+{{- else if eq .Role "assistant" }}<|im_start|>assistant
+{{ if .ToolCalls }}{{- range .ToolCalls }}<tool_call>
+{{ json . }}
+</tool_call>
+{{ end }}{{- end }}{{ .Content }}<|im_end|>
+{{- else if eq .Role "tool" }}<|im_start|>user
+<tool_response>
+{{ .Content }}
+</tool_response><|im_end|>
+{{- end }}{{- end }}<|im_start|>assistant
+
+
+    PS C:\IA\tools\ollama\Z_Iosu\models\Qwen3-VL-2B-Instruct> ollama show qwen3_vl_2b_instruct
+  Model
+    architecture        qwen3vl    
+    parameters          1.7B
+    context length      262144
+    embedding length    2048
+    quantization        Q8_0
+
+  Capabilities
+    completion
+    tools
+    vision
+
+  Projector
+    architecture        clip
+    parameters          406.96M
+    embedding length    1024
+    dimensions          2048
+
+  Parameters
+    temperature       0.1
+    top_k             50
+    top_p             0.9
+    repeat_penalty    1.1
+    stop              "<|im_start|>"
+    stop              "<|im_end|>"
+    stop              "<|thinking|>"
+    stop              "</thinking>"
+    stop              "<tool_call>"
+    stop              "</tool_call>"
+
+  System
+    You are Qwen3-VL, a vision-language AI assistant with tool calling capabilities. You can analyze
+      images and answer questions about them. When given an image, describe what you see. You can also use
+      available tools to help answer questions.

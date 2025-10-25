@@ -1,0 +1,11 @@
+{{- if .System }}<|im_start|>system
+{{ .System }}<|im_end|>
+{{ end }}{{- range $i, $message := .Messages }}{{- if eq .Role "user" }}<|im_start|>user
+{{- if .Content }}{{ .Content }}{{ end }}{{- range .Images }}<|vision_start|><|image_pad|><|vision_end|>{{ end }}<|im_end|>
+{{- else if eq .Role "assistant" }}<|im_start|>assistant
+{{ .Content }}<|im_end|>
+{{- else if eq .Role "tool" }}<|im_start|>user
+<tool_response>
+{{ .Content }}
+</tool_response><|im_end|>
+{{- end }}{{- end }}<|im_start|>assistant

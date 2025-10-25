@@ -1,0 +1,36 @@
+﻿FROM ./Qwen3-VL-8B-Instruct-Q8_0.gguf
+ADAPTER ./mmproj-Qwen3-VL-8B-Instruct.gguf
+
+TEMPLATE """{{- range $index, $_ := .Messages }}
+{{- if eq .Role "system" }}<|im_start|>system
+{{ .Content }}<|im_end|>
+{{- else if eq .Role "user" }}
+{{- if and (le (len (slice $.Messages $index)) 2) $.Tools }}[AVAILABLE_TOOLS]{{ $.Tools }}[/AVAILABLE_TOOLS]
+{{- end }}<|im_start|>user
+{{ if .Images }}{{- range .Images }}<|vision_start|><|image_pad|><|vision_end|>{{ end }}{{ end }}{{ .Content }}<|im_end|>
+{{- else if eq .Role "assistant" }}
+{{- if .Content }}<|im_start|>assistant
+{{ .Content }}<|im_end|>
+{{- else if .ToolCalls }}<|im_start|>assistant
+[TOOL_CALLS][
+{{- range .ToolCalls }}{"name": "{{ .Function.Name }}", "arguments": {{ .Function.Arguments }}}
+{{- end }}]<|im_end|>
+{{- end }}
+{{- else if eq .Role "tool" }}<|im_start|>user
+[TOOL_RESULTS]{"content": {{ .Content }}}[/TOOL_RESULTS]<|im_end|>
+{{- end }}
+{{- end }}<|im_start|>assistant
+"""
+
+PARAMETER stop <|im_start|>
+PARAMETER stop <|im_end|>
+PARAMETER stop <|thinking|>
+PARAMETER stop </thinking>
+PARAMETER stop <tool_call>
+PARAMETER stop </tool_call>
+#PARAMETER temperature 0.1
+#PARAMETER top_p 0.9
+#PARAMETER top_k 50
+#PARAMETER repeat_penalty 1.1
+
+SYSTEM "You are Qwen3-VL, a vision-language AI assistant with tool calling capabilities. You can analyze images and answer questions about them. When given an image, describe what you see. You can also use available tools to help answer questions."

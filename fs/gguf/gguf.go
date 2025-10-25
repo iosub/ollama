@@ -27,6 +27,9 @@ const (
 	typeUint64
 	typeInt64
 	typeFloat64
+
+	// Maximum size for arrays to prevent memory issues
+	maxArraySize = 100_000_000
 )
 
 var ErrUnsupported = errors.New("unsupported")
@@ -246,6 +249,9 @@ func readArray(f *File) (any, error) {
 }
 
 func readArrayData[T any](f *File, n uint64) (s []T, err error) {
+	if n > maxArraySize {
+		return nil, fmt.Errorf("array size %d exceeds maximum allowed size %d", n, maxArraySize)
+	}
 	s = make([]T, n)
 	for i := range n {
 		e, err := read[T](f)
@@ -260,6 +266,9 @@ func readArrayData[T any](f *File, n uint64) (s []T, err error) {
 }
 
 func readArrayString(f *File, n uint64) (s []string, err error) {
+	if n > maxArraySize {
+		return nil, fmt.Errorf("array size %d exceeds maximum allowed size %d", n, maxArraySize)
+	}
 	s = make([]string, n)
 	for i := range n {
 		e, err := readString(f)
