@@ -1,0 +1,19 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Stop Ollama Processes",
+            "type": "shell",
+            "command": "Get-Process | Where-Object { $_.Name -like '*ollama*' } | Stop-Process -Force -ErrorAction SilentlyContinue",
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": false
+            },
+            "problemMatcher": []
+        }
+    ]
+}

@@ -1,0 +1,90 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Ollama Server",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}/main.go",
+            "args": ["serve"],
+            "env": {
+                "OLLAMA_DEBUG": "1",
+                "OLLAMA_HOST": "127.0.0.1:11434",
+                "CGO_ENABLED": "1",
+                "CC": "C:/llvm-mingw-ucrt/llvm-mingw-20240619-ucrt-x86_64/bin/gcc.exe",
+                "CXX": "C:/llvm-mingw-ucrt/llvm-mingw-20240619-ucrt-x86_64/bin/g++.exe",
+                "PATH": "C:/llvm-mingw-ucrt/llvm-mingw-20240619-ucrt-x86_64/bin;${env:PATH}"
+            },
+            "showLog": true,
+            "trace": "verbose",
+            "buildFlags": "-gcflags=\"all=-N -l\""
+        },
+        {
+            "name": "Debug Ollama Run",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}/main.go",
+            "args": ["run", "llama3.2"],
+            "env": {
+                "OLLAMA_DEBUG": "1",
+                "CGO_ENABLED": "1",
+                "CC": "C:/llvm-mingw-ucrt/llvm-mingw-20240619-ucrt-x86_64/bin/gcc.exe",
+                "CXX": "C:/llvm-mingw-ucrt/llvm-mingw-20240619-ucrt-x86_64/bin/g++.exe",
+                "PATH": "C:/llvm-mingw-ucrt/llvm-mingw-20240619-ucrt-x86_64/bin;${env:PATH}"
+            },
+            "showLog": true,
+            "buildFlags": "-v -a -trimpath"
+        },
+        {
+            "name": "Debug Ollama with Args",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}/main.go",
+            "args": [],
+            "env": {
+                "OLLAMA_DEBUG": "1",
+                "CGO_ENABLED": "1",
+                "CC": "C:/llvm-mingw-ucrt/llvm-mingw-20240619-ucrt-x86_64/bin/gcc.exe",
+                "CXX": "C:/llvm-mingw-ucrt/llvm-mingw-20240619-ucrt-x86_64/bin/g++.exe",
+                "PATH": "C:/llvm-mingw-ucrt/llvm-mingw-20240619-ucrt-x86_64/bin;${env:PATH}"
+            },
+            "showLog": true,
+            "console": "integratedTerminal",
+            "buildFlags": "-v -a -trimpath"
+        },
+        {
+            "name": "Attach to Process",
+            "type": "go",
+            "request": "attach",
+            "mode": "local",
+            "processId": "${command:pickProcess}"
+        },
+        {
+            "name": "Debug Current Test",
+            "type": "go",
+            "request": "launch",
+            "mode": "test",
+            "program": "${file}",
+            "showLog": true
+        },
+        {
+            "name": "Debug LLM Server",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}/llm/server.go",
+            "env": {
+                "OLLAMA_DEBUG": "1",
+                "CGO_ENABLED": "1",
+                "CC": "C:/llvm-mingw-ucrt/llvm-mingw-20240619-ucrt-x86_64/bin/gcc.exe",
+                "CXX": "C:/llvm-mingw-ucrt/llvm-mingw-20240619-ucrt-x86_64/bin/g++.exe",
+                "PATH": "C:/llvm-mingw-ucrt/llvm-mingw-20240619-ucrt-x86_64/bin;${env:PATH}"
+            },
+            "showLog": true,
+            "buildFlags": "-v -a -trimpath"
+        }
+    ]
+}
