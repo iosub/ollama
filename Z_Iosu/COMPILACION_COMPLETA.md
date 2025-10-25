@@ -4,6 +4,7 @@ https://github.com/LETS-BEE/llama.cpp/commit/b913e895a2189b9792da7709b36a36a1aed
 https://github.com/LETS-BEE/llama.cpp/commit/85107b657d187afed789df8cf9680f424e6f303b
 https://github.com/LETS-BEE/llama.cpp/commit/de0e3d3c3ce4b394746ade9263736c8edb40260e
 
+to do commint
 
 # GUÍA COMPLETA: Compilación Ollama 0.12.6.99 con Interfaz Gráfica Funcional
 
