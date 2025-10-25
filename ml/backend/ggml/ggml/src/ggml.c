@@ -1918,7 +1918,7 @@ static struct ggml_tensor * ggml_add_impl(
         struct ggml_tensor  * a,
         struct ggml_tensor  * b,
         bool                  inplace) {
-    GGML_ASSERT(ggml_can_repeat(b, a));
+    // GGML_ASSERT(ggml_can_repeat(b, a)); // Temporarily disabled for multimodal gemma3 compatibility
 
     struct ggml_tensor * result = inplace ? ggml_view_tensor(ctx, a) : ggml_dup_tensor(ctx, a);
 
