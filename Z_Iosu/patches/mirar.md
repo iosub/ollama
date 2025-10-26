@@ -11,6 +11,11 @@ https://github.com/LETS-BEE/llama.cpp/commit/b913e895a2189b9792da7709b36a36a1aed
 https://github.com/LETS-BEE/llama.cpp/commit/de0e3d3c3ce4b394746ade9263736c8edb40260e
 https://github.com/LETS-BEE/llama.cpp/commit/e45aecb7b051d3c0fea968d64aadbeb0b777e4a1
 
+
+
+https://github.com/ggml-org/llama.cpp/pull/16780
+
+
 https://github.com/LETS-BEE/llama.cpp/commits/qwen3vl/
 
 
