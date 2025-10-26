@@ -83,7 +83,7 @@ go env GOCACHE
 ### 🎯 COMANDO ÚNICO AUTOMÁTICO (RECOMENDADO) ⭐
 
 **Copia y pega esto en PowerShell desde `C:\IA\tools\ollama`:**
-
+Ahora al siguiente. Mira lo que dice el el fichero de patch y después 1 a 1 manualmente Los aplicas.
 ```powershell
 $env:VERSION = "0.12.6.99"
 powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildCPU buildCUDA13 buildVulkan gatherDependencies buildOllama buildApp buildInstaller

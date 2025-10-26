@@ -1,0 +1,1698 @@
+From e34f1320c0efb95e5e968b33135f3cf28c0dafdb Mon Sep 17 00:00:00 2001
+From: Michael Yang <git@mxy.ng>
+Date: Fri, 10 Oct 2025 15:00:20 -0700
+Subject: [PATCH 1/5] fix(qwen2.5vl): vision
+
+---
+ model/models/qwen25vl/model.go        | 2 +-
+ model/models/qwen25vl/model_vision.go | 6 ++----
+ 2 files changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/model/models/qwen25vl/model.go b/model/models/qwen25vl/model.go
+index 6898e38cac3..c82e62f9391 100644
+--- a/model/models/qwen25vl/model.go
++++ b/model/models/qwen25vl/model.go
+@@ -107,7 +107,7 @@ func (m *Model) PostTokenize(inputs []*input.Input) ([]*input.Input, error) {
+ 			// Adding the 'Picture' prefix is a hack, at the time of writing there is no way to prefix
+ 			// the image tokens with a prompt, so we add a prefix here
+ 			nImg++
+-			pre, err := m.Encode(fmt.Sprintf(" Picture %d: ", nImg), true)
++			pre, err := m.Encode(fmt.Sprintf(" Picture %d: ", nImg), false)
+ 			if err != nil {
+ 				return nil, fmt.Errorf("failed to encode image prompt: %w", err)
+ 			}
+diff --git a/model/models/qwen25vl/model_vision.go b/model/models/qwen25vl/model_vision.go
+index 3dd60e3baf7..687ec8c03a0 100644
+--- a/model/models/qwen25vl/model_vision.go
++++ b/model/models/qwen25vl/model_vision.go
+@@ -332,11 +332,9 @@ func (m *VisionModel) PositionalEmbedding(ctx ml.Context, grid *Grid) ml.Tensor
+ 	pos := ctx.Input().FromIntSlice(coords, 2, grid.Width, grid.Height)
+ 
+ 	// Reshape and permute positions to match spatial merging pattern
+-	pos = pos.Reshape(ctx, 2, grid.Width, merge, grid.Height/merge)
++	pos = pos.Reshape(ctx, -1, grid.Width/merge, merge, grid.Height/merge)
+ 	pos = pos.Permute(ctx, 0, 2, 1, 3).Contiguous(ctx)
+-	pos = pos.Reshape(ctx, 2, merge, merge, grid.Width/merge*grid.Height/merge)
+-	pos = pos.Permute(ctx, 0, 2, 1, 3).Contiguous(ctx)
+-	pos = pos.Reshape(ctx, 2*merge*merge*grid.Width/merge*grid.Height/merge)
++	pos = pos.Reshape(ctx, -1)
+ 
+ 	// Use position indices to look up corresponding frequency values
+ 	positionalEmbedding := freqs.Rows(ctx, pos)
+
+From f6e32c168c8c1610d69568934589dc2266568f42 Mon Sep 17 00:00:00 2001
+From: Michael Yang <git@mxy.ng>
+Date: Mon, 13 Oct 2025 15:09:33 -0700
+Subject: [PATCH 2/5] ml(ggml): conv3d
+
+---
+ ml/backend.go           |  1 +
+ ml/backend/ggml/ggml.go | 10 ++++++++++
+ ml/nn/convolution.go    | 20 +++++++++++++++++++-
+ 3 files changed, 30 insertions(+), 1 deletion(-)
+
+diff --git a/ml/backend.go b/ml/backend.go
+index 351942d54ab..ff6ae53beea 100644
+--- a/ml/backend.go
++++ b/ml/backend.go
+@@ -158,6 +158,7 @@ type Tensor interface {
+ 
+ 	AvgPool2D(ctx Context, k, s int, p float32) Tensor
+ 	Conv2D(ctx Context, weight Tensor, s0, s1, p0, p1, d0, d1 int) Tensor
++	Conv3D(ctx Context, weight Tensor, c, s0, s1, s2, p0, p1, p2, d0, d1, d2 int) Tensor
+ 
+ 	IM2Col(ctx Context, weight Tensor, s0, s1, p0, p1, d0, d1 int) Tensor
+ 
+diff --git a/ml/backend/ggml/ggml.go b/ml/backend/ggml/ggml.go
+index 88078d77980..e4bd1bcec6a 100644
+--- a/ml/backend/ggml/ggml.go
++++ b/ml/backend/ggml/ggml.go
+@@ -1509,6 +1509,16 @@ func (t *Tensor) Conv2D(ctx ml.Context, t2 ml.Tensor, s0, s1, p0, p1, d0, d1 int
+ 	}
+ }
+ 
++func (t *Tensor) Conv3D(ctx ml.Context, t2 ml.Tensor, c, s0, s1, s2, p0, p1, p2, d0, d1, d2 int) ml.Tensor {
++	var tt ml.Tensor = &Tensor{
++		b: t.b,
++		t: C.ggml_conv_3d(ctx.(*Context).ctx, t.t, t2.(*Tensor).t, C.int64_t(c), C.int(s0), C.int(s1), C.int(s2), C.int(p0), C.int(p1), C.int(p2), C.int(d0), C.int(d1), C.int(d2)),
++	}
++
++	tt = tt.Reshape(ctx, t.Dim(3)/c, t2.Dim(3)/c)
++	return tt
++}
++
+ func (t *Tensor) AvgPool2D(ctx ml.Context, k, s int, p float32) ml.Tensor {
+ 	return &Tensor{
+ 		b: t.b,
+diff --git a/ml/nn/convolution.go b/ml/nn/convolution.go
+index 8e015c73f69..db8c61471ad 100644
+--- a/ml/nn/convolution.go
++++ b/ml/nn/convolution.go
+@@ -4,8 +4,26 @@ import "github.com/ollama/ollama/ml"
+ 
+ type Conv2D struct {
+ 	Weight ml.Tensor `gguf:"weight"`
++	Bias   ml.Tensor `gguf:"bias"`
+ }
+ 
+ func (m *Conv2D) Forward(ctx ml.Context, t ml.Tensor, s0, s1, p0, p1, d0, d1 int) ml.Tensor {
+-	return m.Weight.Conv2D(ctx, t, s0, s1, p0, p1, d0, d1)
++	t = m.Weight.Conv2D(ctx, t, s0, s1, p0, p1, d0, d1)
++	if m.Bias != nil {
++		t = t.Add(ctx, m.Bias)
++	}
++	return t
++}
++
++type Conv3D struct {
++	Weight ml.Tensor `gguf:"weight"`
++	Bias   ml.Tensor `gguf:"bias"`
++}
++
++func (m *Conv3D) Forward(ctx ml.Context, t ml.Tensor, c, s0, s1, s2, p0, p1, p2, d0, d1, d2 int) ml.Tensor {
++	t = m.Weight.Conv3D(ctx, t, c, s0, s1, s2, p0, p1, p2, d0, d1, d2)
++	if m.Bias != nil {
++		t = t.Add(ctx, m.Bias)
++	}
++	return t
+ }
+
+From 2049cfead79b299d69d23ed5e60a88897053869f Mon Sep 17 00:00:00 2001
+From: Michael Yang <git@mxy.ng>
+Date: Wed, 15 Oct 2025 14:50:41 -0700
+Subject: [PATCH 3/5] ml(ggml): infer shape
+
+---
+ ml/backend/ggml/ggml.go | 33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+
+diff --git a/ml/backend/ggml/ggml.go b/ml/backend/ggml/ggml.go
+index e4bd1bcec6a..f12b808fdb3 100644
+--- a/ml/backend/ggml/ggml.go
++++ b/ml/backend/ggml/ggml.go
+@@ -11,6 +11,7 @@ package ggml
+ import "C"
+ 
+ import (
++	"cmp"
+ 	"context"
+ 	"errors"
+ 	"fmt"
+@@ -1154,6 +1155,10 @@ func (t *Tensor) Concat(ctx ml.Context, t2 ml.Tensor, dim int) ml.Tensor {
+ }
+ 
+ func (t *Tensor) Contiguous(ctx ml.Context, shape ...int) ml.Tensor {
++	if slices.Contains(shape, -1) {
++		inferShape(t, shape)
++	}
++
+ 	switch len(shape) {
+ 	case 0:
+ 		return &Tensor{
+@@ -1296,7 +1301,35 @@ func (t *Tensor) Copy(ctx ml.Context, t2 ml.Tensor) ml.Tensor {
+ 	}
+ }
+ 
++func inferShape(t *Tensor, shape []int) {
++	total := 1
++	for _, dim := range t.Shape() {
++		total *= dim
++	}
++
++	dim := -1
++	for i := range shape {
++		if shape[i] > 0 {
++			total /= shape[i]
++		} else if shape[i] == -1 {
++			if dim != -1 {
++				panic("only one dimension can be inferred")
++			}
++
++			dim = i
++		}
++	}
++
++	if dim != -1 {
++		shape[dim] = total
++	}
++}
++
+ func (t *Tensor) Reshape(ctx ml.Context, shape ...int) ml.Tensor {
++	if slices.Contains(shape, -1) {
++		inferShape(t, shape)
++	}
++
+ 	switch len(shape) {
+ 	case 1:
+ 		return &Tensor{
+
+From 63958a1fc98279f43e6c2e801f17fdbb7361c1d6 Mon Sep 17 00:00:00 2001
+From: Michael Yang <git@mxy.ng>
+Date: Wed, 15 Oct 2025 14:50:53 -0700
+Subject: [PATCH 4/5] ml(ggml): mrope
+
+---
+ ml/backend/ggml/ggml.go | 46 ++++++++++++++++++++++++-----------------
+ 1 file changed, 27 insertions(+), 19 deletions(-)
+
+diff --git a/ml/backend/ggml/ggml.go b/ml/backend/ggml/ggml.go
+index f12b808fdb3..d62c2057f09 100644
+--- a/ml/backend/ggml/ggml.go
++++ b/ml/backend/ggml/ggml.go
+@@ -1443,14 +1443,7 @@ func (t *Tensor) View(ctx ml.Context, offset int, shape ...int) ml.Tensor {
+ 
+ func (t *Tensor) RoPE(ctx ml.Context, positions ml.Tensor, ropeDim int, ropeBase, ropeScale float32, options ...func(*rope.Options)) ml.Tensor {
+ 	// Default options
+-	opts := rope.Options{
+-		Factors:               &Tensor{},
+-		OriginalContextLength: 131072,
+-		ExtrapolationFactor:   0.,
+-		AttentionFactor:       1.,
+-		BetaFast:              32.,
+-		BetaSlow:              1.,
+-	}
++	opts := rope.Options{Factors: &Tensor{}}
+ 
+ 	// Apply any provided options
+ 	for _, option := range options {
+@@ -1462,24 +1455,39 @@ func (t *Tensor) RoPE(ctx ml.Context, positions ml.Tensor, ropeDim int, ropeBase
+ 		dequant = C.ggml_cast(ctx.(*Context).ctx, t.t, C.GGML_TYPE_F32)
+ 	}
+ 
+-	return &Tensor{
+-		b: t.b,
+-		t: C.ggml_rope_ext(
++	var tt *C.struct_ggml_tensor
++	if opts.Type&0b1000 != 0 {
++		tt = C.ggml_rope_multi(
+ 			ctx.(*Context).ctx,
+ 			dequant,
+ 			positions.(*Tensor).t,
+ 			opts.Factors.(*Tensor).t,
+ 			C.int(ropeDim),
++			(*C.int)(unsafe.Pointer(&opts.MRoPE.Sections[0])),
+ 			C.int(opts.Type),
+-			C.int(opts.OriginalContextLength),
+-			C.float(ropeBase),
+-			C.float(ropeScale),
+-			C.float(opts.ExtrapolationFactor),
+-			C.float(opts.AttentionFactor),
+-			C.float(opts.BetaFast),
+-			C.float(opts.BetaSlow),
+-		),
++			cmp.Or(C.int(opts.YaRN.OriginalContextLength), 128<<10),
++			C.float(ropeBase), C.float(ropeScale),
++			C.float(opts.YaRN.ExtrapolationFactor),
++			cmp.Or(C.float(opts.YaRN.AttentionFactor), 1),
++			cmp.Or(C.float(opts.YaRN.BetaFast), 32),
++			cmp.Or(C.float(opts.YaRN.BetaSlow), 1),
++		)
++	} else {
++		tt = C.ggml_rope_ext(
++			ctx.(*Context).ctx,
++			dequant,
++			positions.(*Tensor).t,
++			opts.Factors.(*Tensor).t,
++			C.int(ropeDim), C.int(opts.Type),
++			cmp.Or(C.int(opts.YaRN.OriginalContextLength), 128<<10),
++			C.float(ropeBase), C.float(ropeScale),
++			C.float(opts.YaRN.ExtrapolationFactor),
++			cmp.Or(C.float(opts.YaRN.AttentionFactor), 1),
++			cmp.Or(C.float(opts.YaRN.BetaFast), 32),
++			cmp.Or(C.float(opts.YaRN.BetaSlow), 1),
++		)
+ 	}
++	return &Tensor{b: t.b, t: tt}
+ }
+ 
+ func (t *Tensor) IM2Col(ctx ml.Context, t2 ml.Tensor, s0, s1, p0, p1, d0, d1 int) ml.Tensor {
+
+From d45f0045cef4ab70d6c5577745e1b866d9006837 Mon Sep 17 00:00:00 2001
+From: Michael Yang <git@mxy.ng>
+Date: Thu, 9 Oct 2025 12:24:18 -0700
+Subject: [PATCH 5/5] feat(model): add qwen3vl
+
+---
+ convert/convert.go                     |   2 +
+ convert/convert_qwen3.go               | 157 +++++++++++++++
+ convert/convert_qwen3vl.go             | 116 +++++++++++
+ convert/tensor.go                      |   8 +-
+ convert/tensor_test.go                 |   2 +-
+ fs/ggml/ggml.go                        |   8 +-
+ ml/nn/rope/rope.go                     |  57 ++++--
+ model/models/models.go                 |   1 +
+ model/models/qwen3/model.go            |   3 +-
+ model/models/qwen3vl/imageprocessor.go | 194 ++++++++++++++++++
+ model/models/qwen3vl/model.go          | 200 ++++++++++++++++++
+ model/models/qwen3vl/model_text.go     | 222 ++++++++++++++++++++
+ model/models/qwen3vl/model_vision.go   | 268 +++++++++++++++++++++++++
+ server/sched.go                        |   2 +-
+ 14 files changed, 1214 insertions(+), 26 deletions(-)
+ create mode 100644 convert/convert_qwen3.go
+ create mode 100644 convert/convert_qwen3vl.go
+ create mode 100644 model/models/qwen3vl/imageprocessor.go
+ create mode 100644 model/models/qwen3vl/model.go
+ create mode 100644 model/models/qwen3vl/model_text.go
+ create mode 100644 model/models/qwen3vl/model_vision.go
+
+diff --git a/convert/convert.go b/convert/convert.go
+index bed59a57503..3e98eee1ac7 100644
+--- a/convert/convert.go
++++ b/convert/convert.go
+@@ -198,6 +198,8 @@ func ConvertModel(fsys fs.FS, f *os.File) error {
+ 		conv = &qwen2Model{}
+ 	case "Qwen2_5_VLForConditionalGeneration":
+ 		conv = &qwen25VLModel{}
++	case "Qwen3VLForConditionalGeneration", "Qwen3VLMoeForConditionalGeneration":
++		conv = &qwen3VLModel{}
+ 	case "BertModel":
+ 		conv = &bertModel{}
+ 	case "CohereForCausalLM":
+diff --git a/convert/convert_qwen3.go b/convert/convert_qwen3.go
+new file mode 100644
+index 00000000000..f54418a9c9a
+--- /dev/null
++++ b/convert/convert_qwen3.go
+@@ -0,0 +1,157 @@
++package convert
++
++import (
++	"slices"
++	"strings"
++
++	"github.com/ollama/ollama/fs/ggml"
++	"github.com/pdevine/tensor"
++	"github.com/pdevine/tensor/native"
++)
++
++type qwen3Model struct {
++	ModelParameters
++	MaxPositionEmbeddings uint32  `json:"max_position_embeddings"`
++	HiddenSize            uint32  `json:"hidden_size"`
++	HiddenLayers          uint32  `json:"num_hidden_layers"`
++	IntermediateSize      uint32  `json:"intermediate_size"`
++	NumAttentionHeads     uint32  `json:"num_attention_heads"`
++	NumKeyValueHeads      uint32  `json:"num_key_value_heads"`
++	HeadDim               uint32  `json:"head_dim"`
++	NumExperts            uint32  `json:"num_experts"`
++	NumExpertsPerToken    uint32  `json:"num_experts_per_tok"`
++	NormTopkProb          bool    `json:"norm_topk_prob"`
++	RopeTheta             float32 `json:"rope_theta"`
++	RopeScaling           struct {
++		Type                          string     `json:"type"`
++		Factor                        ropeFactor `json:"factor"`
++		OriginalMaxPositionEmbeddings uint32     `json:"original_max_position_embeddings"`
++		MropeSection                  []int32    `json:"mrope_section"`
++	} `json:"rope_scaling"`
++	RMSNormEPS float32 `json:"rms_norm_eps"`
++}
++
++// KV implements ModelConverter.
++func (q *qwen3Model) KV(t *Tokenizer) ggml.KV {
++	arch := "qwen3"
++	if q.NumExperts > 0 {
++		arch += "moe"
++	}
++
++	kv := q.ModelParameters.KV(t)
++	kv["general.architecture"] = arch
++	kv["block_count"] = q.HiddenLayers
++	kv["context_length"] = q.MaxPositionEmbeddings
++	kv["embedding_length"] = q.HiddenSize
++	kv["feed_forward_length"] = q.IntermediateSize
++	kv["attention.head_count"] = q.NumAttentionHeads
++	kv["attention.head_count_kv"] = q.NumKeyValueHeads
++	kv["attention.key_length"] = q.HeadDim
++	kv["attention.value_length"] = q.HeadDim
++
++	if q.NumExperts > 0 {
++		kv["expert_count"] = q.NumExperts
++		kv["expert_used_count"] = q.NumExpertsPerToken
++		kv["norm_top_k_prob"] = q.NormTopkProb
++	}
++
++	kv["rope.freq_base"] = q.RopeTheta
++	kv["attention.layer_norm_rms_epsilon"] = q.RMSNormEPS
++
++	switch q.RopeScaling.Type {
++	case "":
++		// no scaling
++	case "yarn":
++		kv["rope.scaling.type"] = q.RopeScaling.Type
++		kv["rope.scaling.factor"] = q.RopeScaling.Factor
++	case "mrope", "default":
++		kv["rope.mrope_section"] = q.RopeScaling.MropeSection
++	default:
++		panic("unknown rope scaling type")
++	}
++	return kv
++}
++
++// Tensors implements ModelConverter.
++func (q *qwen3Model) Tensors(ts []Tensor) []*ggml.Tensor {
++	var out []*ggml.Tensor
++
++	// TODO: handle split experts
++
++	for _, t := range ts {
++		switch {
++		case strings.Contains(t.Name(), "ffn_gate_up_exps"):
++			afterFunc := func(t tensor.Tensor) (tensor.Tensor, error) { return tensor.Transpose(t, 0, 2, 1) }
++			for t := range splitDim(t, 2,
++				split{Replacer: strings.NewReplacer("gate_up", "gate"), afterFunc: afterFunc},
++				split{Replacer: strings.NewReplacer("gate_up", "up"), afterFunc: afterFunc},
++			) {
++				t.Shape[1], t.Shape[2] = t.Shape[2], t.Shape[1]
++				out = append(out, t)
++			}
++		case strings.Contains(t.Name(), "ffn_down_exps"):
++			shape := slices.Clone(t.Shape())
++			shape[1], shape[2] = shape[2], shape[1]
++			t.SetRepacker(func(_ string, data []float32, shape []uint64) ([]float32, error) {
++				dims := make([]int, len(shape))
++				for i := range shape {
++					dims[i] = int(shape[i])
++				}
++
++				var tt tensor.Tensor = tensor.New(tensor.WithShape(dims...), tensor.WithBacking(data))
++				tt, err := tensor.Transpose(tt, 0, 2, 1)
++				if err != nil {
++					return nil, err
++				}
++
++				// flatten tensor so it can be written as a vector
++				if err := tt.Reshape(tt.Shape().TotalSize()); err != nil {
++					return nil, err
++				}
++
++				return native.VectorF32(tt.(*tensor.Dense))
++			})
++			out = append(out, &ggml.Tensor{
++				Name:     t.Name(),
++				Kind:     t.Kind(),
++				Shape:    shape,
++				WriterTo: t,
++			})
++		default:
++			out = append(out, &ggml.Tensor{
++				Name:     t.Name(),
++				Kind:     t.Kind(),
++				Shape:    t.Shape(),
++				WriterTo: t,
++			})
++		}
++	}
++
++	return out
++}
++
++// Replacements implements ModelConverter.
++func (q *qwen3Model) Replacements() []string {
++	return []string{
++		"lm_head", "output",
++		"model.embed_tokens", "token_embd",
++		"model.layers", "blk",
++		"input_layernorm", "attn_norm",
++		"self_attn.k_proj", "attn_k",
++		"self_attn.k_norm", "attn_k_norm",
++		"self_attn.v_proj", "attn_v",
++		"self_attn.q_proj", "attn_q",
++		"self_attn.q_norm", "attn_q_norm",
++		"self_attn.o_proj", "attn_output",
++		"mlp.down_proj", "ffn_down",
++		"mlp.gate_proj", "ffn_gate",
++		"mlp.up_proj", "ffn_up",
++		"mlp.gate.weight", "ffn_gate_inp.weight",
++		"mlp.experts.down_proj", "ffn_down_exps.weight",
++		"mlp.experts.gate_up_proj", "ffn_gate_up_exps.weight",
++		"post_attention_layernorm", "ffn_norm",
++		"model.norm", "output_norm",
++	}
++}
++
++var _ ModelConverter = (*qwen3Model)(nil)
+diff --git a/convert/convert_qwen3vl.go b/convert/convert_qwen3vl.go
+new file mode 100644
+index 00000000000..e0ccb805fe3
+--- /dev/null
++++ b/convert/convert_qwen3vl.go
+@@ -0,0 +1,116 @@
++package convert
++
++import (
++	"cmp"
++	"encoding/json"
++	"io/fs"
++	"slices"
++	"strings"
++
++	"github.com/ollama/ollama/fs/ggml"
++)
++
++type qwen3VLModel struct {
++	qwen3Model `json:"text_config"`
++
++	VisionModel struct {
++		Depth                  uint32  `json:"depth"`
++		HiddenSize             uint32  `json:"hidden_size"`
++		NumHeads               uint32  `json:"num_heads"`
++		InChannels             uint32  `json:"in_channels"`
++		PatchSize              uint32  `json:"patch_size"`
++		SpatialMergeSize       uint32  `json:"spatial_merge_size"`
++		WindowSize             uint32  `json:"window_size"`
++		RMSNormEps             float32 `json:"layer_norm_epsilon"`
++		RopeTheta              float32 `json:"rope_theta"`
++		TemporalPatchSize      uint32  `json:"temporal_patch_size"`
++		DeepstackVisualIndexes []int32 `json:"deepstack_visual_indexes"`
++
++		Size struct {
++			ShortestEdge uint32 `json:"shortest_edge"`
++			LongestEdge  uint32 `json:"longest_edge"`
++		} `json:"size"`
++
++		ImageMean []float32 `json:"image_mean"`
++		ImageStd  []float32 `json:"image_std"`
++	} `json:"vision_config"`
++}
++
++func (m *qwen3VLModel) parseMore(fsys fs.FS) error {
++	bts, err := fs.ReadFile(fsys, "preprocessor_config.json")
++	if err != nil {
++		return err
++	}
++
++	return json.Unmarshal(bts, &m.VisionModel)
++}
++
++func (m *qwen3VLModel) KV(t *Tokenizer) ggml.KV {
++	kv := m.qwen3Model.KV(t)
++
++	arch := "qwen3vl"
++	if m.NumExperts > 0 {
++		arch += "moe"
++	}
++	// override architecture
++	kv["general.architecture"] = arch
++
++	kv["vision.block_count"] = cmp.Or(m.VisionModel.Depth, 32)
++	kv["vision.embedding_length"] = m.VisionModel.HiddenSize
++	kv["vision.attention.head_count"] = cmp.Or(m.VisionModel.NumHeads, 16)
++	kv["vision.num_channels"] = m.VisionModel.InChannels
++	kv["vision.patch_size"] = cmp.Or(m.VisionModel.PatchSize, 14)
++	kv["vision.spatial_merge_size"] = cmp.Or(m.VisionModel.SpatialMergeSize, 2)
++	kv["vision.attention.layer_norm_epsilon"] = cmp.Or(m.VisionModel.RMSNormEps, 1e-6)
++	kv["vision.rope.freq_base"] = cmp.Or(m.VisionModel.RopeTheta, 1e4)
++	kv["vision.temporal_patch_size"] = cmp.Or(m.VisionModel.TemporalPatchSize, 2)
++	kv["vision.deepstack_visual_indexes"] = m.VisionModel.DeepstackVisualIndexes
++
++	kv["vision.shortest_edge"] = m.VisionModel.Size.ShortestEdge
++	kv["vision.longest_edge"] = m.VisionModel.Size.LongestEdge
++
++	kv["vision.image_mean"] = m.VisionModel.ImageMean
++	kv["vision.image_std"] = m.VisionModel.ImageStd
++
++	return kv
++}
++
++func (m *qwen3VLModel) Tensors(ts []Tensor) []*ggml.Tensor {
++	var rest []Tensor
++	var out []*ggml.Tensor
++	for _, t := range ts {
++		switch {
++		case strings.Contains(t.Name(), "attn_qkv"):
++			out = append(out, slices.Collect(splitDim(t, 0,
++				split{Replacer: strings.NewReplacer("attn_qkv", "attn_q")},
++				split{Replacer: strings.NewReplacer("attn_qkv", "attn_k")},
++				split{Replacer: strings.NewReplacer("attn_qkv", "attn_v")},
++			))...)
++		case strings.Contains(t.Name(), "patch_embed") && strings.HasSuffix(t.Name(), "weight"):
++			shape := t.Shape()
++			out = append(out, &ggml.Tensor{
++				Name:     t.Name(),
++				Kind:     t.Kind(),
++				Shape:    append([]uint64{shape[0] * shape[1]}, shape[2:]...),
++				WriterTo: t,
++			})
++		default:
++			rest = append(rest, t)
++		}
++	}
++
++	return append(m.qwen3Model.Tensors(rest), out...)
++}
++
++func (m *qwen3VLModel) Replacements() []string {
++	return append(
++		m.qwen3Model.Replacements(),
++		"model.language_", "",
++		"model.visual", "v",
++		"patch_embed.proj", "patch_embed",
++		"blocks", "blk",
++		"attn.qkv", "attn_qkv",
++		"attn.proj", "attn_out",
++		"deepstack_merger_list", "deepstack_merger",
++	)
++}
+diff --git a/convert/tensor.go b/convert/tensor.go
+index 9b8517f1ec0..27bdd13ff15 100644
+--- a/convert/tensor.go
++++ b/convert/tensor.go
+@@ -19,8 +19,8 @@ type split struct {
+ 	dim    int
+ 	slices []tensor.Slice
+ 
+-	// fn is an optional function to apply to the tensor after slicing
+-	fn func(tensor.Tensor) (tensor.Tensor, error)
++	// afterFunc is an optional function to apply to the tensor after slicing
++	afterFunc func(tensor.Tensor) (tensor.Tensor, error)
+ }
+ 
+ // splitDim splits a tensor along a specified dimension into multiple tensors. The dimension
+@@ -54,8 +54,8 @@ func splitDim(t Tensor, dim int, splits ...split) iter.Seq[*ggml.Tensor] {
+ 
+ 				tt = tensor.Materialize(tt)
+ 
+-				if split.fn != nil {
+-					tt, err = split.fn(tt)
++				if split.afterFunc != nil {
++					tt, err = split.afterFunc(tt)
+ 					if err != nil {
+ 						return nil, err
+ 					}
+diff --git a/convert/tensor_test.go b/convert/tensor_test.go
+index 3a34bbff6fc..c1f58da6e49 100644
+--- a/convert/tensor_test.go
++++ b/convert/tensor_test.go
+@@ -432,7 +432,7 @@ func TestSplitDim(t *testing.T) {
+ 		t.Run("split with transpose", func(t *testing.T) {
+ 			next, stop := iter.Pull(splitDim(&r, 1,
+ 				split{Replacer: strings.NewReplacer("a", "x")},
+-				split{Replacer: strings.NewReplacer("b", "y"), fn: func(tt tensor.Tensor) (tensor.Tensor, error) {
++				split{Replacer: strings.NewReplacer("b", "y"), afterFunc: func(tt tensor.Tensor) (tensor.Tensor, error) {
+ 					return tensor.Transpose(tt, 1, 0)
+ 				}},
+ 			))
+diff --git a/fs/ggml/ggml.go b/fs/ggml/ggml.go
+index fcb3d9fdb47..c0ca068ab65 100644
+--- a/fs/ggml/ggml.go
++++ b/fs/ggml/ggml.go
+@@ -242,13 +242,13 @@ func (kv KV) OllamaEngineRequired() bool {
+ 	return slices.Contains([]string{
+ 		"gemma3",
+ 		"gemma3n",
+-		"mistral3",
+-		"qwen3",
+-		"qwen3moe",
++		"gptoss", "gpt-oss",
+ 		"llama4",
++		"mistral3",
+ 		"mllama",
+ 		"qwen25vl",
+-		"gptoss", "gpt-oss",
++		"qwen3", "qwen3moe",
++		"qwen3vl", "qwen3vlmoe",
+ 	}, kv.Architecture())
+ }
+ 
+diff --git a/ml/nn/rope/rope.go b/ml/nn/rope/rope.go
+index 57dd225257a..1127afe5654 100644
+--- a/ml/nn/rope/rope.go
++++ b/ml/nn/rope/rope.go
+@@ -4,28 +4,42 @@ import "github.com/ollama/ollama/ml"
+ 
+ // Options contains optional parameters for RoPE function
+ type Options struct {
+-	Type                  int
+-	Factors               ml.Tensor
+-	OriginalContextLength int
++	Type    int
++	Factors ml.Tensor
+ 
+ 	// YaRN options
+-	ExtrapolationFactor,
+-	AttentionFactor,
+-	BetaFast,
+-	BetaSlow float32
+-}
++	YaRN struct {
++		OriginalContextLength int
++		ExtrapolationFactor,
++		AttentionFactor,
++		BetaFast,
++		BetaSlow float32
++	}
+ 
+-// WithOriginalContextLength sets a custom context length
+-func WithOriginalContextLength(n int) func(*Options) {
+-	return func(opts *Options) {
+-		opts.OriginalContextLength = n
++	// MRoPE options
++	MRoPE struct {
++		Sections []int
+ 	}
+ }
+ 
+ // WithTypeNeoX sets RoPE type to NeoX
+ func WithTypeNeoX() func(*Options) {
+ 	return func(opts *Options) {
+-		opts.Type = 2
++		opts.Type = 0b0010
++	}
++}
++
++// WithTypeMRoPE sets RoPE type to MRoPE
++func WithTypeMRoPE() func(*Options) {
++	return func(opts *Options) {
++		opts.Type = 0b1000
++	}
++}
++
++// WithTypeVision sets RoPE type to Vision
++func WithTypeVision() func(*Options) {
++	return func(opts *Options) {
++		opts.Type = 0b11000
+ 	}
+ }
+ 
+@@ -38,14 +52,27 @@ func WithFactors(factors ml.Tensor) func(*Options) {
+ 	}
+ }
+ 
++// WithOriginalContextLength sets a custom context length
++func WithOriginalContextLength(n int) func(*Options) {
++	return func(opts *Options) {
++		opts.YaRN.OriginalContextLength = n
++	}
++}
++
+ func WithExtrapolationFactor(extrapolationFactor float32) func(*Options) {
+ 	return func(opts *Options) {
+-		opts.ExtrapolationFactor = extrapolationFactor
++		opts.YaRN.ExtrapolationFactor = extrapolationFactor
+ 	}
+ }
+ 
+ func WithAttentionFactor(attentionFactor float32) func(*Options) {
+ 	return func(opts *Options) {
+-		opts.AttentionFactor = attentionFactor
++		opts.YaRN.AttentionFactor = attentionFactor
++	}
++}
++
++func WithMRoPESections(sections []int) func(*Options) {
++	return func(opts *Options) {
++		opts.MRoPE.Sections = sections
+ 	}
+ }
+diff --git a/model/models/models.go b/model/models/models.go
+index 0cda615af6a..deefeb58f99 100644
+--- a/model/models/models.go
++++ b/model/models/models.go
+@@ -14,4 +14,5 @@ import (
+ 	_ "github.com/ollama/ollama/model/models/qwen2"
+ 	_ "github.com/ollama/ollama/model/models/qwen25vl"
+ 	_ "github.com/ollama/ollama/model/models/qwen3"
++	_ "github.com/ollama/ollama/model/models/qwen3vl"
+ )
+diff --git a/model/models/qwen3/model.go b/model/models/qwen3/model.go
+index 9fd6e313d92..85ee47d6bec 100644
+--- a/model/models/qwen3/model.go
++++ b/model/models/qwen3/model.go
+@@ -3,6 +3,7 @@ package qwen3
+ import (
+ 	"cmp"
+ 	"math"
++	"strings"
+ 
+ 	"github.com/ollama/ollama/fs"
+ 	"github.com/ollama/ollama/kvcache"
+@@ -210,7 +211,7 @@ var _ model.Model = (*Model)(nil)
+ func New(c fs.Config) (model.Model, error) {
+ 	layers := make([]Layer, c.Uint("block_count"))
+ 	for i := range layers {
+-		if c.String("general.architecture") == "qwen3moe" {
++		if strings.HasSuffix(c.String("general.architecture"), "moe") {
+ 			layers[i].MLP = &sparse{}
+ 		} else {
+ 			layers[i].MLP = &dense{}
+diff --git a/model/models/qwen3vl/imageprocessor.go b/model/models/qwen3vl/imageprocessor.go
+new file mode 100644
+index 00000000000..f7f232d1132
+--- /dev/null
++++ b/model/models/qwen3vl/imageprocessor.go
+@@ -0,0 +1,194 @@
++package qwen3vl
++
++import (
++	"fmt"
++	"image"
++	"math"
++
++	"github.com/ollama/ollama/fs"
++	"github.com/ollama/ollama/ml"
++	"github.com/ollama/ollama/model/imageproc"
++)
++
++// ImageProcessor contains configuration for the Qwen 3 VL image processing
++type ImageProcessor struct {
++	numChannels       int
++	patchSize         int
++	temporalPatchSize int
++	mergeSize         int
++	shortestEdge      int
++	longestEdge       int
++	factor            int
++	rescaleFactor     float32
++	imageMean         []float32
++	imageStd          []float32
++}
++
++// newImageProcessor creates a new image processor with default values
++func newImageProcessor(c fs.Config) ImageProcessor {
++	patchSize := int(c.Uint("vision.patch_size", 14))
++	mergeSize := int(c.Uint("vision.spatial_merge_size", 2))
++
++	return ImageProcessor{
++		numChannels:       int(c.Uint("vision.num_channels", 3)), // not set
++		patchSize:         patchSize,
++		temporalPatchSize: 2,
++		mergeSize:         mergeSize,
++		shortestEdge:      int(c.Uint("vision.shortest_edge", 64<<10)),
++		// FIXME(mxyng): the model defined longest edge (16M) is too large for the default
++		// context length of 4K and will panic. Adjusting to 2M for now.
++		// longestEdge:   int(c.Uint("vision.longest_edge", 16<<20)),
++		longestEdge:   2 << 20,
++		factor:        patchSize * mergeSize,
++		rescaleFactor: 1.0 / 255.0,
++		imageMean:     c.Floats("vision.image_mean", imageproc.ImageNetStandardMean[:]),
++		imageStd:      c.Floats("vision.image_std", imageproc.ImageNetStandardSTD[:]),
++	}
++}
++
++// SmartResize implements the smart resize algorithm
++func (p *ImageProcessor) SmartResize(height, width int) (int, int) {
++	factor := p.factor
++
++	if height < factor || width < factor {
++		panic(fmt.Sprintf("height:%d or width:%d must be larger than factor:%d", height, width, factor))
++	} else if aspectRatio := max(height, width) / min(height, width); aspectRatio > 200 {
++		panic(fmt.Sprintf("absolute aspect ratio must be smaller than 200, got %v", aspectRatio))
++	}
++
++	round := func(x float64) int { return int(math.RoundToEven(x)) }
++
++	hBar := round(float64(height)/float64(factor)) * factor
++	wBar := round(float64(width)/float64(factor)) * factor
++
++	if hBar*wBar > p.longestEdge {
++		beta := math.Sqrt(float64(height*width) / float64(p.longestEdge))
++
++		hBar = int(math.Floor(float64(height)/beta/float64(factor))) * factor
++		wBar = int(math.Floor(float64(width)/beta/float64(factor))) * factor
++	} else if hBar*wBar < p.shortestEdge {
++		beta := math.Sqrt(float64(p.shortestEdge) / float64(height*width))
++
++		hBar = int(math.Ceil(float64(height)*beta/float64(factor))) * factor
++		wBar = int(math.Ceil(float64(width)*beta/float64(factor))) * factor
++	}
++
++	return hBar, wBar
++}
++
++type Grid struct {
++	Height   int
++	Width    int
++	Temporal int
++}
++
++func (p *ImageProcessor) ProcessImage(ctx ml.Context, img image.Image) (ml.Tensor, *Grid, error) {
++	origWidth := img.Bounds().Dx()
++	origHeight := img.Bounds().Dy()
++
++	// Calculate smart resize dimensions
++	resizedHeight, resizedWidth := p.SmartResize(origHeight, origWidth)
++
++	// Resize image using existing functions
++	resizedImg := imageproc.Resize(img, image.Point{X: resizedWidth, Y: resizedHeight}, imageproc.ResizeBilinear)
++
++	normalizedPixels := imageproc.Normalize(
++		resizedImg,
++		[3]float32{p.imageMean[0], p.imageMean[1], p.imageMean[2]},
++		[3]float32{p.imageStd[0], p.imageStd[1], p.imageStd[2]},
++		true, // rescale
++		true, // channelFirst
++	)
++
++	// Calculate grid dimensions
++	grid := &Grid{
++		Height:   resizedHeight / p.patchSize,
++		Width:    resizedWidth / p.patchSize,
++		Temporal: 1, // For single images, temporal dimension is 1
++	}
++
++	patches, err := p.createPatches(normalizedPixels, resizedHeight, resizedWidth, grid)
++	if err != nil {
++		return nil, nil, fmt.Errorf("failed to create patches: %v", err)
++	}
++
++	patchDim := p.numChannels * p.temporalPatchSize *
++		p.patchSize * p.patchSize
++	numPatches := grid.Temporal * grid.Height * grid.Width
++
++	pixelValues := ctx.Input().FromFloatSlice(patches, patchDim, numPatches)
++
++	// Return patches and grid dimensions
++	return pixelValues, grid, nil
++}
++
++func (p *ImageProcessor) createPatches(pixels []float32, height, width int, grid *Grid) ([]float32, error) {
++	channels := p.numChannels
++	patchSize := p.patchSize
++	mergeSize := p.mergeSize
++	temporalPatchSize := p.temporalPatchSize
++
++	// Calculate output dimensions
++	numPatches := grid.Temporal * grid.Height * grid.Width
++	patchDim := channels * temporalPatchSize * patchSize * patchSize
++
++	result := make([]float32, numPatches*patchDim)
++	patchIndex := 0
++
++	// Single temporal frame handling (copies to all frames)
++	for range grid.Temporal {
++		for h := 0; h < grid.Height; h += mergeSize {
++			for w := 0; w < grid.Width; w += mergeSize {
++				// Handle the 2x2 merged patches
++				for mh := range mergeSize {
++					for mw := range mergeSize {
++						baseOffset := patchIndex * patchDim
++
++						// Extract patch data for first temporal frame
++						for c := range channels {
++							channelOffset := baseOffset + (c * temporalPatchSize * patchSize * patchSize)
++
++							for py := range patchSize {
++								for px := range patchSize {
++									// Calculate source pixel coordinates
++									y := (h+mh)*patchSize + py
++									x := (w+mw)*patchSize + px
++
++									// Source index in input tensor (CHW format)
++									srcIdx := c*height*width + y*width + x
++
++									// Destination index in first temporal frame
++									dstIdx := channelOffset + (py * patchSize) + px
++
++									if srcIdx < len(pixels) && dstIdx < len(result) {
++										result[dstIdx] = pixels[srcIdx]
++									}
++								}
++							}
++						}
++
++						// Copy first temporal frame to all other frames
++						if temporalPatchSize > 1 {
++							for c := range channels {
++								channelOffset := baseOffset + (c * temporalPatchSize * patchSize * patchSize)
++								firstFrameOffset := channelOffset
++								frameSize := patchSize * patchSize
++
++								// Copy first frame to all other frames
++								for tp := 1; tp < temporalPatchSize; tp++ {
++									currentFrameOffset := channelOffset + (tp * frameSize)
++									copy(result[currentFrameOffset:currentFrameOffset+frameSize],
++										result[firstFrameOffset:firstFrameOffset+frameSize])
++								}
++							}
++						}
++
++						patchIndex++
++					}
++				}
++			}
++		}
++	}
++
++	return result, nil
++}
+diff --git a/model/models/qwen3vl/model.go b/model/models/qwen3vl/model.go
+new file mode 100644
+index 00000000000..61e3ea5047c
+--- /dev/null
++++ b/model/models/qwen3vl/model.go
+@@ -0,0 +1,200 @@
++package qwen3vl
++
++import (
++	"bytes"
++	"image"
++	"slices"
++
++	"github.com/ollama/ollama/fs"
++	"github.com/ollama/ollama/kvcache"
++	"github.com/ollama/ollama/ml"
++	"github.com/ollama/ollama/model"
++	"github.com/ollama/ollama/model/input"
++)
++
++type Model struct {
++	model.Base
++	model.TextProcessor
++
++	*TextModel
++	*VisionModel `gguf:"v"`
++
++	ImageProcessor
++}
++
++func (m *Model) EncodeMultimodal(ctx ml.Context, multimodalData []byte) ([]input.Multimodal, error) {
++	if len(m.VisionModel.Layers) == 0 {
++		return nil, model.ErrNoVisionModel
++	}
++
++	img, _, err := image.Decode(bytes.NewReader(multimodalData))
++	if err != nil {
++		return nil, err
++	}
++
++	pixelValues, grid, err := m.ProcessImage(ctx, img)
++	if err != nil {
++		return nil, err
++	}
++
++	// Calculate tensor dimensions
++	visionOutputs, deepstackVisualEmbeds := m.VisionModel.Forward(ctx, pixelValues, grid)
++	mm := []input.Multimodal{{Tensor: visionOutputs, Data: grid}}
++	for i := range deepstackVisualEmbeds {
++		mm = append(mm, input.Multimodal{Tensor: deepstackVisualEmbeds[i]})
++	}
++
++	return mm, nil
++}
++
++var (
++	tokenVision      int32 = 151655
++	tokenVisionStart int32 = 151652
++	tokenVisionEnd   int32 = 151653
++)
++
++var positions []int32
++
++type modelInput struct {
++	*input.Input
++	position int32
++}
++
++// PostTokenize arranges Qwen 3 VL's inputs for the forward pass
++func (m *Model) PostTokenize(inputs []*input.Input) ([]*input.Input, error) {
++	return slices.Collect(func(yield func(*input.Input) bool) {
++		positions = make([]int32, 0)
++		for i := range inputs {
++			s := []modelInput{{Input: inputs[i]}}
++			if mm := inputs[i].Multimodal; mm != nil {
++				t := mm[0].Tensor
++				s = slices.Repeat([]modelInput{
++					{
++						position: int32(i + 1),
++						Input:    &input.Input{Token: tokenVision},
++					},
++				}, t.Dim(1)+1+1)
++
++				s[0] = modelInput{
++					Input:    &input.Input{Token: tokenVisionStart},
++					position: int32(i),
++				}
++
++				s[len(s)-1] = modelInput{
++					Input:    &input.Input{Token: tokenVisionEnd},
++					position: int32(i + mm[0].Data.(*Grid).Width/m.VisionModel.spatialMergeSize + 1),
++				}
++
++				s[1] = modelInput{
++					Input: &input.Input{
++						Token:          tokenVision,
++						Multimodal:     inputs[i].Multimodal,
++						MultimodalHash: inputs[i].MultimodalHash,
++						SameBatch:      t.Dim(1),
++					},
++					position: int32(i + 1),
++				}
++			}
++
++			for _, e := range s {
++				position := e.position
++				if position == 0 && len(positions) > 0 {
++					position = positions[len(positions)-1] + 1
++				}
++
++				positions = append(positions, position)
++				if !yield(e.Input) {
++					return
++				}
++			}
++		}
++	}), nil
++}
++
++func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
++	positionSlice := slices.Collect(makeSlice2D[int32](4, len(batch.Positions)))
++	for i, id := range batch.Positions {
++		if id < int32(len(positions)) {
++			id = int32(positions[id])
++		} else if len(positions) > 0 {
++			id = id - int32(len(positions)) + int32(positions[len(positions)-1]+1)
++		}
++
++		positionSlice[0][i] = id
++		positionSlice[1][i] = id
++		positionSlice[2][i] = id
++	}
++
++	hiddenStates := m.TextModel.TokenEmbedding.Forward(ctx, batch.Inputs).Duplicate(ctx)
++
++	var deepstackVisualEmbeds []ml.Tensor
++	for _, mi := range batch.Multimodal {
++		visionOutputs := mi.Multimodal[0].Tensor
++		ctx.Forward(visionOutputs.Copy(ctx, hiddenStates.View(ctx, mi.Index*hiddenStates.Stride(1), visionOutputs.Dim(0)*visionOutputs.Dim(1))))
++
++		if grid, ok := mi.Multimodal[0].Data.(*Grid); ok {
++			for i := 0; i < visionOutputs.Dim(1); i++ {
++				w := grid.Width / m.VisionModel.spatialMergeSize
++				positionSlice[1][mi.Index+i] += int32(i / w)
++				positionSlice[2][mi.Index+i] += int32(i % w)
++			}
++		}
++
++		deepstackVisualEmbeds = make([]ml.Tensor, len(mi.Multimodal[1:]))
++		for i, mm := range mi.Multimodal[1:] {
++			deepstackVisualEmbeds[i] = ctx.Input().Zeros(mm.Tensor.DType(), hiddenStates.Shape()...)
++			ctx.Forward(mm.Tensor.Copy(ctx, deepstackVisualEmbeds[i].View(ctx, mi.Index*deepstackVisualEmbeds[i].Stride(1), mm.Tensor.Dim(0)*mm.Tensor.Dim(1))))
++		}
++	}
++
++	positions := ctx.Input().FromIntSlice(slices.Concat(positionSlice...), len(positionSlice[0])*len(positionSlice))
++	for i, layer := range m.TextModel.Layers {
++		if m.Cache != nil {
++			m.Cache.SetLayer(i)
++		}
++
++		var outputs ml.Tensor
++		if i == len(m.TextModel.Layers)-1 {
++			outputs = batch.Outputs
++		}
++
++		hiddenStates = layer.Forward(ctx, hiddenStates, positions, outputs, m.TextModel.Cache, m.TextModel.Options)
++		if j := slices.Index(m.deepstackVisualIndexes, int32(i)); len(deepstackVisualEmbeds) > 0 && j >= 0 {
++			hiddenStates = hiddenStates.Add(ctx, deepstackVisualEmbeds[j])
++		}
++	}
++
++	hiddenStates = m.OutputNorm.Forward(ctx, hiddenStates, 1e-06)
++	return m.Output.Forward(ctx, hiddenStates), nil
++}
++
++func New(c fs.Config) (model.Model, error) {
++	m := Model{
++		TextProcessor: model.NewBytePairEncoding(
++			&model.Vocabulary{
++				Values: c.Strings("tokenizer.ggml.tokens"),
++				Types:  c.Ints("tokenizer.ggml.token_type"),
++				Merges: c.Strings("tokenizer.ggml.merges"),
++				AddBOS: c.Bool("tokenizer.ggml.add_bos_token", false),
++				BOS:    []int32{int32(c.Uint("tokenizer.ggml.bos_token_id"))},
++				AddEOS: c.Bool("tokenizer.ggml.add_eos_token", false),
++				EOS: append(
++					[]int32{int32(c.Uint("tokenizer.ggml.eos_token_id"))},
++					c.Ints("tokenizer.ggml.eos_token_ids")...,
++				),
++			},
++			`(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+`,
++		),
++		TextModel:      newTextModel(c),
++		VisionModel:    newVisionModel(c),
++		ImageProcessor: newImageProcessor(c),
++	}
++
++	m.Cache = kvcache.NewCausalCache(m.Shift)
++	return &m, nil
++}
++
++func init() {
++	model.Register("qwen3vl", New)
++	model.Register("qwen3vlmoe", New)
++}
+diff --git a/model/models/qwen3vl/model_text.go b/model/models/qwen3vl/model_text.go
+new file mode 100644
+index 00000000000..2d2398c53d9
+--- /dev/null
++++ b/model/models/qwen3vl/model_text.go
+@@ -0,0 +1,222 @@
++package qwen3vl
++
++import (
++	"cmp"
++	"math"
++	"slices"
++	"strings"
++
++	"github.com/ollama/ollama/fs"
++	"github.com/ollama/ollama/kvcache"
++	"github.com/ollama/ollama/ml"
++	"github.com/ollama/ollama/ml/nn"
++	"github.com/ollama/ollama/ml/nn/fast"
++	"github.com/ollama/ollama/ml/nn/rope"
++	"github.com/ollama/ollama/model"
++)
++
++type TextOptions struct {
++	hiddenSize,
++	numHeads,
++	numKVHeads,
++	keyLength,
++	valueLength int
++
++	eps,
++	ropeBase,
++	ropeScale float32
++	mropeSections []int
++
++	numExperts, numExpertsUsed int
++	normTopKProb               bool
++}
++
++func (o TextOptions) headDim() int {
++	return cmp.Or(o.keyLength, o.valueLength, o.hiddenSize/o.numHeads)
++}
++
++func (o TextOptions) applyRotaryPositionEmbeddings(ctx ml.Context, states, positions ml.Tensor) ml.Tensor {
++	return fast.RoPE(ctx, states, positions, o.headDim(), o.ropeBase, 1./o.ropeScale,
++		rope.WithTypeMRoPE(),
++		rope.WithMRoPESections(o.mropeSections),
++	)
++}
++
++type TextAttention struct {
++	Query     *nn.Linear  `gguf:"attn_q"`
++	QueryNorm *nn.RMSNorm `gguf:"attn_q_norm"`
++	Key       *nn.Linear  `gguf:"attn_k"`
++	KeyNorm   *nn.RMSNorm `gguf:"attn_k_norm"`
++	Value     *nn.Linear  `gguf:"attn_v"`
++	Output    *nn.Linear  `gguf:"attn_output"`
++}
++
++func (sa *TextAttention) Forward(ctx ml.Context, hiddenStates, positions ml.Tensor, cache kvcache.Cache, opts *TextOptions) ml.Tensor {
++	batchSize := hiddenStates.Dim(1)
++
++	query := sa.Query.Forward(ctx, hiddenStates)
++	key := sa.Key.Forward(ctx, hiddenStates)
++	value := sa.Value.Forward(ctx, hiddenStates)
++
++	query = query.Reshape(ctx, opts.headDim(), opts.numHeads, batchSize)
++	key = key.Reshape(ctx, opts.headDim(), opts.numKVHeads, batchSize)
++	value = value.Reshape(ctx, opts.headDim(), opts.numKVHeads, batchSize)
++
++	query = sa.QueryNorm.Forward(ctx, query, opts.eps)
++	key = sa.KeyNorm.Forward(ctx, key, opts.eps)
++
++	query = opts.applyRotaryPositionEmbeddings(ctx, query, positions)
++	key = opts.applyRotaryPositionEmbeddings(ctx, key, positions)
++
++	attention := nn.Attention(ctx, query, key, value, 1./math.Sqrt(float64(opts.headDim())), cache)
++	attention = attention.Reshape(ctx, attention.Dim(0)*attention.Dim(1), batchSize)
++	return sa.Output.Forward(ctx, attention)
++}
++
++type TextMLP interface {
++	Forward(ml.Context, ml.Tensor, *TextOptions) ml.Tensor
++}
++
++type sparse struct {
++	Router *nn.Linear      `gguf:"ffn_gate_inp"`
++	Gate   *nn.LinearBatch `gguf:"ffn_gate_exps"`
++	Up     *nn.LinearBatch `gguf:"ffn_up_exps"`
++	Down   *nn.LinearBatch `gguf:"ffn_down_exps"`
++}
++
++func (mlp *sparse) Forward(ctx ml.Context, hiddenStates ml.Tensor, opts *TextOptions) ml.Tensor {
++	hiddenDim, sequenceLength, batchSize := hiddenStates.Dim(0), hiddenStates.Dim(1), hiddenStates.Dim(2)
++	hiddenStates = hiddenStates.Reshape(ctx, hiddenDim, sequenceLength*batchSize)
++	routerLogits := mlp.Router.Forward(ctx, hiddenStates)
++
++	routingWeights := routerLogits.Softmax(ctx)
++	selectedExperts := routingWeights.TopK(ctx, opts.numExpertsUsed)
++	routingWeights = routingWeights.Reshape(ctx, 1, opts.numExperts, hiddenStates.Dim(1)).Rows(ctx, selectedExperts)
++	if opts.normTopKProb {
++		routingWeights = routingWeights.Reshape(ctx, opts.numExpertsUsed, hiddenStates.Dim(1))
++		routingWeights = routingWeights.Div(ctx, routingWeights.SumRows(ctx))
++		routingWeights = routingWeights.Reshape(ctx, 1, opts.numExpertsUsed, hiddenStates.Dim(1))
++	}
++
++	hiddenStates = hiddenStates.Reshape(ctx, hiddenStates.Dim(0), 1, hiddenStates.Dim(1))
++
++	hiddenStates = mlp.Gate.Forward(ctx, hiddenStates, selectedExperts).SILU(ctx, mlp.Up.Forward(ctx, hiddenStates, selectedExperts))
++
++	experts := mlp.Down.Forward(ctx, hiddenStates, selectedExperts)
++	experts = experts.Mul(ctx, routingWeights)
++
++	nextStates := experts.View(ctx, 0, experts.Dim(0), experts.Stride(2), experts.Dim(2))
++	for i := 1; i < opts.numExpertsUsed; i++ {
++		nextStates = nextStates.Add(ctx, experts.View(ctx, i*experts.Stride(1), experts.Dim(0), experts.Stride(2), experts.Dim(2)))
++	}
++
++	return nextStates
++}
++
++type dense struct {
++	Gate *nn.Linear `gguf:"ffn_gate"`
++	Up   *nn.Linear `gguf:"ffn_up"`
++	Down *nn.Linear `gguf:"ffn_down"`
++}
++
++func (mlp *dense) Forward(ctx ml.Context, hiddenStates ml.Tensor, _ *TextOptions) ml.Tensor {
++	hiddenStates = mlp.Gate.Forward(ctx, hiddenStates).SILU(ctx, mlp.Up.Forward(ctx, hiddenStates))
++	return mlp.Down.Forward(ctx, hiddenStates)
++}
++
++type TextLayer struct {
++	AttentionNorm *nn.RMSNorm `gguf:"attn_norm"`
++	*TextAttention
++
++	MLPNorm *nn.RMSNorm `gguf:"ffn_norm"`
++	TextMLP
++}
++
++func (d *TextLayer) Forward(ctx ml.Context, hiddenStates, positions, outputs ml.Tensor, cache kvcache.Cache, opts *TextOptions) ml.Tensor {
++	residual := hiddenStates
++	hiddenStates = d.AttentionNorm.Forward(ctx, hiddenStates, opts.eps)
++	hiddenStates = d.TextAttention.Forward(ctx, hiddenStates, positions, cache, opts)
++
++	if outputs != nil {
++		hiddenStates = hiddenStates.Rows(ctx, outputs)
++		residual = residual.Rows(ctx, outputs)
++	}
++
++	hiddenStates = hiddenStates.Add(ctx, residual)
++
++	residual = hiddenStates
++	hiddenStates = d.MLPNorm.Forward(ctx, hiddenStates, opts.eps)
++	hiddenStates = d.TextMLP.Forward(ctx, hiddenStates, opts)
++	return hiddenStates.Add(ctx, residual)
++}
++
++type TextModel struct {
++	model.Base
++	model.BytePairEncoding
++
++	TokenEmbedding *nn.Embedding `gguf:"token_embd"`
++	OutputNorm     *nn.RMSNorm   `gguf:"output_norm"`
++	Output         *nn.Linear    `gguf:"output,alt:token_embd"`
++
++	Layers []TextLayer `gguf:"blk"`
++
++	Options *TextOptions
++}
++
++func (m *TextModel) Shift(ctx ml.Context, layer int, key, shift ml.Tensor) (ml.Tensor, error) {
++	return m.Options.applyRotaryPositionEmbeddings(ctx, key, shift), nil
++}
++
++var _ model.Model = (*Model)(nil)
++
++func newTextModel(c fs.Config) *TextModel {
++	layers := make([]TextLayer, c.Uint("block_count"))
++	for i := range layers {
++		if strings.HasSuffix(c.String("general.architecture"), "moe") {
++			layers[i].TextMLP = &sparse{}
++		} else {
++			layers[i].TextMLP = &dense{}
++		}
++	}
++
++	m := TextModel{
++		BytePairEncoding: model.NewBytePairEncoding(
++			&model.Vocabulary{
++				Values: c.Strings("tokenizer.ggml.tokens"),
++				Types:  c.Ints("tokenizer.ggml.token_type"),
++				Merges: c.Strings("tokenizer.ggml.merges"),
++				AddBOS: c.Bool("tokenizer.ggml.add_bos_token", true),
++				BOS:    []int32{int32(c.Uint("tokenizer.ggml.bos_token_id"))},
++				AddEOS: c.Bool("tokenizer.ggml.add_eos_token", false),
++				EOS: append(
++					[]int32{int32(c.Uint("tokenizer.ggml.eos_token_id"))},
++					c.Ints("tokenizer.ggml.eos_token_ids")...,
++				),
++			},
++			`(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+`,
++		),
++		Layers: layers,
++		Options: &TextOptions{
++			hiddenSize:     int(c.Uint("embedding_length")),
++			numHeads:       int(c.Uint("attention.head_count")),
++			numKVHeads:     int(c.Uint("attention.head_count_kv")),
++			keyLength:      int(c.Uint("attention.key_length")),
++			valueLength:    int(c.Uint("attention.value_length")),
++			eps:            c.Float("attention.layer_norm_rms_epsilon"),
++			ropeBase:       c.Float("rope.freq_base"),
++			ropeScale:      c.Float("rope.scaling.factor", 1),
++			numExperts:     int(c.Uint("expert_count")),
++			numExpertsUsed: int(c.Uint("expert_used_count")),
++			normTopKProb:   c.Bool("norm_top_k_prob", true),
++			mropeSections: slices.Collect(func(yield func(int) bool) {
++				for _, section := range c.Ints("mrope_sections", []int32{24, 20, 20}) {
++					if !yield(int(section)) {
++						return
++					}
++				}
++			}),
++		},
++	}
++
++	return &m
++}
+diff --git a/model/models/qwen3vl/model_vision.go b/model/models/qwen3vl/model_vision.go
+new file mode 100644
+index 00000000000..550cf5f0323
+--- /dev/null
++++ b/model/models/qwen3vl/model_vision.go
+@@ -0,0 +1,268 @@
++package qwen3vl
++
++import (
++	"iter"
++	"math"
++	"slices"
++
++	"github.com/ollama/ollama/fs"
++	"github.com/ollama/ollama/ml"
++	"github.com/ollama/ollama/ml/nn"
++)
++
++type VisionAttention struct {
++	Query  *nn.Linear `gguf:"attn_q"`
++	Key    *nn.Linear `gguf:"attn_k"`
++	Value  *nn.Linear `gguf:"attn_v"`
++	Output *nn.Linear `gguf:"attn_out"`
++}
++
++func rotateHalf(ctx ml.Context, t ml.Tensor) ml.Tensor {
++	x1 := t.View(ctx, 0, t.Dim(0)/2, t.Stride(1), t.Dim(1), t.Stride(2), t.Dim(2), t.Stride(3), t.Dim(3))
++	x2 := t.View(ctx, t.Stride(0)*t.Dim(0)/2, t.Dim(0)/2, t.Stride(1), t.Dim(1), t.Stride(2), t.Dim(2), t.Stride(3), t.Dim(3)).Contiguous(ctx)
++	return x2.Scale(ctx, -1).Concat(ctx, x1, 0)
++}
++
++func applyRotaryPositionalEmbedding(ctx ml.Context, t, cos, sin ml.Tensor) ml.Tensor {
++	return t.Mul(ctx, cos).Add(ctx, rotateHalf(ctx, t).Mul(ctx, sin))
++}
++
++func (sa *VisionAttention) Forward(ctx ml.Context, hiddenStates, cos, sin ml.Tensor, opts VisionOptions) ml.Tensor {
++	query := sa.Query.Forward(ctx, hiddenStates)
++	query = query.Reshape(ctx, opts.headDim(), opts.numHeads, query.Dim(1))
++	query = applyRotaryPositionalEmbedding(ctx, query, cos, sin)
++
++	key := sa.Key.Forward(ctx, hiddenStates)
++	key = key.Reshape(ctx, opts.headDim(), opts.numHeads, key.Dim(1))
++	key = applyRotaryPositionalEmbedding(ctx, key, cos, sin)
++
++	value := sa.Value.Forward(ctx, hiddenStates)
++	value = value.Reshape(ctx, opts.headDim(), opts.numHeads, value.Dim(1))
++
++	attention := nn.Attention(ctx, query, key, value, math.Pow(float64(opts.headDim()), -0.5), nil)
++	attention = attention.Reshape(ctx, opts.hiddenSize, attention.Dim(2))
++	return sa.Output.Forward(ctx, attention)
++}
++
++type VisionMLP struct {
++	FC1 *nn.Linear `gguf:"linear_fc1"`
++	FC2 *nn.Linear `gguf:"linear_fc2"`
++}
++
++func (mlp *VisionMLP) Forward(ctx ml.Context, hiddenStates ml.Tensor, opts VisionOptions) ml.Tensor {
++	return mlp.FC2.Forward(ctx, mlp.FC1.Forward(ctx, hiddenStates).GELU(ctx))
++}
++
++type VisionEncoderLayer struct {
++	Norm1     *nn.LayerNorm `gguf:"norm1"`
++	Attention *VisionAttention
++	Norm2     *nn.LayerNorm `gguf:"norm2"`
++	MLP       *VisionMLP    `gguf:"mlp"`
++}
++
++func (e *VisionEncoderLayer) Forward(ctx ml.Context, hiddenStates, cos, sin ml.Tensor, opts VisionOptions) ml.Tensor {
++	residual := hiddenStates
++	hiddenStates = e.Norm1.Forward(ctx, hiddenStates, opts.eps)
++	hiddenStates = e.Attention.Forward(ctx, hiddenStates, cos, sin, opts)
++	hiddenStates = hiddenStates.Add(ctx, residual)
++
++	residual = hiddenStates
++	hiddenStates = e.Norm2.Forward(ctx, hiddenStates, opts.eps)
++	hiddenStates = e.MLP.Forward(ctx, hiddenStates, opts)
++	return hiddenStates.Add(ctx, residual)
++}
++
++type VisionOptions struct {
++	hiddenSize,
++	numHeads,
++	patchSize,
++	numChannels,
++	spatialMergeSize,
++	temporalPatchSize,
++	gridPerSide int
++
++	eps,
++	ropeTheta float32
++
++	deepstackVisualIndexes []int32
++	mropeSections          []int
++}
++
++func (o VisionOptions) headDim() int {
++	return o.hiddenSize / o.numHeads
++}
++
++type VisionPatchMerger struct {
++	Norm *nn.LayerNorm `gguf:"norm"`
++	FC1  *nn.Linear    `gguf:"linear_fc1"`
++	FC2  *nn.Linear    `gguf:"linear_fc2"`
++}
++
++func (m *VisionPatchMerger) Forward(ctx ml.Context, visionOutputs ml.Tensor, postshuffleNorm bool, opts VisionOptions) ml.Tensor {
++	hiddenSize := opts.hiddenSize * opts.spatialMergeSize * opts.spatialMergeSize
++	if postshuffleNorm {
++		visionOutputs = visionOutputs.Reshape(ctx, hiddenSize, -1)
++	}
++
++	visionOutputs = m.Norm.Forward(ctx, visionOutputs, opts.eps)
++	visionOutputs = visionOutputs.Reshape(ctx, hiddenSize, -1)
++	return m.FC2.Forward(ctx, m.FC1.Forward(ctx, visionOutputs).GELU(ctx))
++}
++
++type VisionPositionEmbedding struct {
++	PositionEmbedding *nn.Embedding `gguf:"pos_embed"`
++}
++
++func makeSlice2D[T int32 | float32](n0, n1 int) iter.Seq[[]T] {
++	return func(yield func([]T) bool) {
++		for range n0 {
++			if !yield(make([]T, n1)) {
++				return
++			}
++		}
++	}
++}
++
++func (m *VisionPositionEmbedding) Forward(ctx ml.Context, hiddenStates ml.Tensor, grid *Grid, opts VisionOptions) ml.Tensor {
++	indexSlice := slices.Collect(makeSlice2D[int32](4, grid.Height*grid.Width))
++	weightSlice := slices.Collect(makeSlice2D[float32](4, grid.Height*grid.Width))
++
++	stepHeight := float32(opts.gridPerSide-1) / float32(grid.Height-1)
++	stepWidth := float32(opts.gridPerSide-1) / float32(grid.Width-1)
++
++	var i int
++	for h := range grid.Height {
++		for w := range grid.Width {
++			y, x := float32(h)*stepHeight, float32(w)*stepWidth
++
++			floorY, floorX := int32(y), int32(x)
++			ceilY, ceilX := min(floorY+1, int32(opts.gridPerSide-1)), min(floorX+1, int32(opts.gridPerSide-1))
++
++			indexSlice[0][i] = floorY*int32(opts.gridPerSide) + floorX
++			indexSlice[1][i] = floorY*int32(opts.gridPerSide) + ceilX
++			indexSlice[2][i] = ceilY*int32(opts.gridPerSide) + floorX
++			indexSlice[3][i] = ceilY*int32(opts.gridPerSide) + ceilX
++
++			weightSlice[0][i] = (1 - (y - float32(floorY))) * (1 - (x - float32(floorX)))
++			weightSlice[1][i] = (1 - (y - float32(floorY))) * (x - float32(floorX))
++			weightSlice[2][i] = (y - float32(floorY)) * (1 - (x - float32(floorX)))
++			weightSlice[3][i] = (y - float32(floorY)) * (x - float32(floorX))
++
++			i++
++		}
++	}
++
++	indices := ctx.Input().FromIntSlice(slices.Concat(indexSlice...), grid.Height*grid.Width*4)
++	weights := ctx.Input().FromFloatSlice(slices.Concat(weightSlice...), 1, grid.Height*grid.Width*4)
++
++	n := hiddenStates.Dim(0)
++	positionEmbeds := m.PositionEmbedding.Forward(ctx, indices)
++	positionEmbeds = positionEmbeds.Mul(ctx, weights)
++	positionEmbeds = positionEmbeds.Reshape(ctx, n, -1, 4)
++
++	positionEmbeds = positionEmbeds.View(ctx, 0, n, positionEmbeds.Stride(1), grid.Height*grid.Width).
++		Add(ctx, positionEmbeds.View(ctx, 1*positionEmbeds.Stride(2), n, positionEmbeds.Stride(1), grid.Height*grid.Width)).
++		Add(ctx, positionEmbeds.View(ctx, 2*positionEmbeds.Stride(2), n, positionEmbeds.Stride(1), grid.Height*grid.Width)).
++		Add(ctx, positionEmbeds.View(ctx, 3*positionEmbeds.Stride(2), n, positionEmbeds.Stride(1), grid.Height*grid.Width))
++
++	positionEmbeds = positionEmbeds.Reshape(ctx, -1, grid.Width/opts.spatialMergeSize, opts.spatialMergeSize, grid.Height/opts.spatialMergeSize)
++	positionEmbeds = positionEmbeds.Permute(ctx, 0, 2, 1, 3).Contiguous(ctx, n, -1)
++	return hiddenStates.Add(ctx, positionEmbeds)
++}
++
++type VisionModel struct {
++	PatchEmbedding    *nn.Conv3D `gguf:"patch_embed"`
++	PositionEmbedding *VisionPositionEmbedding
++	Layers            []VisionEncoderLayer `gguf:"blk"`
++	PatchMerger       *VisionPatchMerger   `gguf:"merger"`
++	DeepstackMerger   []*VisionPatchMerger `gguf:"deepstack_merger"`
++
++	VisionOptions
++}
++
++func (m *VisionModel) positions(ctx ml.Context, grid *Grid) (_, _ ml.Tensor) {
++	indices := ctx.Input().FromIntSlice(slices.Collect(func(yield func(int32) bool) {
++		for y := range grid.Height {
++			for x := range grid.Width {
++				if !yield(int32(y)) {
++					return
++				}
++				if !yield(int32(x)) {
++					return
++				}
++			}
++		}
++	}), grid.Width*grid.Height*2)
++
++	indices = indices.Reshape(ctx, -1, grid.Width/m.spatialMergeSize, m.spatialMergeSize, grid.Height/m.spatialMergeSize)
++	indices = indices.Permute(ctx, 0, 2, 1, 3).Contiguous(ctx)
++	indices = indices.Reshape(ctx, -1)
++
++	halfDim := m.headDim() / 2
++	maxGrid := max(grid.Height, grid.Width)
++	frequencies := ctx.Input().FromFloatSlice(slices.Collect(func(yield func(float32) bool) {
++		ropeTheta := float64(m.ropeTheta)
++		for i := range maxGrid {
++			for j := range halfDim / 2 {
++				if !yield(float32(i) / float32(math.Pow(ropeTheta, float64(j*2)/float64(halfDim)))) {
++					return
++				}
++			}
++		}
++	}), halfDim/2, maxGrid)
++
++	embeds := frequencies.Rows(ctx, indices)
++	embeds = embeds.Reshape(ctx, halfDim, 1, -1)
++	embeds = embeds.Concat(ctx, embeds, 0)
++	return embeds.Cos(ctx), embeds.Sin(ctx)
++}
++
++// Forward computes the vision model for an input tensor
++func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid) (ml.Tensor, []ml.Tensor) {
++	pixelValues = pixelValues.Reshape(ctx, m.patchSize, m.patchSize, m.temporalPatchSize, -1)
++	hiddenStates := m.PatchEmbedding.Forward(ctx, pixelValues, m.numChannels, m.patchSize, m.patchSize, m.temporalPatchSize, 0, 0, 0, 1, 1, 1)
++	hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, m.VisionOptions)
++
++	cos, sin := m.positions(ctx, grid)
++
++	deepstackStates := make([]ml.Tensor, len(m.deepstackVisualIndexes))
++	for i, layer := range m.Layers {
++		hiddenStates = layer.Forward(ctx, hiddenStates, cos, sin, m.VisionOptions)
++		if i := slices.Index(m.deepstackVisualIndexes, int32(i)); i >= 0 {
++			deepstackStates[i] = m.DeepstackMerger[i].Forward(ctx, hiddenStates, true, m.VisionOptions)
++		}
++	}
++
++	hiddenStates = m.PatchMerger.Forward(ctx, hiddenStates, false, m.VisionOptions)
++	return hiddenStates, deepstackStates
++}
++
++// newVisionModel creates a new instance of the Qwen vision model
++func newVisionModel(c fs.Config) *VisionModel {
++	deepstackVisualIndexes := c.Ints("vision.deepstack_visual_indexes")
++	model := &VisionModel{
++		Layers:          make([]VisionEncoderLayer, c.Uint("vision.block_count", 32)),
++		DeepstackMerger: make([]*VisionPatchMerger, len(deepstackVisualIndexes)),
++		VisionOptions: VisionOptions{
++			hiddenSize:        int(c.Uint("vision.embedding_length", 1280)),
++			numHeads:          int(c.Uint("vision.attention.head_count", 16)),
++			patchSize:         int(c.Uint("vision.patch_size", 14)),
++			numChannels:       int(c.Uint("vision.num_channels", 3)),
++			eps:               c.Float("vision.attention.layer_norm_epsilon", 1e-6),
++			ropeTheta:         c.Float("vision.rope.freq_base", 10000.0),
++			spatialMergeSize:  int(c.Uint("vision.spatial_merge_size", 2)),
++			temporalPatchSize: int(c.Uint("vision.temporal_patch_size", 2)),
++			gridPerSide:       int(math.Sqrt(float64(c.Uint("vision.num_positional_embeddings", 2304)))),
++			mropeSections: slices.Collect(func(yield func(int) bool) {
++				for _, section := range c.Ints("mrope_sections", []int32{24, 20, 20}) {
++					if !yield(int(section)) {
++						return
++					}
++				}
++			}),
++			deepstackVisualIndexes: deepstackVisualIndexes,
++		},
++	}
++
++	return model
++}
+diff --git a/server/sched.go b/server/sched.go
+index 7c63995310a..6edea9f9447 100644
+--- a/server/sched.go
++++ b/server/sched.go
+@@ -405,7 +405,7 @@ func (s *Scheduler) load(req *LlmRequest, f *ggml.GGML, gpus discover.GpuInfoLis
+ 
+ 	// `mllama` is a snowflake and uses an encoder cache which cannot be used with num_parallel > 1
+ 	// ref: https://github.com/ollama/ollama/issues/4165
+-	if slices.Contains(req.model.Config.ModelFamilies, "mllama") && numParallel != 1 {
++	if slices.Contains([]string{"mllama", "qwen3vl", "qwen3vlmoe"}, req.model.Config.ModelFamily) && numParallel != 1 {
+ 		numParallel = 1
+ 		slog.Warn("mllama does not currently support parallel requests")
+ 	}
