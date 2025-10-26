@@ -1918,6 +1918,23 @@ static struct ggml_tensor * ggml_add_impl(
         struct ggml_tensor  * a,
         struct ggml_tensor  * b,
         bool                  inplace) {
+    if (!ggml_can_repeat(b, a)) {
+        GGML_LOG_ERROR("%s: cannot repeat rhs to match lhs\n", __func__);
+        GGML_LOG_ERROR(
+            "    a: name=%s op=%s type=%s ne=[%" PRId64 ", %" PRId64 ", %" PRId64 ", %" PRId64 "] nb=[%zu, %zu, %zu, %zu]\n",
+            a->name,
+            ggml_op_name(a->op),
+            ggml_type_name(a->type),
+            a->ne[0], a->ne[1], a->ne[2], a->ne[3],
+            a->nb[0], a->nb[1], a->nb[2], a->nb[3]);
+        GGML_LOG_ERROR(
+            "    b: name=%s op=%s type=%s ne=[%" PRId64 ", %" PRId64 ", %" PRId64 ", %" PRId64 "] nb=[%zu, %zu, %zu, %zu]\n",
+            b->name,
+            ggml_op_name(b->op),
+            ggml_type_name(b->type),
+            b->ne[0], b->ne[1], b->ne[2], b->ne[3],
+            b->nb[0], b->nb[1], b->nb[2], b->nb[3]);
+    }
     GGML_ASSERT(ggml_can_repeat(b, a));
 
     struct ggml_tensor * result = inplace ? ggml_view_tensor(ctx, a) : ggml_dup_tensor(ctx, a);

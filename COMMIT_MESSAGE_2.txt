@@ -1,0 +1,22 @@
+Add local development patches and scripts for Qwen3-VL
+
+This commit contains local development resources for working with
+Qwen3-VL implementation. These files are for internal use and testing.
+
+## Added Files
+
+### Patch Files (Z_Iosu/patches/)
+- original_99719122b.patch: Base Qwen3-VL architecture
+- original_b913e895a.patch: DeepStack implementation
+- original_de0e3d3c3.patch: Memory access fixes
+- original_e45aecb7b.patch: Layer normalization updates
+- README_QWEN3VL.md: Detailed documentation
+- mirar.md: Reference links and documentation
+
+### Verification Scripts (Z_Iosu/scripts/)
+- verify_all_patches.ps1: Comprehensive patch verification
+- verify_each_patch_detailed.ps1: Individual patch checking
+- check_patches.ps1: Quick status check
+
+These resources are maintained locally for development and are not
+intended for upstream contribution.

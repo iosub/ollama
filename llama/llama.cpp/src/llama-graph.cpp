@@ -54,7 +54,13 @@ void llm_graph_input_pos::set_input(const llama_ubatch * ubatch) {
             }
             ggml_backend_tensor_set(pos, pos_data.data(), 0, pos_data.size()*ggml_element_size(pos));
         } else {
-            ggml_backend_tensor_set(pos, ubatch->pos, 0, n_tokens*n_pos_per_embd*ggml_element_size(pos));
+            llama_pos * pos_ptr = ubatch->pos;
+            // Normally, ubatch->pos stores linearly increasing position
+            // However, some multi-modal models requires special position embedding (e.g. M-Rope in qwen2vl and qwen2.5vl)
+            // But linearly increasing position is still needed for proper causal attention masking
+            // So we store both of them: the first n_tokens elements are not changed, while model-specific positions are appended after that.
+            if (ubatch->embd && n_pos_per_embd > 1) pos_ptr += n_tokens; // use mrope positions
+            ggml_backend_tensor_set(pos, pos_ptr, 0, n_tokens * n_pos_per_embd * ggml_element_size(pos));
         }
     }
 }
@@ -206,7 +212,7 @@ void llm_graph_input_cls::set_input(const llama_ubatch * ubatch) {
 
         const bool last = (
              cparams.pooling_type == LLAMA_POOLING_TYPE_LAST ||
-            (cparams.pooling_type == LLAMA_POOLING_TYPE_RANK && arch == LLM_ARCH_QWEN3) // qwen3 reranking & embedding models use last token
+            (cparams.pooling_type == LLAMA_POOLING_TYPE_RANK && (arch == LLM_ARCH_QWEN3 || arch == LLM_ARCH_QWEN3_VL)) // qwen3 reranking & embedding models use last token
         );
 
         for (int i = 0; i < n_tokens; ++i) {
@@ -1135,6 +1141,55 @@ ggml_tensor * llm_graph_context::build_inp_embd(ggml_tensor * tok_embd) const {
     return cur;
 }
 
+// input embeddings with optional lora for qwen3vl series model
+ggml_tensor * llm_graph_context::build_qwen3vl_inp_embd(ggml_tensor * tok_embd) const {
+    const int64_t n_embd_full = hparams.n_embd; // main + 3 deepstack layers
+    const int64_t n_embd_main = n_embd_full / 4;
+
+    auto inp = std::make_unique<llm_graph_input_embd>();
+    ggml_tensor * cur = nullptr;
+
+    if (ubatch.token) {
+        // Pure text input: expand to 4*n_embd with zero deepstack
+        inp->tokens = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, ubatch.n_tokens);
+        ggml_set_input(inp->tokens);
+        res->t_tokens = inp->tokens;
+
+        // Get main embedding from token IDs
+        cur = ggml_get_rows(ctx0, tok_embd, inp->tokens);
+
+        // Apply LoRA if needed
+        for (const auto & lora : *loras) {
+            llama_adapter_lora_weight * lw = lora.first->get_weight(tok_embd);
+            if (lw == nullptr) continue;
+
+            const float adapter_scale = lora.second;
+            const float scale = lw->get_scale(lora.first->alpha, adapter_scale);
+            ggml_tensor * inpL_delta = ggml_scale(ctx0, ggml_mul_mat(
+                ctx0, lw->b,
+                ggml_get_rows(ctx0, lw->a, inp->tokens)
+            ), scale);
+            cur = ggml_add(ctx0, cur, inpL_delta);
+        }
+    } else {
+        // Custom embedding input (e.g., from image): assume already 4*n_embd
+        inp->embd = ggml_new_tensor_2d(ctx0, GGML_TYPE_F32, n_embd_full, ubatch.n_tokens);
+        ggml_set_input(inp->embd);
+        cur = inp->embd;
+    }
+
+    // Apply embedding scale if needed (e.g., Granite)
+    if (hparams.f_embedding_scale != 0.0f) {
+        cur = ggml_scale(ctx0, cur, hparams.f_embedding_scale);
+    }
+
+    // Register to graph and input system
+    cb(cur, "inp_embd_qwen3vl", -1);
+    res->add_input(std::move(inp));
+
+    return cur;
+}
+
 ggml_tensor * llm_graph_context::build_inp_pos() const {
     auto inp = std::make_unique<llm_graph_input_pos>(hparams.n_pos_per_embd());
 
@@ -1938,7 +1993,7 @@ void llm_graph_context::build_pooling(
                 }
 
                 // softmax for qwen3 reranker
-                if (arch == LLM_ARCH_QWEN3) {
+                if (arch == LLM_ARCH_QWEN3 || arch == LLM_ARCH_QWEN3_VL) {
                     cur = ggml_soft_max(ctx0, cur);
                 }
             } break;

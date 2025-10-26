@@ -268,7 +268,7 @@ struct mtmd_context {
             // https://github.com/huggingface/transformers/blob/1cd110c6cb6a6237614130c470e9a902dbc1a4bd/docs/source/en/model_doc/pixtral.md
             img_end = "[IMG_END]";
 
-        } else if (proj == PROJECTOR_TYPE_QWEN2VL || proj == PROJECTOR_TYPE_QWEN25VL) {
+        } else if (proj == PROJECTOR_TYPE_QWEN2VL || proj == PROJECTOR_TYPE_QWEN25VL || proj == PROJECTOR_TYPE_QWEN3VLMOE) {
             // <|vision_start|> ... (image embeddings) ... <|vision_end|>
             img_beg = "<|vision_start|>";
             img_end = "<|vision_end|>";
@@ -1035,9 +1035,6 @@ const char * mtmd_image_tokens_get_id(const mtmd_image_tokens * image_tokens) {
 }
 
 llama_pos mtmd_image_tokens_get_n_pos(const mtmd_image_tokens * image_tokens) {
-    if (image_tokens->use_mrope_pos) {
-        return (::std::max)(image_tokens->nx, image_tokens->ny);//assuming image, not video // for M-RoPE, the whole image is 1 in temporal dimension
-    }
     return image_tokens->n_tokens();
 }
 

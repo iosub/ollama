@@ -1,0 +1,213 @@
+Add Qwen3-VL and Qwen3-VL-MoE multimodal model support
+
+This commit introduces comprehensive support for Qwen3-VL vision-language 
+models, including both the dense variant and the Mixture-of-Experts (MoE) 
+architecture with DeepStack fusion capabilities.
+
+## Overview
+
+Qwen3-VL represents Alibaba's advanced multimodal models capable of 
+understanding and reasoning about images alongside text. This implementation 
+enables running these models for various vision-language tasks including 
+image understanding, optical character recognition (OCR), visual question 
+answering, and document analysis.
+
+## Architecture Implementation
+
+### Core Architecture (llama-arch.cpp/h)
+- **LLM_ARCH_QWEN3_VL**: Dense vision-language model architecture
+- **LLM_ARCH_QWEN3_VL_MOE**: Mixture-of-Experts variant with expert routing
+- Complete tensor mapping registration for both architectures
+- Architecture-specific parameter handling and validation
+
+### Model Loading (llama-model.cpp)
+
+**Hyperparameter Loading**
+- QWEN3_VL: Standard dense model configuration
+  * Uses full n_embd dimension throughout
+  * 36 layers for 4B parameter variant
+- QWEN3_VL_MOE: Expert-based configuration  
+  * 4x n_embd expansion (n_embd/4 per channel × 4 channels)
+  * 48 layers (30B-A3B) or 94 layers (235B-A22B)
+  * Expert feed-forward network dimensions
+
+**Multi-axis Rotary Position Embedding (M-RoPE)**
+- Configured rope_sections = [24, 20, 20, 0]
+  * Temporal dimension: 24 dims
+  * Height dimension: 20 dims  
+  * Width dimension: 20 dims
+  * Unused dimension: 0
+- Enables spatial awareness for image patch processing
+- Added debug logging for MRoPE configuration verification
+
+**Tensor Initialization**
+- QWEN3_VL follows QWEN3 dense structure
+  * Token embeddings, output projection
+  * Per-layer: attention (Q/K/V/O), normalization, FFN
+- QWEN3_VL_MOE includes expert-specific tensors
+  * Expert gate networks for routing
+  * Per-expert FFN weights (gate, down, up)
+  * Shared and expert-specific parameters
+
+### Graph Building (llama-graph.cpp/h)
+
+**DeepStack Architecture for MoE**
+The Qwen3-VL-MoE variant implements a novel DeepStack fusion mechanism:
+
+1. **Channel Splitting**: Vision embeddings split into 3 processing channels
+   - ds0, ds1, ds2 (DeepStack channels 0, 1, 2)
+   - Each channel: n_embd/4 dimensions
+
+2. **Per-layer Processing**: Independent expert selection per channel
+   - Token-level expert routing
+   - Gated mixture-of-experts computation
+   - Q/K normalization before attention
+
+3. **Fusion Layers**: Learned merging at early transformer layers
+   - Fusion occurs at layers 0, 1, and 2
+   - DeepStack merger combines information across channels
+   - Only active when vision embeddings present (text-only safe)
+
+**Batch Processing**
+- Enhanced position array handling for M-RoPE multi-dimensional positions
+- Proper ubatch preparation distinguishing vision vs text tokens
+- Conditional graph construction based on modality
+
+### Vision Processing (clip.cpp/clip-impl.h)
+
+**PROJECTOR_TYPE_QWEN3VLMOE**
+- New projector type for Qwen3-VL-MoE vision encoder
+- Handles projection from vision encoder to language model space
+
+**DeepStack Merger Implementation**
+The merger is a learnable 2-layer MLP with normalization:
+```
+Input (3 channels) 
+  → LayerNorm(norm_w, norm_b)
+  → Linear(fc1_w, fc1_b) 
+  → GELU activation
+  → Linear(fc2_w, fc2_b)
+  → Output (fused representation)
+```
+
+Components:
+- `norm_w`, `norm_b`: Layer normalization parameters
+- `fc1_w`, `fc1_b`: First linear projection
+- `fc2_w`, `fc2_b`: Second linear projection
+
+**Spatial Operations**
+- Fixed spatial merge for vision patch sequences
+- Proper handling of patch grid dimensions
+- Vision-text boundary management
+
+**Safety Improvements**
+- Removed illegal zero-tensor initialization for text-only inputs
+- Conditional fusion: only processes when vision embeddings exist
+- Prevents memory access violations in text-only inference
+
+### Platform Support (llama-model-loader.cpp)
+
+**Windows File Handle Limit**
+- Increased stdio limit to 2048 handles (from default ~512)
+- Critical for MoE models with many expert weight files
+- Uses `_setmaxstdio()` on Windows platform
+- Prevents "too many open files" errors during loading
+
+### Reference Patches (llama/patches/)
+
+Included for transparency and reproducibility:
+- `0033-qwen3vl-base-architecture.patch`
+- `0034-qwen3vl-deepstack-implementation.patch`  
+- `0035-qwen3vl-memory-fix.patch`
+- `0036-qwen3vl-layer-norm-bias.patch`
+
+## Technical Specifications
+
+### Qwen3-VL (Dense)
+- **Type**: Standard transformer with integrated vision encoder
+- **Layers**: 36 (4B parameter model)
+- **Embedding**: Full n_embd dimension
+- **Position Encoding**: M-RoPE with 4 dimensional sections
+- **Use Cases**: General vision-language understanding
+
+### Qwen3-VL-MoE (Mixture of Experts)
+- **Type**: Sparse MoE with DeepStack fusion
+- **Layers**: 48 (30B activated/3B) or 94 (235B activated/22B)
+- **Embedding**: 4-channel architecture (n_embd/4 per channel)
+- **Experts**: Multiple expert networks per layer with learned routing
+- **Fusion**: 3-layer early fusion (layers 0, 1, 2)
+- **Use Cases**: High-quality vision understanding at improved efficiency
+
+### DeepStack Fusion Mechanism
+
+The multi-channel fusion enables:
+1. **Parallel Processing**: Different aspects of vision processed independently
+2. **Early Integration**: Information merged in early transformer layers
+3. **Adaptive Routing**: Expert selection per channel and token
+4. **Efficiency**: Sparse activation patterns reduce computation
+
+## Capabilities Enabled
+
+This implementation supports:
+- **Multimodal Chat**: Conversational AI with image understanding
+- **Image Captioning**: Detailed image descriptions
+- **Visual Question Answering**: Answer questions about image content
+- **Optical Character Recognition**: Extract text from images
+- **Document Understanding**: Analyze documents, tables, charts
+- **Image Analysis**: Detailed visual scene understanding
+
+## References and Acknowledgments
+
+This implementation is based on the outstanding work by the community:
+
+**Primary Source Repository**
+- Branch: https://github.com/LETS-BEE/llama.cpp/commits/qwen3vl/
+- Author: LETS-BEE
+
+**Source Commits** (applied in llama/patches/):
+1. Base Architecture  
+   https://github.com/LETS-BEE/llama.cpp/commit/99719122bf16db5db85f0c2d37c059a3aefd3eca
+
+2. DeepStack Implementation  
+   https://github.com/LETS-BEE/llama.cpp/commit/b913e895a2189b9792da7709b36a36a1aed2feb9
+
+3. Memory Access Fix  
+   https://github.com/LETS-BEE/llama.cpp/commit/de0e3d3c3ce4b394746ade9263736c8edb40260e
+
+4. Layer Normalization Update  
+   https://github.com/LETS-BEE/llama.cpp/commit/e45aecb7b051d3c0fea968d64aadbeb0b777e4a1
+
+**Related Discussions and Pull Requests**
+- Upstream llama.cpp Discussion:  
+  https://github.com/ggml-org/llama.cpp/issues/16207#issuecomment-3443868720
+
+- Upstream llama.cpp PR:  
+  https://github.com/ggml-org/llama.cpp/pull/16745
+
+- Related Ollama PR:  
+  https://github.com/ollama/ollama/pull/12665
+
+**Additional Context**
+- OCR-related discussion:  
+  https://github.com/ggml-org/llama.cpp/pull/16764
+
+## Testing
+
+Tested with:
+- Qwen3-VL 4B parameter models (dense)
+- Qwen3-VL-MoE 30B-A3B models (MoE)
+- Various image understanding tasks
+- Text-only and multimodal inference modes
+
+## Future Work
+
+Potential enhancements:
+- Additional model size variants
+- Performance optimizations for DeepStack fusion
+- Extended M-RoPE configuration options
+- Enhanced vision preprocessing pipelines
+
+---
+
+Special thanks to the llama.cpp community and all contributors who made
+this multimodal vision-language support possible.
