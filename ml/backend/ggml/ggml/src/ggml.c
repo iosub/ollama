@@ -1918,6 +1918,13 @@ static struct ggml_tensor * ggml_add_impl(
         struct ggml_tensor  * a,
         struct ggml_tensor  * b,
         bool                  inplace) {
+    if (!ggml_can_repeat(b, a)) {
+        GGML_LOG_ERROR("%s: add mismatch a=%s b=%s a_ne=[%" PRId64 ", %" PRId64 ", %" PRId64 ", %" PRId64 "] b_ne=[%" PRId64 ", %" PRId64 ", %" PRId64 ", %" PRId64 "]\n",
+            __func__, a->name ? a->name : "<unnamed>", b->name ? b->name : "<unnamed>",
+            a->ne[0], a->ne[1], a->ne[2], a->ne[3],
+            b->ne[0], b->ne[1], b->ne[2], b->ne[3]);
+        fflush(stderr);
+    }
     GGML_ASSERT(ggml_can_repeat(b, a));
 
     struct ggml_tensor * result = inplace ? ggml_view_tensor(ctx, a) : ggml_dup_tensor(ctx, a);
@@ -3436,7 +3443,14 @@ struct ggml_tensor * ggml_reshape_3d(
         int64_t               ne1,
         int64_t               ne2) {
     GGML_ASSERT(ggml_is_contiguous(a));
-    GGML_ASSERT(ggml_nelements(a) == ne0*ne1*ne2);
+    const int64_t ggml_reshape3_expected = ne0*ne1*ne2;
+    const int64_t ggml_reshape3_actual = ggml_nelements(a);
+    if (ggml_reshape3_actual != ggml_reshape3_expected) {
+        GGML_LOG_ERROR("%s: reshape_3d mismatch tensor=%s actual=%" PRId64 " target=%" PRId64 " target_dims=[%" PRId64 ", %" PRId64 ", %" PRId64 "] input_dims=[%" PRId64 ", %" PRId64 ", %" PRId64 ", %" PRId64 "]\n",
+            __func__, a->name ? a->name : "<unnamed>", ggml_reshape3_actual, ggml_reshape3_expected, ne0, ne1, ne2, a->ne[0], a->ne[1], a->ne[2], a->ne[3]);
+        fflush(stderr);
+    }
+    GGML_ASSERT(ggml_reshape3_actual == ggml_reshape3_expected);
 
     const int64_t ne[3] = { ne0, ne1, ne2 };
     struct ggml_tensor * result = ggml_new_tensor_impl(ctx, a->type, 3, ne, a, 0);
@@ -3456,7 +3470,14 @@ struct ggml_tensor * ggml_reshape_4d(
         int64_t               ne2,
         int64_t               ne3) {
     GGML_ASSERT(ggml_is_contiguous(a));
-    GGML_ASSERT(ggml_nelements(a) == ne0*ne1*ne2*ne3);
+    const int64_t ggml_reshape4_expected = ne0*ne1*ne2*ne3;
+    const int64_t ggml_reshape4_actual = ggml_nelements(a);
+    if (ggml_reshape4_actual != ggml_reshape4_expected) {
+        GGML_LOG_ERROR("%s: reshape_4d mismatch tensor=%s actual=%" PRId64 " target=%" PRId64 " target_dims=[%" PRId64 ", %" PRId64 ", %" PRId64 ", %" PRId64 "] input_dims=[%" PRId64 ", %" PRId64 ", %" PRId64 ", %" PRId64 "]\n",
+            __func__, a->name ? a->name : "<unnamed>", ggml_reshape4_actual, ggml_reshape4_expected, ne0, ne1, ne2, ne3, a->ne[0], a->ne[1], a->ne[2], a->ne[3]);
+        fflush(stderr);
+    }
+    GGML_ASSERT(ggml_reshape4_actual == ggml_reshape4_expected);
 
     const int64_t ne[4] = { ne0, ne1, ne2, ne3 };
     struct ggml_tensor * result = ggml_new_tensor_impl(ctx, a->type, 4, ne, a, 0);
