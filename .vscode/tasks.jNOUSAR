@@ -1,0 +1,60 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Stop Ollama Processes",
+            "type": "shell",
+            "command": "Get-Process | Where-Object { $_.Name -like '*ollama*' } | Stop-Process -Force -ErrorAction SilentlyContinue",
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run ollama serve",
+            "type": "shell",
+            "command": ".\\ollama.exe",
+            "args": [
+                "serve"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}\\dist\\windows-amd64"
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run Qwen3-VL",
+            "type": "shell",
+            "command": ".\\ollama.exe",
+            "args": [
+                "run",
+                "qwen3_vl_4b_instruct:latest"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}\\dist\\windows-amd64"
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": false
+            },
+            "problemMatcher": []
+        }
+    ]
+}
