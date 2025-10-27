@@ -65,6 +65,10 @@ func (m *qwen3VLModel) KV(t *Tokenizer) ggml.KV {
 	kv["vision.rope.freq_base"] = cmp.Or(m.VisionModel.RopeTheta, 1e4)
 	kv["vision.temporal_patch_size"] = cmp.Or(m.VisionModel.TemporalPatchSize, 2)
 	kv["vision.deepstack_visual_indexes"] = m.VisionModel.DeepstackVisualIndexes
+	if len(m.VisionModel.DeepstackVisualIndexes) > 0 {
+		kv["clip.vision.deepstack_layers"] = m.VisionModel.DeepstackVisualIndexes
+		kv["llama.n_deepstack_layers"] = uint32(len(m.VisionModel.DeepstackVisualIndexes))
+	}
 
 	kv["vision.shortest_edge"] = m.VisionModel.Size.ShortestEdge
 	kv["vision.longest_edge"] = m.VisionModel.Size.LongestEdge
@@ -80,6 +84,8 @@ func (m *qwen3VLModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	var out []*ggml.Tensor
 	for _, t := range ts {
 		switch {
+		case strings.Contains(t.Name(), ".merger."):
+			continue
 		case strings.Contains(t.Name(), "attn_qkv"):
 			out = append(out, slices.Collect(splitDim(t, 0,
 				split{Replacer: strings.NewReplacer("attn_qkv", "attn_q")},
@@ -87,13 +93,15 @@ func (m *qwen3VLModel) Tensors(ts []Tensor) []*ggml.Tensor {
 				split{Replacer: strings.NewReplacer("attn_qkv", "attn_v")},
 			))...)
 		case strings.Contains(t.Name(), "patch_embed") && strings.HasSuffix(t.Name(), "weight"):
-			shape := t.Shape()
-			out = append(out, &ggml.Tensor{
-				Name:     t.Name(),
-				Kind:     t.Kind(),
-				Shape:    append([]uint64{shape[0] * shape[1]}, shape[2:]...),
-				WriterTo: t,
-			})
+			// Split patch_embed along temporal dimension (dim 2) like qwen25vl
+			for tensor := range splitDim(t, 2,
+				split{Replacer: strings.NewReplacer("patch_embed", "patch_embd_0")},
+				split{Replacer: strings.NewReplacer("patch_embed", "patch_embd_1")},
+			) {
+				// Remove the temporal dimension (which becomes 1 after split)
+				tensor.Shape = slices.DeleteFunc(tensor.Shape, func(i uint64) bool { return i == 1 })
+				out = append(out, tensor)
+			}
 		default:
 			rest = append(rest, t)
 		}
@@ -111,6 +119,12 @@ func (m *qwen3VLModel) Replacements() []string {
 		"blocks", "blk",
 		"attn.qkv", "attn_qkv",
 		"attn.proj", "attn_out",
-		"deepstack_merger_list", "deepstack_merger",
+		"deepstack_merger_list", "deepstack",
+		"deepstack_merger", "deepstack",
+		".linear_fc1", ".fc1",
+		".linear_fc2", ".fc2",
+		".layer_norm", ".norm",
+		"norm1", "ln1",
+		"norm2", "ln2",
 	)
 }

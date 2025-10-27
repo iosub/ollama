@@ -45,8 +45,8 @@ func (sa *VisionAttention) Forward(ctx ml.Context, hiddenStates, cos, sin ml.Ten
 }
 
 type VisionMLP struct {
-	FC1 *nn.Linear `gguf:"linear_fc1"`
-	FC2 *nn.Linear `gguf:"linear_fc2"`
+	FC1 *nn.Linear `gguf:"fc1"`
+	FC2 *nn.Linear `gguf:"fc2"`
 }
 
 func (mlp *VisionMLP) Forward(ctx ml.Context, hiddenStates ml.Tensor, opts VisionOptions) ml.Tensor {
@@ -54,9 +54,9 @@ func (mlp *VisionMLP) Forward(ctx ml.Context, hiddenStates ml.Tensor, opts Visio
 }
 
 type VisionEncoderLayer struct {
-	Norm1     *nn.LayerNorm `gguf:"norm1"`
+	Norm1     *nn.LayerNorm `gguf:"ln1"`
 	Attention *VisionAttention
-	Norm2     *nn.LayerNorm `gguf:"norm2"`
+	Norm2     *nn.LayerNorm `gguf:"ln2"`
 	MLP       *VisionMLP    `gguf:"mlp"`
 }
 
@@ -94,8 +94,8 @@ func (o VisionOptions) headDim() int {
 
 type VisionPatchMerger struct {
 	Norm *nn.LayerNorm `gguf:"norm"`
-	FC1  *nn.Linear    `gguf:"linear_fc1"`
-	FC2  *nn.Linear    `gguf:"linear_fc2"`
+	FC1  *nn.Linear    `gguf:"fc1"`
+	FC2  *nn.Linear    `gguf:"fc2"`
 }
 
 func (m *VisionPatchMerger) Forward(ctx ml.Context, visionOutputs ml.Tensor, postshuffleNorm bool, opts VisionOptions) ml.Tensor {

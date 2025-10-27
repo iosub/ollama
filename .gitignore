@@ -1,5 +1,5 @@
 .DS_Store
-.vscode
+# .vscode
 .env
 .venv
 .swp
@@ -25,3 +25,7 @@ logs/crash
 
 
 temp_pr12654.patch
+*.model-00001-of-00002.safetensors
+*.safetensors
+Z_Iosu/models/Qwen3-VL-4B-Instruct-new/
+
