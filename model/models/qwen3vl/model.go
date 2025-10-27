@@ -2,7 +2,9 @@ package qwen3vl
 
 import (
 	"bytes"
+	"fmt"
 	"image"
+	"iter"
 	"slices"
 
 	"github.com/ollama/ollama/fs"
@@ -60,6 +62,16 @@ type modelInput struct {
 	position int32
 }
 
+func makeSlice2D[T any](rows, cols int) iter.Seq[[]T] {
+	return func(yield func([]T) bool) {
+		for range rows {
+			if !yield(make([]T, cols)) {
+				return
+			}
+		}
+	}
+}
+
 // PostTokenize arranges Qwen 3 VL's inputs for the forward pass
 func (m *Model) PostTokenize(inputs []*input.Input) ([]*input.Input, error) {
 	return slices.Collect(func(yield func(*input.Input) bool) {
@@ -79,31 +91,11 @@ func (m *Model) PostTokenize(inputs []*input.Input) ([]*input.Input, error) {
 					Input:    &input.Input{Token: tokenVisionStart},
 					position: int32(i),
 				}
-
-				s[len(s)-1] = modelInput{
-					Input:    &input.Input{Token: tokenVisionEnd},
-					position: int32(i + mm[0].Data.(*Grid).Width/m.VisionModel.spatialMergeSize + 1),
-				}
-
-				s[1] = modelInput{
-					Input: &input.Input{
-						Token:          tokenVision,
-						Multimodal:     inputs[i].Multimodal,
-						MultimodalHash: inputs[i].MultimodalHash,
-						SameBatch:      t.Dim(1),
-					},
-					position: int32(i + 1),
-				}
 			}
 
-			for _, e := range s {
-				position := e.position
-				if position == 0 && len(positions) > 0 {
-					position = positions[len(positions)-1] + 1
-				}
-
-				positions = append(positions, position)
-				if !yield(e.Input) {
+			for _, v := range s {
+				positions = append(positions, v.position)
+				if !yield(v.Input) {
 					return
 				}
 			}
@@ -160,7 +152,22 @@ func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
 
 		hiddenStates = layer.Forward(ctx, hiddenStates, positions, outputs, m.TextModel.Cache, m.TextModel.Options)
 		if j := slices.Index(m.deepstackVisualIndexes, int32(i)); len(deepstackVisualEmbeds) > 0 && j >= 0 {
-			hiddenStates = hiddenStates.Add(ctx, deepstackVisualEmbeds[j])
+			// Calculate padding needed for dimension 1
+			dim1Diff := hiddenStates.Dim(1) - deepstackVisualEmbeds[j].Dim(1)
+			
+			if dim1Diff < 0 {
+				return nil, fmt.Errorf("incompatible tensor dimensions: visual=%d > hidden=%d", 
+					deepstackVisualEmbeds[j].Dim(1), hiddenStates.Dim(1))
+			}
+			
+			var visualEmbeds ml.Tensor
+			if dim1Diff > 0 {
+				visualEmbeds = deepstackVisualEmbeds[j].Pad(ctx, 0, dim1Diff, 0, 0)
+			} else {
+				visualEmbeds = deepstackVisualEmbeds[j]
+			}
+			
+			hiddenStates = hiddenStates.Add(ctx, visualEmbeds)
 		}
 	}
 

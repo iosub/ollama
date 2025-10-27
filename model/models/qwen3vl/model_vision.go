@@ -45,8 +45,8 @@ func (sa *VisionAttention) Forward(ctx ml.Context, hiddenStates, cos, sin ml.Ten
 }
 
 type VisionMLP struct {
-	FC1 *nn.Linear `gguf:"fc1"`
-	FC2 *nn.Linear `gguf:"fc2"`
+	FC1 *nn.Linear `gguf:"linear_fc1"`
+	FC2 *nn.Linear `gguf:"linear_fc2"`
 }
 
 func (mlp *VisionMLP) Forward(ctx ml.Context, hiddenStates ml.Tensor, opts VisionOptions) ml.Tensor {
@@ -54,9 +54,9 @@ func (mlp *VisionMLP) Forward(ctx ml.Context, hiddenStates ml.Tensor, opts Visio
 }
 
 type VisionEncoderLayer struct {
-	Norm1     *nn.LayerNorm `gguf:"ln1"`
+	Norm1     *nn.LayerNorm `gguf:"norm1"`
 	Attention *VisionAttention
-	Norm2     *nn.LayerNorm `gguf:"ln2"`
+	Norm2     *nn.LayerNorm `gguf:"norm2"`
 	MLP       *VisionMLP    `gguf:"mlp"`
 }
 
@@ -94,8 +94,8 @@ func (o VisionOptions) headDim() int {
 
 type VisionPatchMerger struct {
 	Norm *nn.LayerNorm `gguf:"norm"`
-	FC1  *nn.Linear    `gguf:"fc1"`
-	FC2  *nn.Linear    `gguf:"fc2"`
+	FC1  *nn.Linear    `gguf:"linear_fc1"`
+	FC2  *nn.Linear    `gguf:"linear_fc2"`
 }
 
 func (m *VisionPatchMerger) Forward(ctx ml.Context, visionOutputs ml.Tensor, postshuffleNorm bool, opts VisionOptions) ml.Tensor {
@@ -113,10 +113,10 @@ type VisionPositionEmbedding struct {
 	PositionEmbedding *nn.Embedding `gguf:"pos_embed"`
 }
 
-func makeSlice2D[T int32 | float32](n0, n1 int) iter.Seq[[]T] {
+func makeSlice[T int32 | float32](dim, n int) iter.Seq[[]T] {
 	return func(yield func([]T) bool) {
-		for range n0 {
-			if !yield(make([]T, n1)) {
+		for range dim {
+			if !yield(make([]T, n)) {
 				return
 			}
 		}
@@ -124,8 +124,14 @@ func makeSlice2D[T int32 | float32](n0, n1 int) iter.Seq[[]T] {
 }
 
 func (m *VisionPositionEmbedding) Forward(ctx ml.Context, hiddenStates ml.Tensor, grid *Grid, opts VisionOptions) ml.Tensor {
-	indexSlice := slices.Collect(makeSlice2D[int32](4, grid.Height*grid.Width))
-	weightSlice := slices.Collect(makeSlice2D[float32](4, grid.Height*grid.Width))
+	// Validate grid dimensions to prevent panic
+	if grid == nil || grid.Height <= 0 || grid.Width <= 0 {
+		// Return hiddenStates unchanged if grid is invalid
+		return hiddenStates
+	}
+
+	indexSlice := slices.Collect(makeSlice[int32](4, grid.Height*grid.Width))
+	weightSlice := slices.Collect(makeSlice[float32](4, grid.Height*grid.Width))
 
 	stepHeight := float32(opts.gridPerSide-1) / float32(grid.Height-1)
 	stepWidth := float32(opts.gridPerSide-1) / float32(grid.Width-1)
