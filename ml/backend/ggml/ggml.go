@@ -11,6 +11,7 @@ package ggml
 import "C"
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -1410,18 +1411,21 @@ func (t *Tensor) View(ctx ml.Context, offset int, shape ...int) ml.Tensor {
 
 func (t *Tensor) RoPE(ctx ml.Context, positions ml.Tensor, ropeDim int, ropeBase, ropeScale float32, options ...func(*rope.Options)) ml.Tensor {
 	// Default options
-	opts := rope.Options{
-		Factors:               &Tensor{},
-		OriginalContextLength: 131072,
-		ExtrapolationFactor:   0.,
-		AttentionFactor:       1.,
-		BetaFast:              32.,
-		BetaSlow:              1.,
-	}
+	opts := rope.Options{Factors: &Tensor{}}
 
 	// Apply any provided options
 	for _, option := range options {
 		option(&opts)
+	}
+
+	factors := opts.Factors
+	if factors == nil {
+		factors = &Tensor{}
+	}
+
+	tensorFactors, ok := factors.(*Tensor)
+	if !ok {
+		panic("ggml: unsupported tensor type for RoPE factors")
 	}
 
 	dequant := t.t
@@ -1429,24 +1433,53 @@ func (t *Tensor) RoPE(ctx ml.Context, positions ml.Tensor, ropeDim int, ropeBase
 		dequant = C.ggml_cast(ctx.(*Context).ctx, t.t, C.GGML_TYPE_F32)
 	}
 
-	return &Tensor{
-		b: t.b,
-		t: C.ggml_rope_ext(
+	originalContextLength := cmp.Or(opts.YaRN.OriginalContextLength, 128<<10)
+	attentionFactor := cmp.Or(opts.YaRN.AttentionFactor, float32(1))
+	betaFast := cmp.Or(opts.YaRN.BetaFast, float32(32))
+	betaSlow := cmp.Or(opts.YaRN.BetaSlow, float32(1))
+
+	var sections *C.int
+	if len(opts.MRoPE.Sections) > 0 {
+		sections = (*C.int)(unsafe.Pointer(&opts.MRoPE.Sections[0]))
+	}
+
+	var tt *C.struct_ggml_tensor
+	if opts.Type&0b1000 != 0 {
+		tt = C.ggml_rope_multi(
 			ctx.(*Context).ctx,
 			dequant,
 			positions.(*Tensor).t,
-			opts.Factors.(*Tensor).t,
+			tensorFactors.t,
 			C.int(ropeDim),
+			sections,
 			C.int(opts.Type),
-			C.int(opts.OriginalContextLength),
+			C.int(originalContextLength),
 			C.float(ropeBase),
 			C.float(ropeScale),
-			C.float(opts.ExtrapolationFactor),
-			C.float(opts.AttentionFactor),
-			C.float(opts.BetaFast),
-			C.float(opts.BetaSlow),
-		),
+			C.float(opts.YaRN.ExtrapolationFactor),
+			C.float(attentionFactor),
+			C.float(betaFast),
+			C.float(betaSlow),
+		)
+	} else {
+		tt = C.ggml_rope_ext(
+			ctx.(*Context).ctx,
+			dequant,
+			positions.(*Tensor).t,
+			tensorFactors.t,
+			C.int(ropeDim),
+			C.int(opts.Type),
+			C.int(originalContextLength),
+			C.float(ropeBase),
+			C.float(ropeScale),
+			C.float(opts.YaRN.ExtrapolationFactor),
+			C.float(attentionFactor),
+			C.float(betaFast),
+			C.float(betaSlow),
+		)
 	}
+
+	return &Tensor{b: t.b, t: tt}
 }
 
 func (t *Tensor) IM2Col(ctx ml.Context, t2 ml.Tensor, s0, s1, p0, p1, d0, d1 int) ml.Tensor {
@@ -1506,6 +1539,27 @@ func (t *Tensor) Conv2D(ctx ml.Context, t2 ml.Tensor, s0, s1, p0, p1, d0, d1 int
 	return &Tensor{
 		b: t.b,
 		t: C.ggml_conv_2d(ctx.(*Context).ctx, t.t, t2.(*Tensor).t, C.int(s0), C.int(s1), C.int(p0), C.int(p1), C.int(d0), C.int(d1)),
+	}
+}
+
+func (t *Tensor) Conv3D(ctx ml.Context, t2 ml.Tensor, ic, s0, s1, s2, p0, p1, p2, d0, d1, d2 int) ml.Tensor {
+	return &Tensor{
+		b: t.b,
+		t: C.ggml_conv_3d(
+			ctx.(*Context).ctx,
+			t.t,
+			t2.(*Tensor).t,
+			C.int64_t(ic),
+			C.int(s0),
+			C.int(s1),
+			C.int(s2),
+			C.int(p0),
+			C.int(p1),
+			C.int(p2),
+			C.int(d0),
+			C.int(d1),
+			C.int(d2),
+		),
 	}
 }
 
