@@ -26,3 +26,4 @@ logs/crash
 
 temp_pr12654.patch
 llama.rar
+*.safetensors
