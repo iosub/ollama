@@ -2,9 +2,7 @@ package qwen3vl
 
 import (
 	"bytes"
-	"fmt"
 	"image"
-	"iter"
 	"slices"
 
 	"github.com/ollama/ollama/fs"
@@ -22,6 +20,8 @@ type Model struct {
 	*VisionModel `gguf:"v"`
 
 	ImageProcessor
+
+	positionCache []int32
 }
 
 func (m *Model) EncodeMultimodal(ctx ml.Context, multimodalData []byte) ([]input.Multimodal, error) {
@@ -55,27 +55,14 @@ var (
 	tokenVisionEnd   int32 = 151653
 )
 
-var positions []int32
-
 type modelInput struct {
 	*input.Input
 	position int32
 }
 
-func makeSlice2D[T any](rows, cols int) iter.Seq[[]T] {
-	return func(yield func([]T) bool) {
-		for range rows {
-			if !yield(make([]T, cols)) {
-				return
-			}
-		}
-	}
-}
-
-// PostTokenize arranges Qwen 3 VL's inputs for the forward pass
 func (m *Model) PostTokenize(inputs []*input.Input) ([]*input.Input, error) {
+	m.positionCache = m.positionCache[:0]
 	return slices.Collect(func(yield func(*input.Input) bool) {
-		positions = make([]int32, 0)
 		for i := range inputs {
 			s := []modelInput{{Input: inputs[i]}}
 			if mm := inputs[i].Multimodal; mm != nil {
@@ -91,11 +78,31 @@ func (m *Model) PostTokenize(inputs []*input.Input) ([]*input.Input, error) {
 					Input:    &input.Input{Token: tokenVisionStart},
 					position: int32(i),
 				}
+
+				s[len(s)-1] = modelInput{
+					Input:    &input.Input{Token: tokenVisionEnd},
+					position: int32(i + mm[0].Data.(*Grid).Width/m.spatialMergeSize + 1),
+				}
+
+				s[1] = modelInput{
+					Input: &input.Input{
+						Token:          tokenVision,
+						Multimodal:     inputs[i].Multimodal,
+						MultimodalHash: inputs[i].MultimodalHash,
+						SameBatch:      t.Dim(1),
+					},
+					position: int32(i + 1),
+				}
 			}
 
-			for _, v := range s {
-				positions = append(positions, v.position)
-				if !yield(v.Input) {
+			for _, e := range s {
+				position := e.position
+				if position == 0 && len(m.positionCache) > 0 {
+					position = m.positionCache[len(m.positionCache)-1] + 1
+				}
+
+				m.positionCache = append(m.positionCache, position)
+				if !yield(e.Input) {
 					return
 				}
 			}
@@ -103,13 +110,14 @@ func (m *Model) PostTokenize(inputs []*input.Input) ([]*input.Input, error) {
 	}), nil
 }
 
+
 func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
-	positionSlice := slices.Collect(makeSlice2D[int32](4, len(batch.Positions)))
+	positionSlice := slices.Collect(makeSlice2D[int32](3, len(batch.Positions)))
 	for i, id := range batch.Positions {
-		if id < int32(len(positions)) {
-			id = int32(positions[id])
-		} else if len(positions) > 0 {
-			id = id - int32(len(positions)) + int32(positions[len(positions)-1]+1)
+		if id < int32(len(m.positionCache)) {
+			id = m.positionCache[id]
+		} else if len(m.positionCache) > 0 {
+			id = id - int32(len(m.positionCache)) + m.positionCache[len(m.positionCache)-1] + 1
 		}
 
 		positionSlice[0][i] = id
@@ -125,8 +133,8 @@ func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
 		ctx.Forward(visionOutputs.Copy(ctx, hiddenStates.View(ctx, mi.Index*hiddenStates.Stride(1), visionOutputs.Dim(0)*visionOutputs.Dim(1))))
 
 		if grid, ok := mi.Multimodal[0].Data.(*Grid); ok {
-			for i := 0; i < visionOutputs.Dim(1); i++ {
-				w := grid.Width / m.VisionModel.spatialMergeSize
+			for i := range visionOutputs.Dim(1) {
+				w := grid.Width / m.spatialMergeSize
 				positionSlice[1][mi.Index+i] += int32(i / w)
 				positionSlice[2][mi.Index+i] += int32(i % w)
 			}
@@ -139,7 +147,8 @@ func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
 		}
 	}
 
-	positions := ctx.Input().FromIntSlice(slices.Concat(positionSlice...), len(positionSlice[0])*len(positionSlice))
+	positions := ctx.Input().FromIntSlice(slices.Concat(positionSlice...), len(positionSlice[0]), len(positionSlice))
+	cos, sin := m.rotaryEmbedding(ctx, positions)
 	for i, layer := range m.TextModel.Layers {
 		if m.Cache != nil {
 			m.Cache.SetLayer(i)
@@ -150,24 +159,9 @@ func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
 			outputs = batch.Outputs
 		}
 
-		hiddenStates = layer.Forward(ctx, hiddenStates, positions, outputs, m.TextModel.Cache, m.TextModel.Options)
-		if j := slices.Index(m.deepstackVisualIndexes, int32(i)); len(deepstackVisualEmbeds) > 0 && j >= 0 {
-			// Calculate padding needed for dimension 1
-			dim1Diff := hiddenStates.Dim(1) - deepstackVisualEmbeds[j].Dim(1)
-			
-			if dim1Diff < 0 {
-				return nil, fmt.Errorf("incompatible tensor dimensions: visual=%d > hidden=%d", 
-					deepstackVisualEmbeds[j].Dim(1), hiddenStates.Dim(1))
-			}
-			
-			var visualEmbeds ml.Tensor
-			if dim1Diff > 0 {
-				visualEmbeds = deepstackVisualEmbeds[j].Pad(ctx, 0, dim1Diff, 0, 0)
-			} else {
-				visualEmbeds = deepstackVisualEmbeds[j]
-			}
-			
-			hiddenStates = hiddenStates.Add(ctx, visualEmbeds)
+		hiddenStates = layer.Forward(ctx, hiddenStates, cos, sin, outputs, m.Cache, m.Options)
+		if i < len(deepstackVisualEmbeds) {
+			hiddenStates = hiddenStates.Add(ctx, deepstackVisualEmbeds[i])
 		}
 	}
 
@@ -197,7 +191,10 @@ func New(c fs.Config) (model.Model, error) {
 		ImageProcessor: newImageProcessor(c),
 	}
 
-	m.Cache = kvcache.NewCausalCache(m.Shift)
+	m.Cache = kvcache.NewCausalCache(func(ctx ml.Context, layer int, key, position ml.Tensor) (ml.Tensor, error) {
+		m.positionCache = nil
+		return nil, kvcache.ErrNotSupported
+	})
 	return &m, nil
 }
 

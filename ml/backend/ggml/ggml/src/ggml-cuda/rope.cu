@@ -123,10 +123,9 @@ static __global__ void rope_neox(
 
 template<bool forward, bool has_ff, typename T>
 static __global__ void rope_multi(
-    const T * x, T * dst, const int ne0, const int ne1, const int ne2, const int s1, const int s2,
-    const int n_dims, const int32_t * pos, const float freq_scale, const float ext_factor, const float attn_factor,
-    const rope_corr_dims corr_dims, const float theta_scale, const float * freq_factors, const mrope_sections sections,
-    const bool is_imrope) {
+        const T * x, T * dst, const int ne0, const int ne1, const int ne2, const int s1, const int s2,
+        const int n_dims, const int32_t * pos, const float freq_scale, const float ext_factor, const float attn_factor,
+        const rope_corr_dims corr_dims, const float theta_scale, const float * freq_factors, const mrope_sections sections, const bool is_imrope) {
     const int i0 = 2*(blockDim.y*blockIdx.y + threadIdx.y);
 
     if (i0 >= ne0) {
@@ -152,14 +151,14 @@ static __global__ void rope_multi(
     const int sec_w = sections.v[1] + sections.v[0];
     const int sector = (i0 / 2) % sect_dims;
 
-    float theta_base = 0.0f;
+    float theta_base = 0.0;
     if (is_imrope) {
-        if (sector % 3 == 1 && sector < 3 * sections.v[1]) {
+        if (sector % 3 == 1 && sector < 3 * sections.v[1]) { // h
             theta_base = pos[channel_x + ne2 * 1]*powf(theta_scale, i0/2.0f);
-        } else if (sector % 3 == 2 && sector < 3 * sections.v[2]) {
+        } else if (sector % 3 == 2 && sector < 3 * sections.v[2]) { // w
             theta_base = pos[channel_x + ne2 * 2]*powf(theta_scale, i0/2.0f);
-        } else {
-            theta_base = pos[channel_x + ne2 * 3]*powf(theta_scale, i0/2.0f);
+        } else { // t
+            theta_base = pos[channel_x]*powf(theta_scale, i0/2.0f);
         }
     } else {
         if (sector < sections.v[0]) {
@@ -285,10 +284,9 @@ static void rope_neox_cuda(
 
 template<bool forward, typename T>
 static void rope_multi_cuda(
-    const T * x, T * dst, const int ne0, const int ne1, const int ne2, const int s1, const int s2, const int n_dims, const int nr,
-    const int32_t * pos, const float freq_scale, const float freq_base, const float ext_factor, const float attn_factor,
-    const rope_corr_dims corr_dims, const float * freq_factors, const mrope_sections sections, const bool is_imrope,
-    cudaStream_t stream) {
+        const T * x, T * dst, const int ne0, const int ne1, const int ne2, const int s1, const int s2, const int n_dims, const int nr,
+        const int32_t * pos, const float freq_scale, const float freq_base, const float ext_factor, const float attn_factor,
+        const rope_corr_dims corr_dims, const float * freq_factors, const mrope_sections sections, const bool is_imrope, cudaStream_t stream) {
     GGML_ASSERT(ne0 % 2 == 0);
     const dim3 block_dims(1, CUDA_ROPE_BLOCK_SIZE, 1);
     const int n_blocks_x = (ne0 + 2*CUDA_ROPE_BLOCK_SIZE - 1) / (2*CUDA_ROPE_BLOCK_SIZE);

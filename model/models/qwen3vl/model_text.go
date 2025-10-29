@@ -10,8 +10,6 @@ import (
 	"github.com/ollama/ollama/kvcache"
 	"github.com/ollama/ollama/ml"
 	"github.com/ollama/ollama/ml/nn"
-	"github.com/ollama/ollama/ml/nn/fast"
-	"github.com/ollama/ollama/ml/nn/rope"
 	"github.com/ollama/ollama/model"
 )
 
@@ -29,17 +27,12 @@ type TextOptions struct {
 
 	numExperts, numExpertsUsed int
 	normTopKProb               bool
+
+	inverseFrequenciesCache []float32
 }
 
 func (o TextOptions) headDim() int {
 	return cmp.Or(o.keyLength, o.valueLength, o.hiddenSize/o.numHeads)
-}
-
-func (o TextOptions) applyRotaryPositionEmbeddings(ctx ml.Context, states, positions ml.Tensor) ml.Tensor {
-	return fast.RoPE(ctx, states, positions, o.headDim(), o.ropeBase, 1./o.ropeScale,
-		rope.WithTypeMRoPE(),
-		rope.WithMRoPESections(o.mropeSections),
-	)
 }
 
 type TextAttention struct {
@@ -51,7 +44,7 @@ type TextAttention struct {
 	Output    *nn.Linear  `gguf:"attn_output"`
 }
 
-func (sa *TextAttention) Forward(ctx ml.Context, hiddenStates, positions ml.Tensor, cache kvcache.Cache, opts *TextOptions) ml.Tensor {
+func (sa *TextAttention) Forward(ctx ml.Context, hiddenStates, cos, sin ml.Tensor, cache kvcache.Cache, opts *TextOptions) ml.Tensor {
 	batchSize := hiddenStates.Dim(1)
 
 	query := sa.Query.Forward(ctx, hiddenStates)
@@ -65,8 +58,8 @@ func (sa *TextAttention) Forward(ctx ml.Context, hiddenStates, positions ml.Tens
 	query = sa.QueryNorm.Forward(ctx, query, opts.eps)
 	key = sa.KeyNorm.Forward(ctx, key, opts.eps)
 
-	query = opts.applyRotaryPositionEmbeddings(ctx, query, positions)
-	key = opts.applyRotaryPositionEmbeddings(ctx, key, positions)
+	query = applyRotaryPositionalEmbedding(ctx, query, cos, sin)
+	key = applyRotaryPositionalEmbedding(ctx, key, cos, sin)
 
 	attention := nn.Attention(ctx, query, key, value, 1./math.Sqrt(float64(opts.headDim())), cache)
 	attention = attention.Reshape(ctx, attention.Dim(0)*attention.Dim(1), batchSize)
@@ -132,10 +125,10 @@ type TextLayer struct {
 	TextMLP
 }
 
-func (d *TextLayer) Forward(ctx ml.Context, hiddenStates, positions, outputs ml.Tensor, cache kvcache.Cache, opts *TextOptions) ml.Tensor {
+func (d *TextLayer) Forward(ctx ml.Context, hiddenStates, cos, sin, outputs ml.Tensor, cache kvcache.Cache, opts *TextOptions) ml.Tensor {
 	residual := hiddenStates
 	hiddenStates = d.AttentionNorm.Forward(ctx, hiddenStates, opts.eps)
-	hiddenStates = d.TextAttention.Forward(ctx, hiddenStates, positions, cache, opts)
+	hiddenStates = d.TextAttention.Forward(ctx, hiddenStates, cos, sin, cache, opts)
 
 	if outputs != nil {
 		hiddenStates = hiddenStates.Rows(ctx, outputs)
@@ -151,9 +144,6 @@ func (d *TextLayer) Forward(ctx ml.Context, hiddenStates, positions, outputs ml.
 }
 
 type TextModel struct {
-	model.Base
-	model.BytePairEncoding
-
 	TokenEmbedding *nn.Embedding `gguf:"token_embd"`
 	OutputNorm     *nn.RMSNorm   `gguf:"output_norm"`
 	Output         *nn.Linear    `gguf:"output,alt:token_embd"`
@@ -163,8 +153,40 @@ type TextModel struct {
 	Options *TextOptions
 }
 
-func (m *TextModel) Shift(ctx ml.Context, layer int, key, shift ml.Tensor) (ml.Tensor, error) {
-	return m.Options.applyRotaryPositionEmbeddings(ctx, key, shift), nil
+func (m *TextModel) rotaryEmbedding(ctx ml.Context, positions ml.Tensor) (_, _ ml.Tensor) {
+	positions = positions.Reshape(ctx, 1, positions.Dim(0), positions.Dim(1))
+	if len(m.Options.inverseFrequenciesCache) == 0 {
+		m.Options.inverseFrequenciesCache = make([]float32, m.Options.headDim()/2)
+		for i := range m.Options.inverseFrequenciesCache {
+			frequency := float32(math.Pow(float64(m.Options.ropeBase), float64(i*2)/float64(m.Options.headDim())))
+			m.Options.inverseFrequenciesCache[i] = 1 / frequency
+		}
+	}
+
+	inverseFrequencies := ctx.Input().FromFloatSlice(m.Options.inverseFrequenciesCache, 1, len(m.Options.inverseFrequenciesCache))
+
+	positions = positions.Cast(ctx, ml.DTypeF32)
+	frequencies := inverseFrequencies.Mulmat(ctx, positions)
+
+	interleaved := frequencies.View(ctx,
+		0, frequencies.Dim(0),
+		frequencies.Stride(1), frequencies.Dim(1),
+	)
+
+	for _, i := range []int{1, 2} {
+		args := []int{
+			i * frequencies.Stride(0), 1,
+			3 * frequencies.Stride(0), m.Options.mropeSections[i],
+			frequencies.Stride(1), frequencies.Dim(1),
+		}
+
+		ctx.Forward(frequencies.View(ctx, i*frequencies.Stride(2)+args[0], args[1:]...).
+			Copy(ctx, interleaved.View(ctx, args[0], args[1:]...)))
+	}
+
+	interleaved = interleaved.Concat(ctx, interleaved, 0)
+	interleaved = interleaved.Reshape(ctx, interleaved.Dim(0), 1, interleaved.Dim(1), interleaved.Dim(2))
+	return interleaved.Cos(ctx), interleaved.Sin(ctx)
 }
 
 var _ model.Model = (*Model)(nil)
@@ -180,21 +202,6 @@ func newTextModel(c fs.Config) *TextModel {
 	}
 
 	m := TextModel{
-		BytePairEncoding: model.NewBytePairEncoding(
-			&model.Vocabulary{
-				Values: c.Strings("tokenizer.ggml.tokens"),
-				Types:  c.Ints("tokenizer.ggml.token_type"),
-				Merges: c.Strings("tokenizer.ggml.merges"),
-				AddBOS: c.Bool("tokenizer.ggml.add_bos_token", true),
-				BOS:    []int32{int32(c.Uint("tokenizer.ggml.bos_token_id"))},
-				AddEOS: c.Bool("tokenizer.ggml.add_eos_token", false),
-				EOS: append(
-					[]int32{int32(c.Uint("tokenizer.ggml.eos_token_id"))},
-					c.Ints("tokenizer.ggml.eos_token_ids")...,
-				),
-			},
-			`(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+`,
-		),
 		Layers: layers,
 		Options: &TextOptions{
 			hiddenSize:     int(c.Uint("embedding_length")),

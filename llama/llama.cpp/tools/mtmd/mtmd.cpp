@@ -79,11 +79,11 @@ enum mtmd_slice_tmpl {
     MTMD_SLICE_TMPL_IDEFICS3,
 };
 
-mtmd_input_text* mtmd_input_text_init(const char * text, bool add_special, bool parse_special) {
-    return new mtmd_input_text{text, add_special, parse_special};
+mtmd_input_text * mtmd_input_text_init(const char * text, bool add_special, bool parse_special) {
+    return new mtmd_input_text{ text, add_special, parse_special };
 }
 
-void mtmd_input_text_free(mtmd_input_text* input_text) {
+void mtmd_input_text_free(mtmd_input_text * input_text) {
     if (input_text) {
         delete input_text;
     }
@@ -162,12 +162,14 @@ struct mtmd_context {
             throw std::runtime_error("media_marker must not be empty");
         }
 
+        LOG_DBG("%s: initializing clip context from %s\n", __func__, mmproj_fname ? mmproj_fname : "<null>");
         clip_context_params ctx_clip_params;
         ctx_clip_params.use_gpu   = ctx_params.use_gpu;
         ctx_clip_params.verbosity = ctx_params.verbosity;
         auto res = clip_init(mmproj_fname, ctx_clip_params);
         ctx_v = res.ctx_v;
         ctx_a = res.ctx_a;
+        LOG_DBG("%s: clip init result ctx_v=%p ctx_a=%p\n", __func__, (void *)ctx_v, (void *)ctx_a);
         if (!ctx_v && !ctx_a) {
             throw std::runtime_error(string_format("Failed to load CLIP model from %s\n", mmproj_fname));
         }
@@ -185,19 +187,23 @@ struct mtmd_context {
 
         // since we already validate n_embd of vision and audio mmproj,
         // we can safely assume that they are the same
-        int n_embd_clip = clip_n_mmproj_embd(ctx_v ? ctx_v : ctx_a);
+        const clip_ctx * ctx_for_embd = ctx_v ? ctx_v : ctx_a;
+        LOG_DBG("%s: computing clip embedding size from ctx=%p\n", __func__, (void *)ctx_for_embd);
+        int n_embd_clip = clip_n_mmproj_embd(ctx_for_embd);
         if (n_embd_text != n_embd_clip) {
             throw std::runtime_error(string_format(
                 "mismatch between text model (n_embd = %d) and mmproj (n_embd = %d)\n"
                 "hint: you may be using wrong mmproj\n",
                 n_embd_text, n_embd_clip));
         }
+        LOG_DBG("%s: validated embedding sizes text=%d clip=%d\n", __func__, n_embd_text, n_embd_clip);
         if (ctx_v) {
             init_vision();
         }
         if (ctx_a) {
             init_audio();
         }
+        LOG_DBG("%s: initialization complete\n", __func__);
     }
 
     void init_vision() {
@@ -268,7 +274,7 @@ struct mtmd_context {
             // https://github.com/huggingface/transformers/blob/1cd110c6cb6a6237614130c470e9a902dbc1a4bd/docs/source/en/model_doc/pixtral.md
             img_end = "[IMG_END]";
 
-        } else if (proj == PROJECTOR_TYPE_QWEN2VL || proj == PROJECTOR_TYPE_QWEN25VL) {
+        } else if (proj == PROJECTOR_TYPE_QWEN2VL || proj == PROJECTOR_TYPE_QWEN25VL || proj == PROJECTOR_TYPE_QWEN3VL) {
             // <|vision_start|> ... (image embeddings) ... <|vision_end|>
             img_beg = "<|vision_start|>";
             img_end = "<|vision_end|>";
@@ -284,6 +290,11 @@ struct mtmd_context {
             // <img> ... (image embeddings) ... </img>
             img_beg = "<img>";
             img_end = "</img>";
+
+        } else if (proj == PROJECTOR_TYPE_LIGHTONOCR) {
+            // <|im_start|> ... (image embeddings) ... <|im_end|>
+            img_beg = "<|im_start|>";
+            img_end = "<|im_end|>";
 
         }
     }

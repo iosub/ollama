@@ -113,6 +113,16 @@ type VisionPositionEmbedding struct {
 	PositionEmbedding *nn.Embedding `gguf:"pos_embed"`
 }
 
+func makeSlice2D[T int32 | float32](n0, n1 int) iter.Seq[[]T] {
+	return func(yield func([]T) bool) {
+		for range n0 {
+			if !yield(make([]T, n1)) {
+				return
+			}
+		}
+	}
+}
+
 func makeSlice[T int32 | float32](dim, n int) iter.Seq[[]T] {
 	return func(yield func([]T) bool) {
 		for range dim {

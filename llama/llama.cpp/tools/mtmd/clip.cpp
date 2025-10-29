@@ -27,20 +27,6 @@
 #include <array>
 #include <numeric>
 #include <functional>
-#include <algorithm>
-
-#if defined(_WIN32)
-#define WIN32_LEAN_AND_MEAN
-#ifndef NOMINMAX
-    #define NOMINMAX
-#endif
-#include <windows.h>
-#if __GLIBCXX__
-#include <cstdio>
-#include <ext/stdio_filebuf.h>
-#include <fcntl.h>
-#endif
-#endif
 
 struct clip_logger_state g_logger_state = {GGML_LOG_LEVEL_CONT, clip_log_callback_default, NULL};
 
@@ -185,7 +171,7 @@ struct clip_hparams {
     int32_t n_head;
     int32_t n_layer;
     // idefics3
-    int32_t preproc_image_size = 0;
+    int32_t preproc_image_size = 0; // aka max_dimension
     int32_t proj_scale_factor = 0;
 
     float image_mean[3];
@@ -210,7 +196,7 @@ struct clip_hparams {
     int32_t n_wa_pattern = 0;
     int32_t spatial_merge_size = 0;
 
-    std::vector<int32_t> deepstack_layers; // qwen3vl deepstack layers
+    std::vector<bool> is_deepstack_layers; // qwen3vl: whether the layer is a deepstack layer
 
     // audio
     int32_t n_mel_bins = 0; // whisper preprocessor
@@ -255,6 +241,14 @@ struct clip_layer {
     // layer scale (no bias)
     ggml_tensor * ls_1_w = nullptr;
     ggml_tensor * ls_2_w = nullptr;
+
+    // qwen3vl deepstack merger
+    ggml_tensor * deepstack_norm_w = nullptr;
+    ggml_tensor * deepstack_norm_b = nullptr;
+    ggml_tensor * deepstack_fc1_w = nullptr;
+    ggml_tensor * deepstack_fc1_b = nullptr;
+    ggml_tensor * deepstack_fc2_w = nullptr;
+    ggml_tensor * deepstack_fc2_b = nullptr;
 };
 
 struct clip_model {
@@ -374,17 +368,6 @@ struct clip_model {
     ggml_tensor * conv1d_2_b = nullptr;
     ggml_tensor * mm_norm_pre_w = nullptr;
     ggml_tensor * mm_norm_mid_w = nullptr;
-
-    struct deepstack_merger {
-        ggml_tensor * norm_w = nullptr;
-        ggml_tensor * norm_b = nullptr;
-        ggml_tensor * fc1_w = nullptr;
-        ggml_tensor * fc1_b = nullptr;
-        ggml_tensor * fc2_w = nullptr;
-        ggml_tensor * fc2_b = nullptr;
-    };
-
-    std::vector<deepstack_merger> deepstack_mergers;
 
     bool audio_has_avgpool() const {
         return proj_type == PROJECTOR_TYPE_QWEN2A
@@ -648,7 +631,7 @@ struct clip_graph {
         }
 
         // arrangement of the [IMG_BREAK] token
-        {
+        if (model.token_embd_img_break) {
             // not efficient, but works
             // the trick is to view the embeddings as a 3D tensor with shape [n_embd, n_patches_per_row, n_rows]
             // and then concatenate the [IMG_BREAK] token to the end of each row, aka n_patches_per_row dimension
@@ -705,6 +688,13 @@ struct clip_graph {
             inp = ggml_add(ctx0, inp, inp_1);
 
             inp = ggml_permute(ctx0, inp, 1, 2, 0, 3);  // [w, h, c, b] -> [c, w, h, b]
+            inp = ggml_cont_4d(
+                ctx0, inp,
+                n_embd * 2, n_patches_x / 2, n_patches_y, batch_size);
+            inp = ggml_reshape_4d(
+                ctx0, inp,
+                n_embd * 2, n_patches_x / 2, 2, batch_size * (n_patches_y / 2));
+            inp = ggml_permute(ctx0, inp, 0, 2, 1, 3);
             inp = ggml_cont_3d(
                 ctx0, inp,
                 n_embd, n_patches_x * n_patches_y, batch_size);
@@ -856,15 +846,10 @@ struct clip_graph {
         GGML_ASSERT(model.patch_bias != nullptr);
         GGML_ASSERT(model.position_embeddings != nullptr);
         GGML_ASSERT(model.class_embedding == nullptr);
-        GGML_ASSERT(!hparams.deepstack_layers.empty());
 
         const int batch_size       = 1;
         const int n_pos            = n_patches;
         const int num_position_ids = n_pos * 4; // m-rope requires 4 dim per position
-
-        LOG_INF("%s: image_nx=%d image_ny=%d patch_size=%d n_patches_x=%d n_patches_y=%d n_patches=%d\n",
-            __func__, img.nx, img.ny, patch_size, n_patches_x, n_patches_y, n_patches);
-        fflush(stdout);
 
         norm_type norm_t = NORM_TYPE_NORMAL;
 
@@ -879,23 +864,16 @@ struct clip_graph {
         // second conv dimension
         {
             auto inp_1 = ggml_conv_2d(ctx0, model.patch_embeddings_1, inp_raw, patch_size, patch_size, 0, 0, 1, 1);
-            
-            // Debug: Print tensor shapes before addition
-            LOG_INF("%s: inp shape=[%" PRId64 ", %" PRId64 ", %" PRId64 ", %" PRId64 "]\n", 
-                __func__, inp->ne[0], inp->ne[1], inp->ne[2], inp->ne[3]);
-            LOG_INF("%s: inp_1 shape=[%" PRId64 ", %" PRId64 ", %" PRId64 ", %" PRId64 "]\n", 
-                __func__, inp_1->ne[0], inp_1->ne[1], inp_1->ne[2], inp_1->ne[3]);
-            fflush(stdout);
-            
-            // Ensure both tensors have the same shape before addition
-            GGML_ASSERT(inp->ne[0] == inp_1->ne[0]);
-            GGML_ASSERT(inp->ne[1] == inp_1->ne[1]);
-            GGML_ASSERT(inp->ne[2] == inp_1->ne[2]);
-            GGML_ASSERT(inp->ne[3] == inp_1->ne[3]);
-            
             inp = ggml_add(ctx0, inp, inp_1);
 
             inp = ggml_permute(ctx0, inp, 1, 2, 0, 3);  // [w, h, c, b] -> [c, w, h, b]
+            inp = ggml_cont_4d(
+                ctx0, inp,
+                n_embd * 2, n_patches_x / 2, n_patches_y, batch_size);
+            inp = ggml_reshape_4d(
+                ctx0, inp,
+                n_embd * 2, n_patches_x / 2, 2, batch_size * (n_patches_y / 2));
+            inp = ggml_permute(ctx0, inp, 0, 2, 1, 3);
             inp = ggml_cont_3d(
                 ctx0, inp,
                 n_embd, n_patches_x * n_patches_y, batch_size);
@@ -907,8 +885,21 @@ struct clip_graph {
             cb(inp, "patch_bias", -1);
         }
 
-        // Qwen3VL uses M-RoPE (dynamic rotary positional embeddings), not learned position embeddings
-        // Skip the position embedding addition here - it will be applied via M-RoPE in attention
+        // calculate absolute position embedding and apply
+        ggml_tensor * learned_pos_embd = resize_position_embeddings();
+        learned_pos_embd = ggml_cont_4d(
+            ctx0, learned_pos_embd,
+            n_embd * 2, n_patches_x / 2, n_patches_y, batch_size);
+        learned_pos_embd = ggml_reshape_4d(
+            ctx0, learned_pos_embd,
+            n_embd * 2, n_patches_x / 2, 2, batch_size * (n_patches_y / 2));
+        learned_pos_embd = ggml_permute(ctx0, learned_pos_embd, 0, 2, 1, 3);
+        learned_pos_embd = ggml_cont_3d(
+            ctx0, learned_pos_embd,
+            n_embd, n_patches_x * n_patches_y, batch_size);
+        inp = ggml_add(ctx0, inp, learned_pos_embd);
+        cb(inp, "inp_pos_emb", -1);
+
         ggml_tensor * inpL = inp;
 
         ggml_tensor * positions = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, num_position_ids);
@@ -990,34 +981,15 @@ struct clip_graph {
             // residual 2
             cur = ggml_add(ctx0, inpL, cur);
             cb(cur, "layer_out", il);
-
-            if (std::find(hparams.deepstack_layers.begin(), hparams.deepstack_layers.end(), il) != hparams.deepstack_layers.end()) {
-                const int deepstack_idx = std::find(hparams.deepstack_layers.begin(), hparams.deepstack_layers.end(), il) - hparams.deepstack_layers.begin();
-                auto & merger = model.deepstack_mergers[deepstack_idx];
-                ggml_tensor * feat = ggml_dup(ctx0, cur);
-                // For Qwen3VL, spatial merge is already done in patch embedding, so no merge_factor here
-                const int64_t deepstack_target_ne0 = (int64_t) n_embd;
-                const int64_t deepstack_target_ne1 = n_pos;
-                const int64_t deepstack_target_ne2 = batch_size;
-                const int64_t deepstack_actual = ggml_nelements(feat);
-                const int64_t deepstack_target = deepstack_target_ne0 * deepstack_target_ne1 * deepstack_target_ne2;
-                LOG_INF("%s: deepstack reshape layer=%d merge=%d n_embd=%d n_pos=%d batch=%d input_ne=[%" PRId64 ", %" PRId64 ", %" PRId64 ", %" PRId64 "] actual_elems=%" PRId64 " target=[%" PRId64 ", %" PRId64 ", %" PRId64 "] target_elems=%" PRId64 "\n", __func__, il, merge_factor, n_embd, n_pos, batch_size, feat->ne[0], feat->ne[1], feat->ne[2], feat->ne[3], deepstack_actual, deepstack_target_ne0, deepstack_target_ne1, deepstack_target_ne2, deepstack_target);
-                fflush(stdout);
-                if (deepstack_actual != deepstack_target) {
-                    LOG_ERR("%s: deepstack reshape mismatch layer=%d actual=%" PRId64 " target=%" PRId64 " target_dims=[%" PRId64 ", %" PRId64 ", %" PRId64 "]\n", __func__, il, deepstack_actual, deepstack_target, deepstack_target_ne0, deepstack_target_ne1, deepstack_target_ne2);
-                    fprintf(stderr, "deepstack reshape mismatch layer=%d input=[%" PRId64 ", %" PRId64 ", %" PRId64 ", %" PRId64 "] actual=%" PRId64 " target=[%" PRId64 ", %" PRId64 ", %" PRId64 "] target_elems=%" PRId64 "\n", il, feat->ne[0], feat->ne[1], feat->ne[2], feat->ne[3], deepstack_actual, deepstack_target_ne0, deepstack_target_ne1, deepstack_target_ne2, deepstack_target);
-                    fflush(stderr);
-                }
-                feat = ggml_reshape_3d(ctx0, feat, deepstack_target_ne0, deepstack_target_ne1, deepstack_target_ne2);
-
-                feat = build_norm(feat, merger.norm_w, merger.norm_b, norm_t, eps, il);
-                feat = ggml_mul_mat(ctx0, merger.fc1_w, feat);
-                feat = ggml_add(ctx0, feat, merger.fc1_b);
-
-                feat = ggml_gelu(ctx0, feat);
-
-                feat = ggml_mul_mat(ctx0, merger.fc2_w, feat);
-                feat = ggml_add(ctx0, feat, merger.fc2_b);
+            
+            if (hparams.is_deepstack_layers[il]) {
+                ggml_tensor * feat = ggml_reshape_3d(ctx0, cur, n_embd * merge_factor, n_pos / merge_factor, batch_size);
+                feat = build_norm(feat, layer.deepstack_norm_w, layer.deepstack_norm_b, norm_t, eps, il);
+                feat = build_ffn(feat,
+                    layer.deepstack_fc1_w, layer.deepstack_fc1_b,
+                    nullptr, nullptr,
+                    layer.deepstack_fc2_w, layer.deepstack_fc2_b,
+                    ffn_op_type::FFN_GELU, il);
 
                 if(!deepstack_features) {
                     deepstack_features = feat;
@@ -1036,33 +1008,18 @@ struct clip_graph {
         }
 
         // multimodal projection
-        // For Qwen3VL, spatial merge is already done in patch embedding, so no merge factor here
         ggml_tensor * embeddings = inpL;
-        const int64_t proj_target_ne0 = (int64_t) n_embd;
-        const int64_t proj_target_ne1 = n_pos;
-        const int64_t proj_target_ne2 = batch_size;
-        const int64_t proj_actual = ggml_nelements(embeddings);
-        const int64_t proj_target = proj_target_ne0 * proj_target_ne1 * proj_target_ne2;
-        LOG_INF("%s: projector reshape n_embd=%d n_pos=%d batch=%d input_ne=[%" PRId64 ", %" PRId64 ", %" PRId64 ", %" PRId64 "] actual_elems=%" PRId64 " target=[%" PRId64 ", %" PRId64 ", %" PRId64 "] target_elems=%" PRId64 "\n", __func__, n_embd, n_pos, batch_size, embeddings->ne[0], embeddings->ne[1], embeddings->ne[2], embeddings->ne[3], proj_actual, proj_target_ne0, proj_target_ne1, proj_target_ne2, proj_target);
-        fflush(stdout);
-        if (proj_actual != proj_target) {
-            LOG_ERR("%s: projector reshape mismatch actual=%" PRId64 " target=%" PRId64 " target_dims=[%" PRId64 ", %" PRId64 ", %" PRId64 "]\n", __func__, proj_actual, proj_target, proj_target_ne0, proj_target_ne1, proj_target_ne2);
-            fprintf(stderr, "projector reshape mismatch input=[%" PRId64 ", %" PRId64 ", %" PRId64 ", %" PRId64 "] actual=%" PRId64 " target=[%" PRId64 ", %" PRId64 ", %" PRId64 "] target_elems=%" PRId64 "\n", embeddings->ne[0], embeddings->ne[1], embeddings->ne[2], embeddings->ne[3], proj_actual, proj_target_ne0, proj_target_ne1, proj_target_ne2, proj_target);
-            fflush(stderr);
+        embeddings = ggml_reshape_3d(ctx0, embeddings, n_embd * 4, n_pos / 4, batch_size);
+
+        embeddings = build_ffn(embeddings,
+            model.mm_0_w, model.mm_0_b,
+            nullptr, nullptr,
+            model.mm_1_w, model.mm_1_b,
+            ffn_op_type::FFN_GELU, -1);
+
+        if (deepstack_features) {
+            embeddings = ggml_concat(ctx0, embeddings, deepstack_features, 0); // add optional deepstack branch
         }
-        embeddings = ggml_reshape_3d(ctx0, embeddings, proj_target_ne0, proj_target_ne1, proj_target_ne2);
-
-        embeddings = ggml_mul_mat(ctx0, model.mm_0_w, embeddings);
-        embeddings = ggml_add(ctx0, embeddings, model.mm_0_b);
-
-        // GELU activation
-        embeddings = ggml_gelu(ctx0, embeddings);
-
-        // Second linear layer
-        embeddings = ggml_mul_mat(ctx0, model.mm_1_w, embeddings);
-        embeddings = ggml_add(ctx0, embeddings, model.mm_1_b);
-
-        embeddings = ggml_concat(ctx0, embeddings, deepstack_features, 0); // concat along the feature dimension
 
         // build the graph
         ggml_build_forward_expand(gf, embeddings);
@@ -2334,6 +2291,7 @@ static ggml_cgraph * clip_image_build_graph(clip_ctx * ctx, const clip_image_f32
                 res = graph.build_siglip();
             } break;
         case PROJECTOR_TYPE_PIXTRAL:
+        case PROJECTOR_TYPE_LIGHTONOCR:
             {
                 res = graph.build_pixtral();
             } break;
@@ -2464,15 +2422,27 @@ struct clip_model_loader {
         // projector type
         std::string proj_type;
         {
+            // default key
             get_string(KEY_PROJ_TYPE, proj_type, false);
-            if (!proj_type.empty()) {
-                model.proj_type = clip_projector_type_from_string(proj_type);
+
+            // for models with mixed modalities
+            if (proj_type.empty()) {
+                if (modality == CLIP_MODALITY_VISION) {
+                    get_string(KEY_VISION_PROJ_TYPE, proj_type, false);
+                } else if (modality == CLIP_MODALITY_AUDIO) {
+                    get_string(KEY_AUDIO_PROJ_TYPE, proj_type, false);
+                } else {
+                    GGML_ABORT("unknown modality");
+                }
             }
+
+            model.proj_type = clip_projector_type_from_string(proj_type);
+
             if (model.proj_type == PROJECTOR_TYPE_UNKNOWN) {
                 throw std::runtime_error(string_format("%s: unknown projector type: %s\n", __func__, proj_type.c_str()));
             }
 
-            // correct arch for multimodal models
+            // correct arch for multimodal models (legacy method)
             if (model.proj_type == PROJECTOR_TYPE_QWEN25O) {
                 model.proj_type = modality == CLIP_MODALITY_VISION
                                     ? PROJECTOR_TYPE_QWEN25VL
@@ -2596,6 +2566,9 @@ struct clip_model_loader {
                 hparams.vision_feature_layer.insert(layer);
             }
 
+            // set default deepstack layers to false
+            hparams.is_deepstack_layers.resize(hparams.n_layer, false);
+
             // model-specific params
             switch (model.proj_type) {
                 case PROJECTOR_TYPE_MINICPMV:
@@ -2611,6 +2584,7 @@ struct clip_model_loader {
                         get_u32(KEY_PROJ_SCALE_FACTOR, hparams.proj_scale_factor, false);
                     } break;
                 case PROJECTOR_TYPE_PIXTRAL:
+                case PROJECTOR_TYPE_LIGHTONOCR:
                     {
                         hparams.rope_theta = 10000.0f;
                         hparams.warmup_image_size = hparams.patch_size * 8;
@@ -2657,7 +2631,18 @@ struct clip_model_loader {
                         hparams.image_size = 1024; // still need this?
                         hparams.warmup_image_size = hparams.patch_size * 8;
                         get_u32(KEY_SPATIAL_MERGE_SIZE, hparams.spatial_merge_size, false);
-                        get_arr_int(KEY_DEEPSTACK_LAYERS, hparams.deepstack_layers, false);
+                        std::vector<bool> deepstack_layers_tmp;
+                        get_arr_bool(KEY_IS_DEEPSTACK_LAYERS, deepstack_layers_tmp, false);
+                        if (!deepstack_layers_tmp.empty()) {
+                            if (deepstack_layers_tmp.size() != static_cast<size_t>(hparams.n_layer)) {
+                                LOG_WRN("%s: mismatched deepstack layer flags (have %zu, expected %d)\n",
+                                        __func__, deepstack_layers_tmp.size(), hparams.n_layer);
+                            }
+                            const size_t copy_count = std::min(deepstack_layers_tmp.size(), static_cast<size_t>(hparams.n_layer));
+                            for (size_t i = 0; i < copy_count; ++i) {
+                                hparams.is_deepstack_layers[i] = deepstack_layers_tmp[i];
+                            }
+                        }
                     } break;
                 case PROJECTOR_TYPE_LLAMA4:
                     {
@@ -2697,6 +2682,24 @@ struct clip_model_loader {
                 LOG_INF("%s: minicpmv_version:   %d\n", __func__, hparams.minicpmv_version);
                 LOG_INF("%s: proj_scale_factor:  %d\n", __func__, hparams.proj_scale_factor);
                 LOG_INF("%s: n_wa_pattern:       %d\n", __func__, hparams.n_wa_pattern);
+                if (hparams.spatial_merge_size > 0) {
+                    LOG_INF("%s: spatial_merge_size: %d\n", __func__, hparams.spatial_merge_size);
+                }
+                if (!hparams.is_deepstack_layers.empty()) {
+                    LOG_INF("%s: deepstack enabled layers: ", __func__);
+                    bool first = true;
+                    for (size_t i = 0; i < hparams.is_deepstack_layers.size(); ++i) {
+                        if (hparams.is_deepstack_layers[i]) {
+                            LOG_CNT("%s%zu", first ? "" : ", ", i);
+                            first = false;
+                        }
+                    }
+                    if (first) {
+                        LOG_CNT("none\n");
+                    } else {
+                        LOG_CNT("\n");
+                    }
+                }
             } else if (is_audio) {
                 LOG_INF("\n--- audio hparams ---\n");
                 LOG_INF("%s: n_mel_bins:         %d\n", __func__, hparams.n_mel_bins);
@@ -2761,24 +2764,6 @@ struct clip_model_loader {
         model.patch_bias = get_tensor(TN_PATCH_BIAS, false);
         model.patch_embeddings_0 = get_tensor(TN_PATCH_EMBD,   false);
         model.patch_embeddings_1 = get_tensor(TN_PATCH_EMBD_1, false);
-        if (model.patch_bias) {
-            LOG_INF("%s: patch_bias dims=[%" PRId64 ", %" PRId64 ", %" PRId64 ", %" PRId64 "] type=%d\n",
-                __func__, model.patch_bias->ne[0], model.patch_bias->ne[1],
-                model.patch_bias->ne[2], model.patch_bias->ne[3], model.patch_bias->type);
-            fflush(stdout);
-        }
-        if (model.patch_embeddings_0) {
-            LOG_INF("%s: patch_embeddings_0 dims=[%" PRId64 ", %" PRId64 ", %" PRId64 ", %" PRId64 "] type=%d\n",
-                __func__, model.patch_embeddings_0->ne[0], model.patch_embeddings_0->ne[1],
-                model.patch_embeddings_0->ne[2], model.patch_embeddings_0->ne[3], model.patch_embeddings_0->type);
-            fflush(stdout);
-        }
-        if (model.patch_embeddings_1) {
-            LOG_INF("%s: patch_embeddings_1 dims=[%" PRId64 ", %" PRId64 ", %" PRId64 ", %" PRId64 "] type=%d\n",
-                __func__, model.patch_embeddings_1->ne[0], model.patch_embeddings_1->ne[1],
-                model.patch_embeddings_1->ne[2], model.patch_embeddings_1->ne[3], model.patch_embeddings_1->type);
-            fflush(stdout);
-        }
 
         model.position_embeddings = get_tensor(string_format(TN_POS_EMBD, prefix), false);
 
@@ -2811,6 +2796,17 @@ struct clip_model_loader {
             layer.ff_gate_b = get_tensor(string_format(TN_FFN_GATE, prefix, il, "bias"),   false);
             layer.ff_down_w = get_tensor(string_format(TN_FFN_DOWN, prefix, il, "weight"));
             layer.ff_down_b = get_tensor(string_format(TN_FFN_DOWN, prefix, il, "bias"),   false);
+
+
+            // qwen3vl deepstack layer
+            if (hparams.is_deepstack_layers[il]) {
+                layer.deepstack_norm_w = get_tensor(string_format(TN_DEEPSTACK_NORM, il, "weight"), false);
+                layer.deepstack_norm_b = get_tensor(string_format(TN_DEEPSTACK_NORM, il, "bias"), false);
+                layer.deepstack_fc1_w = get_tensor(string_format(TN_DEEPSTACK_FC1, il, "weight"), false);
+                layer.deepstack_fc1_b = get_tensor(string_format(TN_DEEPSTACK_FC1, il, "bias"), false);
+                layer.deepstack_fc2_w = get_tensor(string_format(TN_DEEPSTACK_FC2, il, "weight"), false);
+                layer.deepstack_fc2_b = get_tensor(string_format(TN_DEEPSTACK_FC2, il, "bias"), false);
+            }
 
             // some models already exported with legacy (incorrect) naming which is quite messy, let's fix it here
             // note: Qwen model converted from the old surgery script has n_ff = 0, so we cannot use n_ff to check!
@@ -2953,19 +2949,6 @@ struct clip_model_loader {
                     model.mm_0_b = get_tensor(string_format(TN_LLAVA_PROJ, 0, "bias"));
                     model.mm_1_w = get_tensor(string_format(TN_LLAVA_PROJ, 2, "weight"));
                     model.mm_1_b = get_tensor(string_format(TN_LLAVA_PROJ, 2, "bias"));
-
-                    if (!hparams.deepstack_layers.empty()) {
-                        model.deepstack_mergers.resize(hparams.deepstack_layers.size());
-                        for (size_t i = 0; i < hparams.deepstack_layers.size(); i++) {
-                            auto & merger = model.deepstack_mergers[i];
-                            merger.norm_w = get_tensor(string_format("v.deepstack.%d.norm.weight", (int)i), false);
-                            merger.norm_b = get_tensor(string_format("v.deepstack.%d.norm.bias", (int)i), false);
-                            merger.fc1_w  = get_tensor(string_format("v.deepstack.%d.fc1.weight", (int)i), false);
-                            merger.fc1_b  = get_tensor(string_format("v.deepstack.%d.fc1.bias", (int)i), false);
-                            merger.fc2_w  = get_tensor(string_format("v.deepstack.%d.fc2.weight", (int)i), false);
-                            merger.fc2_b  = get_tensor(string_format("v.deepstack.%d.fc2.bias", (int)i), false);
-                        }
-                    }
                 } break;
             case PROJECTOR_TYPE_GEMMA3:
                 {
@@ -2995,6 +2978,15 @@ struct clip_model_loader {
                     // [IMG_BREAK] token embedding
                     model.token_embd_img_break = get_tensor(TN_TOK_IMG_BREAK);
                     // for mistral small 3.1
+                    model.mm_input_norm_w   = get_tensor(TN_MM_INP_NORM,     false);
+                    model.mm_patch_merger_w = get_tensor(TN_MM_PATCH_MERGER, false);
+                } break;
+            case PROJECTOR_TYPE_LIGHTONOCR:
+                {
+                    model.mm_1_w = get_tensor(string_format(TN_LLAVA_PROJ, 1, "weight"));
+                    model.mm_1_b = get_tensor(string_format(TN_LLAVA_PROJ, 1, "bias"), false);
+                    model.mm_2_w = get_tensor(string_format(TN_LLAVA_PROJ, 2, "weight"));
+                    model.mm_2_b = get_tensor(string_format(TN_LLAVA_PROJ, 2, "bias"), false);
                     model.mm_input_norm_w   = get_tensor(TN_MM_INP_NORM,     false);
                     model.mm_patch_merger_w = get_tensor(TN_MM_PATCH_MERGER, false);
                 } break;
@@ -3050,29 +3042,7 @@ struct clip_model_loader {
         {
             std::vector<uint8_t> read_buf;
 
-#ifdef _WIN32
-            int wlen = MultiByteToWideChar(CP_UTF8, 0, fname.c_str(), -1, NULL, 0);
-            if (!wlen) {
-                throw std::runtime_error(string_format("%s: failed to convert filename to wide string\n", __func__));
-            }
-            wchar_t * wbuf = (wchar_t *) malloc(wlen * sizeof(wchar_t));
-            wlen = MultiByteToWideChar(CP_UTF8, 0, fname.c_str(), -1, wbuf, wlen);
-            if (!wlen) {
-                free(wbuf);
-                throw std::runtime_error(string_format("%s: failed to convert filename to wide string\n", __func__));
-            }
-#if __GLIBCXX__
-            int fd = _wopen(wbuf, _O_RDONLY | _O_BINARY);
-            __gnu_cxx::stdio_filebuf<char> buffer(fd, std::ios_base::in);
-            std::istream fin(&buffer);
-#else // MSVC
-            // unused in our current build
-            auto fin = std::ifstream(wbuf, std::ios::binary);
-#endif
-            free(wbuf);
-#else
             auto fin = std::ifstream(fname, std::ios::binary);
-#endif
             if (!fin) {
                 throw std::runtime_error(string_format("%s: failed to open %s\n", __func__, fname.c_str()));
             }
@@ -3099,11 +3069,7 @@ struct clip_model_loader {
                     ggml_backend_tensor_set(cur, read_buf.data(), 0, num_bytes);
                 }
             }
-#if defined(_WIN32) && defined(__GLIBCXX__)
-            close(fd);
-#else
             fin.close();
-#endif
 
             LOG_DBG("%s: loaded %zu tensors from %s\n", __func__, tensors_to_load.size(), fname.c_str());
         }
@@ -3194,6 +3160,21 @@ struct clip_model_loader {
         int n = gguf_get_arr_n(ctx_gguf.get(), i);
         output.resize(n);
         const int32_t * values = (const int32_t *)gguf_get_arr_data(ctx_gguf.get(), i);
+        for (int i = 0; i < n; ++i) {
+            output[i] = values[i];
+        }
+    }
+
+    void get_arr_bool(const std::string & key, std::vector<bool> & output, bool required = true) {
+        const int i = gguf_find_key(ctx_gguf.get(), key.c_str());
+        if (i < 0) {
+            if (required) throw std::runtime_error("Key not found: " + key);
+            return;
+        }
+
+        const int n = gguf_get_arr_n(ctx_gguf.get(), i);
+        output.resize(n);
+        const bool * values = (const bool *)gguf_get_arr_data(ctx_gguf.get(), i);
         for (int i = 0; i < n; ++i) {
             output[i] = values[i];
         }
@@ -3512,8 +3493,8 @@ struct image_manipulation {
             return {0, 0};
         }
 
-        float scale = std::min(1.0f, std::min(static_cast<float>(max_dimension) / inp_size.width,
-                                              static_cast<float>(max_dimension) / inp_size.height));
+        float scale = std::min(static_cast<float>(max_dimension) / inp_size.width,
+                               static_cast<float>(max_dimension) / inp_size.height);
 
         float target_width_f  = static_cast<float>(inp_size.width)  * scale;
         float target_height_f = static_cast<float>(inp_size.height) * scale;
@@ -3676,7 +3657,7 @@ struct llava_uhd {
 
         // resize to overview size
         clip_image_u8_ptr resized_img(clip_image_u8_init());
-        image_manipulation::bicubic_resize(*img, *resized_img, inst.overview_size.width, inst.overview_size.height);
+        image_manipulation::resize_and_pad_image(*img, *resized_img, inst.overview_size);
         output.push_back(std::move(resized_img));
         if (inst.slices.empty()) {
             // no slices, just return the resized image
@@ -3878,6 +3859,9 @@ bool clip_image_preprocess(struct clip_ctx * ctx, const clip_image_u8 * img, str
         // CITE: https://github.com/huggingface/transformers/blob/main/src/transformers/models/idefics3/image_processing_idefics3.py#L737
         const clip_image_size refined_size = image_manipulation::calc_size_preserved_ratio(
             original_size, params.image_size, params.preproc_image_size);
+        // LOG_INF("%s: original size: %d x %d, refined size: %d x %d\n",
+        //         __func__, original_size.width, original_size.height,
+        //         refined_size.width, refined_size.height);
 
         llava_uhd::slice_instructions instructions;
         instructions.overview_size = clip_image_size{params.image_size, params.image_size};
@@ -3888,6 +3872,7 @@ bool clip_image_preprocess(struct clip_ctx * ctx, const clip_image_u8 * img, str
         };
         for (int y = 0; y < refined_size.height; y += params.image_size) {
             for (int x = 0; x < refined_size.width; x += params.image_size) {
+                // LOG_INF("%s: adding slice at x=%d, y=%d\n", __func__, x, y);
                 instructions.slices.push_back(llava_uhd::slice_coordinates{
                     /* x    */x,
                     /* y    */y,
@@ -3924,7 +3909,9 @@ bool clip_image_preprocess(struct clip_ctx * ctx, const clip_image_u8 * img, str
         res_imgs->entries.push_back(std::move(img_f32));
         return true;
 
-    } else if (ctx->proj_type() == PROJECTOR_TYPE_PIXTRAL) {
+    } else if (ctx->proj_type() == PROJECTOR_TYPE_PIXTRAL
+            || ctx->proj_type() == PROJECTOR_TYPE_LIGHTONOCR
+    ) {
         clip_image_u8 resized_image;
         auto new_size = image_manipulation::calc_size_preserved_ratio(original_size, params.patch_size, params.image_size);
         image_manipulation::bilinear_resize(*img, resized_image, new_size.width, new_size.height);
@@ -4168,12 +4155,17 @@ int clip_n_output_tokens(const struct clip_ctx * ctx, struct clip_image_f32 * im
                 n_patches = x_patch * y_patch;
             } break;
         case PROJECTOR_TYPE_PIXTRAL:
+        case PROJECTOR_TYPE_LIGHTONOCR:
             {
                 // dynamic size
                 int n_merge = params.spatial_merge_size;
                 int n_patches_x = img->nx / patch_size / (n_merge > 0 ? n_merge : 1);
                 int n_patches_y = img->ny / patch_size / (n_merge > 0 ? n_merge : 1);
-                n_patches = n_patches_y * n_patches_x + n_patches_y - 1; // + one [IMG_BREAK] per row, except the last row
+                if (ctx->model.token_embd_img_break) {
+                    n_patches = n_patches_y * n_patches_x + n_patches_y - 1; // + one [IMG_BREAK] per row, except the last row
+                } else {
+                    n_patches = n_patches_y * n_patches_x;
+                }
             } break;
         case PROJECTOR_TYPE_VOXTRAL:
         case PROJECTOR_TYPE_ULTRAVOX:
@@ -4551,6 +4543,7 @@ bool clip_image_batch_encode(clip_ctx * ctx, const int n_threads, const clip_ima
             } break;
         case PROJECTOR_TYPE_PIXTRAL:
         case PROJECTOR_TYPE_KIMIVL:
+        case PROJECTOR_TYPE_LIGHTONOCR:
             {
                 // set the 2D positions
                 int n_patches_per_col = image_size_width / patch_size;
@@ -4681,6 +4674,7 @@ int clip_n_mmproj_embd(const struct clip_ctx * ctx) {
             return ctx->model.mm_model_peg_0_b->ne[0];
         case PROJECTOR_TYPE_MLP:
         case PROJECTOR_TYPE_PIXTRAL:
+        case PROJECTOR_TYPE_LIGHTONOCR:
             return ctx->model.mm_2_w->ne[1];
         case PROJECTOR_TYPE_MLP_NORM:
             return ctx->model.mm_3_b->ne[0];
@@ -4692,7 +4686,7 @@ int clip_n_mmproj_embd(const struct clip_ctx * ctx) {
         case PROJECTOR_TYPE_QWEN25VL:
             return ctx->model.mm_1_b->ne[0];
         case PROJECTOR_TYPE_QWEN3VL:
-            return ctx->model.mm_1_b->ne[0] * (static_cast<int>(ctx->model.hparams.deepstack_layers.size()) + 1);
+            return ctx->model.mm_1_b->ne[0] * (1 + std::count(ctx->model.hparams.is_deepstack_layers.begin(), ctx->model.hparams.is_deepstack_layers.end(), true)); // main path + deepstack paths
         case PROJECTOR_TYPE_GEMMA3:
             return ctx->model.mm_input_proj_w->ne[0];
         case PROJECTOR_TYPE_IDEFICS3:
@@ -4727,8 +4721,8 @@ bool clip_is_glm(const struct clip_ctx * ctx) {
 
 bool clip_is_qwen2vl(const struct clip_ctx * ctx) {
     return ctx->proj_type() == PROJECTOR_TYPE_QWEN2VL
-    || ctx->proj_type() == PROJECTOR_TYPE_QWEN25VL
-    || ctx->proj_type() == PROJECTOR_TYPE_QWEN3VL;
+        || ctx->proj_type() == PROJECTOR_TYPE_QWEN25VL
+        || ctx->proj_type() == PROJECTOR_TYPE_QWEN3VL;
 }
 
 bool clip_is_llava(const struct clip_ctx * ctx) {

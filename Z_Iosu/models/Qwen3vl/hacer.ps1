@@ -1,0 +1,29 @@
+ C:\IA\tools\ollama\dist\windows-amd64\ollama.exe create qwen3_vl_4b_instruct-base -f .\qwen3_vl_4b_instruct.Modelfile
+ C:\IA\tools\ollama\dist\windows-amd64\ollama.exe create qwen3_vl_4b_instruct-new -f .\Modelfile.txt     
+
+
+
+
+https://github.com/ggml-org/llama.cpp/pull/16780#issuecomment-3451475461
+
+huggingface-cli download Qwen/Qwen3-VL-30B-A3B-Instruct  --local-dir tmp/Qwen3-VL-30B-A3B-Instruct  --local-dir-use-symlinks False  --include "*.json" "*.safetensors" "preprocessor_config.json"
+
+
+
+
+
+ cd c:\IA\tools\ollama\Z_Iosu\models\Qwen3-VL-4B-Instruct; C:\IA\tools\ollama\dist\windows-amd64\ollama.exe run qwen3_vl_4b_instruct-old:latest "test" --verbose
+
+ I have managed to get Qwen3-LV-30B-A3B-instruct running on Ubuntu just now (specifically with a ryzen ai max+ 395 and vulkan). Did you compile your own GGUF/mmproj.gguf using convert_hf_to_gguf.py?
+
+How I prepared mine below
+
+huggingface-cli download Qwen/Qwen3-VL-30B-A3B-Instruct  --local-dir tmp/Qwen3-VL-30B-A3B-Instruct  --local-dir-use-symlinks False  --include "*.json" "*.safetensors" "preprocessor_config.json"
+
+CUDA_VISIBLE_DEVICES="" HF_HOME=~/projects/llamajjy/llama.cpp/tmp python3 convert_hf_to_gguf.py tmp/Qwen3-VL-30B-A3B-Instruct --outtype f16 --use-temp-file --outfile models <for model
+
+CUDA_VISIBLE_DEVICES="" HF_HOME=~/projects/llamajjy/llama.cpp/tmp python3 convert_hf_to_gguf.py tmp/Qwen3-VL-30B-A3B-Instruct --outtype f16 --use-temp-file --outfile models --mmproj < for mmproj
+
+build-vulkan/bin/llama-server -m models/Qwen3-VL-30B-A3B-Instruct-F16.gguf --mmproj models/mmproj-Qwen3-VL-30B-A3B-Instruct-f16.gguf --jinja --host 0.0.0.0 --port 8081 -ngl 999 < to run llama.cpp
+
+No GGUFs I found off the shelf were working right until I did this. Hope this help

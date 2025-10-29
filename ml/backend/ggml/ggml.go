@@ -1155,6 +1155,10 @@ func (t *Tensor) Concat(ctx ml.Context, t2 ml.Tensor, dim int) ml.Tensor {
 }
 
 func (t *Tensor) Contiguous(ctx ml.Context, shape ...int) ml.Tensor {
+	if slices.Contains(shape, -1) {
+		inferShape(t, shape)
+	}
+
 	switch len(shape) {
 	case 0:
 		return &Tensor{
@@ -1297,7 +1301,43 @@ func (t *Tensor) Copy(ctx ml.Context, t2 ml.Tensor) ml.Tensor {
 	}
 }
 
+// inferShape updates shape in place to automatically set a single -1 dimesion
+// based on the input tensor and the other dimensions
+func inferShape(t *Tensor, shape []int) {
+	total := 1
+	for _, dim := range t.Shape() {
+		total *= dim
+	}
+
+	dim := -1
+	for i := range shape {
+		switch shape[i] {
+		case -1:
+			if dim != -1 {
+				panic("only one dimension can be inferred")
+			}
+			dim = i
+		case 0:
+			panic("dimension cannot be zero")
+		default:
+			if total%shape[i] != 0 {
+				panic("cannot infer dimension")
+			}
+
+			total /= shape[i]
+		}
+	}
+
+	if dim != -1 {
+		shape[dim] = total
+	}
+}
+
 func (t *Tensor) Reshape(ctx ml.Context, shape ...int) ml.Tensor {
+	if slices.Contains(shape, -1) {
+		inferShape(t, shape)
+	}
+
 	switch len(shape) {
 	case 1:
 		return &Tensor{
@@ -1542,25 +1582,14 @@ func (t *Tensor) Conv2D(ctx ml.Context, t2 ml.Tensor, s0, s1, p0, p1, d0, d1 int
 	}
 }
 
-func (t *Tensor) Conv3D(ctx ml.Context, t2 ml.Tensor, ic, s0, s1, s2, p0, p1, p2, d0, d1, d2 int) ml.Tensor {
-	return &Tensor{
+func (t *Tensor) Conv3D(ctx ml.Context, t2 ml.Tensor, c, s0, s1, s2, p0, p1, p2, d0, d1, d2 int) ml.Tensor {
+	var tt ml.Tensor = &Tensor{
 		b: t.b,
-		t: C.ggml_conv_3d(
-			ctx.(*Context).ctx,
-			t.t,
-			t2.(*Tensor).t,
-			C.int64_t(ic),
-			C.int(s0),
-			C.int(s1),
-			C.int(s2),
-			C.int(p0),
-			C.int(p1),
-			C.int(p2),
-			C.int(d0),
-			C.int(d1),
-			C.int(d2),
-		),
+		t: C.ggml_conv_3d(ctx.(*Context).ctx, t.t, t2.(*Tensor).t, C.int64_t(c), C.int(s0), C.int(s1), C.int(s2), C.int(p0), C.int(p1), C.int(p2), C.int(d0), C.int(d1), C.int(d2)),
 	}
+
+	tt = tt.Reshape(ctx, t.Dim(3)/c, t2.Dim(3)/c)
+	return tt
 }
 
 func (t *Tensor) AvgPool2D(ctx ml.Context, k, s int, p float32) ml.Tensor {
