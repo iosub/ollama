@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <cstring>
 #include <limits>
 #include <map>
 #include <stdexcept>
@@ -37,8 +38,15 @@ llama_kv_cache::llama_kv_cache(
 
     const uint32_t n_layer_kv = hparams.n_layer_kv();
 
+    // define a comparator for the buft -> ctx map to ensure that the order is well-defined:
+    struct ggml_backend_buft_comparator {
+        bool operator()(const ggml_backend_buffer_type_t & lhs, const ggml_backend_buffer_type_t & rhs) const {
+            return strcmp(ggml_backend_buft_name(lhs), ggml_backend_buft_name(rhs)) < 0;
+        }
+    };
+    std::map<ggml_backend_buffer_type_t, ggml_context_ptr, ggml_backend_buft_comparator> ctx_map;
+
     // create a context for each buffer type
-    std::map<ggml_backend_buffer_type_t, ggml_context *> ctx_map;
     auto ctx_for_buft = [&](ggml_backend_buffer_type_t buft) -> ggml_context * {
         auto it = ctx_map.find(buft);
         if (it == ctx_map.end()) {
@@ -53,13 +61,12 @@ llama_kv_cache::llama_kv_cache(
                 return nullptr;
             }
 
-            ctx_map[buft] = ctx;
-            ctxs.emplace_back(ctx);
+            ctx_map.emplace(buft, ctx);
 
             return ctx;
         }
 
-        return it->second;
+        return it->second.get();
     };
 
     GGML_ASSERT(n_stream == 1 || n_stream == n_seq_max);
@@ -167,11 +174,8 @@ llama_kv_cache::llama_kv_cache(
     }
 
     // allocate tensors and initialize the buffers to avoid NaNs in the padding
-    for (auto it : ctx_map) {
-        auto * buft = it.first;
-        auto * ctx  = it.second;
-
-        ggml_backend_buffer_t buf = ggml_backend_alloc_ctx_tensors_from_buft(ctx, buft);
+    for (auto & [buft, ctx] : ctx_map) {
+        ggml_backend_buffer_t buf = ggml_backend_alloc_ctx_tensors_from_buft(ctx.get(), buft);
         if (!buf) {
             throw std::runtime_error("failed to allocate buffer for kv cache");
         }
@@ -179,7 +183,7 @@ llama_kv_cache::llama_kv_cache(
         LLAMA_LOG_INFO("%s: %10s KV buffer size = %8.2f MiB\n", __func__, ggml_backend_buffer_name(buf), ggml_backend_buffer_get_size(buf)/1024.0/1024.0);
 
         ggml_backend_buffer_clear(buf, 0);
-        bufs.emplace_back(buf);
+        ctxs_bufs.emplace_back(std::move(ctx), buf);
     }
 
     {
@@ -203,7 +207,7 @@ void llama_kv_cache::clear(bool data) {
     }
 
     if (data) {
-        for (auto & buf : bufs) {
+        for (auto & [_, buf] : ctxs_bufs) {
             ggml_backend_buffer_clear(buf.get(), 0);
         }
     }
@@ -472,8 +476,8 @@ llama_pos llama_kv_cache::seq_pos_max(llama_seq_id seq_id) const {
 
 std::map<ggml_backend_buffer_type_t, size_t> llama_kv_cache::memory_breakdown() const {
     std::map<ggml_backend_buffer_type_t, size_t> ret;
-    for (const ggml_backend_buffer_ptr & buf_ptr : bufs) {
-        ret[ggml_backend_buffer_get_type(buf_ptr.get())] += ggml_backend_buffer_get_size(buf_ptr.get());
+    for (const auto & [_, buf] : ctxs_bufs) {
+        ret[ggml_backend_buffer_get_type(buf.get())] += ggml_backend_buffer_get_size(buf.get());
     }
     return ret;
 }
@@ -895,7 +899,6 @@ void llama_kv_cache::apply_ubatch(const slot_info & sinfo, const llama_ubatch & 
             }
 
             cells.pos_set(idx, ubatch.pos[i]);
-            ubatch.kv_position_of_token[i] = (int32_t)idx;//set the position in the kv cache as a property for this token (needed for proper causal masking)
 
             for (int32_t s = 0; s < ubatch.n_seq_id[i]; s++) {
                 cells.seq_add(idx, ubatch.seq_id[i][s]);
@@ -1216,12 +1219,6 @@ void llama_kv_cache::set_input_kq_mask(ggml_tensor * dst, const llama_ubatch * u
 
     std::fill(data, data + ggml_nelements(dst), -INFINITY);
 
-    std::vector<int32_t> map_kv_to_batch(n_kv, -1);//for each token in the cache, either (-1) or the position in the current ubatch
-    for (uint32_t i = 0; i < n_tokens; ++i)//invert the batch -> kv position map into a kv -> batch position map
-    {
-        if (ubatch->kv_position_of_token[i] != -1)
-            map_kv_to_batch[ubatch->kv_position_of_token[i]] = i;
-    }
     // Use only the previous KV cells of the correct sequence for each token of the ubatch.
     // It's assumed that if a token in the batch has multiple sequences, they are equivalent.
     // Example with a cache of 10 tokens, 2 tokens populated in cache and 3 tokens in batch:
@@ -1261,10 +1258,8 @@ void llama_kv_cache::set_input_kq_mask(ggml_tensor * dst, const llama_ubatch * u
                     const llama_pos p0 = cells.pos_get(j);
 
                     // mask future tokens
-                    if (causal_attn)
-                    {
-                        if (map_kv_to_batch[j] != -1 && map_kv_to_batch[j] > (int32_t)i)//if the kv cache token is in the current batch AND its position in the batch is higher than i
-                            continue;
+                    if (causal_attn && p0 > p1) {
+                        continue;
                     }
 
                     // apply SWA if any
@@ -1307,7 +1302,7 @@ void llama_kv_cache::set_input_pos_bucket(ggml_tensor * dst, const llama_ubatch 
 size_t llama_kv_cache::total_size() const {
     size_t size = 0;
 
-    for (const auto & buf : bufs) {
+    for (const auto & [_, buf] : ctxs_bufs) {
         size += ggml_backend_buffer_get_size(buf.get());
     }
 
@@ -1349,7 +1344,7 @@ ggml_tensor * llama_kv_cache::build_rope_shift(
     const auto & yarn_beta_slow  = cparams.yarn_beta_slow;
 
     const auto & n_rot     = hparams.n_rot;
-    const auto & rope_type = hparams.rope_type == LLAMA_ROPE_TYPE_MROPE
+    const auto & rope_type = hparams.rope_type == LLAMA_ROPE_TYPE_MROPE || hparams.rope_type == LLAMA_ROPE_TYPE_IMROPE
                                 // @ngxson : this is a workaround
                                 // for M-RoPE, we want to rotate the whole vector when doing KV shift
                                 // a normal RoPE should work, we just need to use the correct ordering

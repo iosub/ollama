@@ -75,8 +75,8 @@ typedef struct mtmd_input_chunk  mtmd_input_chunk;
 typedef struct mtmd_input_chunks mtmd_input_chunks;
 typedef struct mtmd_input_text   mtmd_input_text;
 
-MTMD_API mtmd_input_text* mtmd_input_text_init(const char * text, bool add_special, bool parse_special);
-MTMD_API void mtmd_input_text_free(mtmd_input_text* input_text);
+MTMD_API mtmd_input_text * mtmd_input_text_init(const char * text, bool add_special, bool parse_special);
+MTMD_API void mtmd_input_text_free(mtmd_input_text * input_text);
 
 struct mtmd_context_params {
     bool use_gpu;
@@ -156,7 +156,7 @@ MTMD_API const mtmd_image_tokens *  mtmd_input_chunk_get_tokens_image(const mtmd
 MTMD_API size_t                     mtmd_input_chunk_get_n_tokens    (const mtmd_input_chunk * chunk);
 // returns nullptr for ID on text chunk
 MTMD_API const char *               mtmd_input_chunk_get_id          (const mtmd_input_chunk * chunk);
-// number of temporal positions (always max(ntok_x, ntok_y, ntok_t) for M-RoPE, n_tokens otherwise)
+// number of temporal positions (always 1 for M-RoPE, n_tokens otherwise)
 MTMD_API llama_pos                  mtmd_input_chunk_get_n_pos       (const mtmd_input_chunk * chunk);
 
 // in case you want to use custom logic to handle the chunk (i.e. KV cache management)

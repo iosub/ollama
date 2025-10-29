@@ -221,11 +221,13 @@ bool llama_batch_allocr::init(
             /*.n_seq_id     =*/ batch.n_seq_id,
             /*.seq_id       =*/ batch.seq_id,
             /*.seq_id_unq   =*/ this->seq_id_unq.data(),
-        /*.seq_idx      =*/ this->seq_idx.data(),
-        /*.output       =*/ batch.logits,
-        /*.kv_position_of_token=*/ {},
-        /*.data         =*/ {},
-    };        ubatch_print(ubatch, debug);
+            /*.seq_idx      =*/ this->seq_idx.data(),
+            /*.output       =*/ batch.logits,
+            /*.data         =*/ {},
+            /*.kv_position_of_token=*/ {},
+        };
+
+        ubatch_print(ubatch, debug);
 
         LLAMA_LOG_DEBUG("%s:   seq       = [\n", __func__);
         for (int s0 = 0; s0 < (int) seq_pos.size(); ++s0) {
@@ -725,6 +727,7 @@ llama_ubatch llama_batch_allocr::ubatch_add(const std::vector<int32_t> & idxs, u
         /*.output       =*/        udata->output.data(),
         /*.kv_position_of_token=*/ udata->kv_position_of_token.data(),
         /*.data         =*/        std::move(udata),
+        
     };
 
     if (debug > 0) {

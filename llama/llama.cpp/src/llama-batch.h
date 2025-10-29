@@ -39,7 +39,7 @@ struct llama_ubatch {
     llama_seq_id *  seq_id_unq;             // [n_seqs_unq]       | s   | seq_id
     int32_t      *  seq_idx;                // [LLAMA_MAX_SEQ]    | -   | seq_idx
     int8_t       *  output;                 // [n_tokens]         | i   | -
-    int32_t      *  kv_position_of_token;   // [n_tokens]         | i   | kv position where the token was inserted
+    int32_t      *  kv_position_of_token;   // [n_tokens]         | i   | kv position whre the token was inserted
 
     struct data_t {
         std::vector<llama_token>    token;
@@ -125,7 +125,7 @@ private:
     uint32_t n_seq_max;
     uint32_t n_outputs;
 
-    std::array<llama_seq_id, 1> seq_id_0 = { 0 }; // default sequence id
+    std::array<llama_seq_id, 1> seq_id_0 = {{ 0 }}; // default sequence id
 
     std::vector<llama_pos>      pos;
     std::vector<int32_t>        n_seq_id;
