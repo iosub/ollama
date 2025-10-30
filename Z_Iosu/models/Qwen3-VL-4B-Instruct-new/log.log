@@ -1,0 +1,1014 @@
+sor" name=v.blk.20.attn_q.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.20.attn_v.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.20.attn_v.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.20.ln1.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.20.ln1.weight shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.20.ln2.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.20.ln2.weight shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.20.mlp.fc1.bias shape=[4096] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.20.mlp.fc1.weight shape="[1024 4096]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.20.mlp.fc2.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.20.mlp.fc2.weight shape="[4096 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.21.attn_k.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.21.attn_k.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.21.attn_out.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.21.attn_out.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.21.attn_q.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.21.attn_q.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.21.attn_v.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.21.attn_v.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.21.ln1.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.21.ln1.weight shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.21.ln2.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.21.ln2.weight shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.21.mlp.fc1.bias shape=[4096] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.21.mlp.fc1.weight shape="[1024 4096]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.21.mlp.fc2.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.21.mlp.fc2.weight shape="[4096 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.22.attn_k.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.22.attn_k.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.22.attn_out.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.22.attn_out.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.22.attn_q.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.22.attn_q.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.22.attn_v.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.22.attn_v.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.22.ln1.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.22.ln1.weight shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.22.ln2.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.22.ln2.weight shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.22.mlp.fc1.bias shape=[4096] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.22.mlp.fc1.weight shape="[1024 4096]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.22.mlp.fc2.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.22.mlp.fc2.weight shape="[4096 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.23.attn_k.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.23.attn_k.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.23.attn_out.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.23.attn_out.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.338-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.23.attn_q.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.23.attn_q.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.23.attn_v.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.23.attn_v.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.23.ln1.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.23.ln1.weight shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.23.ln2.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.23.ln2.weight shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.23.mlp.fc1.bias shape=[4096] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.23.mlp.fc1.weight shape="[1024 4096]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.23.mlp.fc2.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.23.mlp.fc2.weight shape="[4096 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.3.attn_k.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.3.attn_k.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.3.attn_out.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.3.attn_out.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.3.attn_q.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.3.attn_q.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.3.attn_v.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.3.attn_v.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.3.ln1.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.3.ln1.weight shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.3.ln2.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.3.ln2.weight shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.3.mlp.fc1.bias shape=[4096] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.3.mlp.fc1.weight shape="[1024 4096]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.3.mlp.fc2.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.3.mlp.fc2.weight shape="[4096 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.4.attn_k.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.4.attn_k.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.4.attn_out.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.4.attn_out.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.4.attn_q.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.4.attn_q.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.4.attn_v.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.4.attn_v.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.4.ln1.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.4.ln1.weight shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.4.ln2.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.4.ln2.weight shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.4.mlp.fc1.bias shape=[4096] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.4.mlp.fc1.weight shape="[1024 4096]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.4.mlp.fc2.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.4.mlp.fc2.weight shape="[4096 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.5.attn_k.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.5.attn_k.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.5.attn_out.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.5.attn_out.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.5.attn_q.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.5.attn_q.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.5.attn_v.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.5.attn_v.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.5.ln1.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.5.ln1.weight shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.5.ln2.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.5.ln2.weight shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.5.mlp.fc1.bias shape=[4096] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.5.mlp.fc1.weight shape="[1024 4096]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.5.mlp.fc2.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.5.mlp.fc2.weight shape="[4096 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.6.attn_k.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.6.attn_k.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.6.attn_out.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.6.attn_out.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.6.attn_q.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.6.attn_q.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.6.attn_v.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.6.attn_v.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.6.ln1.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.6.ln1.weight shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.6.ln2.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.6.ln2.weight shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.6.mlp.fc1.bias shape=[4096] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.6.mlp.fc1.weight shape="[1024 4096]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.6.mlp.fc2.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.6.mlp.fc2.weight shape="[4096 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.7.attn_k.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.7.attn_k.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.7.attn_out.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.7.attn_out.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.7.attn_q.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.7.attn_q.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.7.attn_v.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.7.attn_v.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.7.ln1.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.7.ln1.weight shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.7.ln2.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.7.ln2.weight shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.7.mlp.fc1.bias shape=[4096] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.7.mlp.fc1.weight shape="[1024 4096]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.7.mlp.fc2.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.7.mlp.fc2.weight shape="[4096 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.8.attn_k.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.8.attn_k.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.8.attn_out.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.8.attn_out.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.8.attn_q.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.8.attn_q.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.8.attn_v.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.8.attn_v.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.8.ln1.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.8.ln1.weight shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.8.ln2.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.8.ln2.weight shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.8.mlp.fc1.bias shape=[4096] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.8.mlp.fc1.weight shape="[1024 4096]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.8.mlp.fc2.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.8.mlp.fc2.weight shape="[4096 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.9.attn_k.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.9.attn_k.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.9.attn_out.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.9.attn_out.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.9.attn_q.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.9.attn_q.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.9.attn_v.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.9.attn_v.weight shape="[1024 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.9.ln1.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.9.ln1.weight shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.9.ln2.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.9.ln2.weight shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.9.mlp.fc1.bias shape=[4096] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.9.mlp.fc1.weight shape="[1024 4096]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.9.mlp.fc2.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.blk.9.mlp.fc2.weight shape="[4096 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.deepstack.0.fc1.bias shape=[4096] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.deepstack.0.fc1.weight shape="[4096 4096]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.deepstack.0.fc2.bias shape=[2560] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.deepstack.0.fc2.weight shape="[4096 2560]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.deepstack.0.norm.bias shape=[4096] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.deepstack.0.norm.weight shape=[4096] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.deepstack.1.fc1.bias shape=[4096] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.deepstack.1.fc1.weight shape="[4096 4096]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.339-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.deepstack.1.fc2.bias shape=[2560] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.340-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.deepstack.1.fc2.weight shape="[4096 2560]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.340-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.deepstack.1.norm.bias shape=[4096] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.340-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.deepstack.1.norm.weight shape=[4096] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.340-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.deepstack.2.fc1.bias shape=[4096] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.340-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.deepstack.2.fc1.weight shape="[4096 4096]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.340-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.deepstack.2.fc2.bias shape=[2560] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.340-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.deepstack.2.fc2.weight shape="[4096 2560]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.340-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.deepstack.2.norm.bias shape=[4096] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.340-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.deepstack.2.norm.weight shape=[4096] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.340-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.patch_embd_0.weight shape="[16 16 3 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.340-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.patch_embd_1.weight shape="[16 16 3 1024]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.340-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.patch_embed.bias shape=[1024] dtype=0 buffer_type=CPU
+time=2025-10-27T04:54:09.340-05:00 level=TRACE source=ggml.go:278 msg="created tensor" name=v.pos_embed.weight shape="[1024 2304]" dtype=1 buffer_type=CPU
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=ggml.go:417 msg="model weights" buffer=CPU size="2.5 GiB"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=ggml.go:417 msg="model weights" buffer=Vulkan0 size="6.4 GiB"
+time=2025-10-27T04:54:09.622-05:00 level=DEBUG source=ggml.go:276 msg="key with type not found" key=qwen3vl.pooling_type default=0
+time=2025-10-27T04:54:09.622-05:00 level=DEBUG source=ggml.go:276 msg="key with type not found" key=tokenizer.ggml.add_bos_token default=false
+time=2025-10-27T04:54:09.622-05:00 level=DEBUG source=ggml.go:276 msg="key with type not found" key=tokenizer.ggml.bos_token_id default=0
+time=2025-10-27T04:54:09.622-05:00 level=DEBUG source=ggml.go:276 msg="key with type not found" key=tokenizer.ggml.add_bos_token default=true
+time=2025-10-27T04:54:09.622-05:00 level=DEBUG source=ggml.go:276 msg="key with type not found" key=tokenizer.ggml.bos_token_id default=0
+time=2025-10-27T04:54:09.622-05:00 level=DEBUG source=ggml.go:276 msg="key with type not found" key=qwen3vl.rope.scaling.factor default=1
+time=2025-10-27T04:54:09.622-05:00 level=DEBUG source=ggml.go:276 msg="key with type not found" key=qwen3vl.expert_count default=0
+time=2025-10-27T04:54:09.622-05:00 level=DEBUG source=ggml.go:276 msg="key with type not found" key=qwen3vl.expert_used_count default=0
+time=2025-10-27T04:54:09.622-05:00 level=DEBUG source=ggml.go:276 msg="key with type not found" key=qwen3vl.norm_top_k_prob default=true
+time=2025-10-27T04:54:09.622-05:00 level=DEBUG source=ggml.go:276 msg="key with type not found" key=qwen3vl.mrope_sections default="&{size:0 values:[24 20 20]}"
+time=2025-10-27T04:54:09.622-05:00 level=DEBUG source=ggml.go:276 msg="key with type not found" key=qwen3vl.vision.num_positional_embeddings default=2304
+time=2025-10-27T04:54:09.622-05:00 level=DEBUG source=ggml.go:276 msg="key with type not found" key=qwen3vl.mrope_sections default="&{size:0 values:[24 20 20]}"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=token_embd.weight type=bf16 shape="[2560 151936]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=output_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=output.weight type=bf16 shape="[2560 151936]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.0.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.0.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.0.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.0.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.0.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.0.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.0.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.0.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.0.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.0.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.0.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.1.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.1.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.1.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.1.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.1.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.1.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.1.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.1.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.1.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.1.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.1.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.2.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.2.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.2.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.2.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.2.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.2.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.2.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.2.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.2.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.2.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.2.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.3.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.3.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.3.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.3.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.3.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.3.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.3.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.3.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.3.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.3.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.622-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.3.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.4.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.4.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.4.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.4.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.4.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.4.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.4.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.4.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.4.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.4.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.4.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.5.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.5.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.5.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.5.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.5.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.5.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.5.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.5.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.5.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.5.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.5.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.6.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.6.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.6.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.6.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.6.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.6.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.6.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.6.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.6.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.6.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.6.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.7.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.7.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.7.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.7.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.7.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.7.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.7.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.7.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.7.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.7.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.7.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.8.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.8.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.8.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.8.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.8.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.8.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.8.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.8.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.8.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.8.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.8.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.9.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.9.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.9.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.9.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.9.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.9.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.9.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.9.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.9.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.9.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.9.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.10.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.10.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.10.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.10.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.10.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.10.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.10.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.10.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.10.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.10.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.10.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.11.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.11.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.11.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.11.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.11.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.11.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.11.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.11.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.11.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.11.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.11.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.12.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.12.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.12.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.12.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.12.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.12.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.12.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.12.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.12.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.12.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.12.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.13.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.13.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.13.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.13.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.13.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.13.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.13.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.13.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.13.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.13.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.13.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.14.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.14.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.14.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.14.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.14.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.14.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.14.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.14.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.14.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.14.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.14.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.15.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.15.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.15.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.15.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.15.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.15.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.15.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.15.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.15.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.15.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.15.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.16.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.16.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.16.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.16.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.623-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.16.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.16.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.16.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.16.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.16.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.16.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.16.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.17.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.17.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.17.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.17.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.17.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.17.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.17.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.17.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.17.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.17.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.17.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.18.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.18.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.18.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.18.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.18.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.18.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.18.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.18.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.18.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.18.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.18.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.19.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.19.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.19.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.19.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.19.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.19.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.19.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.19.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.19.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.19.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.19.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.20.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.20.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.20.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.20.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.20.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.20.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.20.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.20.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.20.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.20.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.20.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.21.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.21.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.21.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.21.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.21.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.21.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.21.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.21.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.21.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.21.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.21.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.22.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.22.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.22.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.22.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.22.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.22.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.22.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.22.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.22.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.22.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.22.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.23.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.23.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.23.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.23.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.23.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.23.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.23.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.23.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.23.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.23.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.23.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.24.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.24.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.24.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.24.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.24.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.24.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.24.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.24.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.24.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.24.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.24.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.25.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.25.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.25.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.25.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.25.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.25.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.25.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.25.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.25.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.25.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.25.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.26.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.26.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.26.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.26.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.26.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.26.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.26.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.26.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.26.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.26.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.26.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.27.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.27.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.27.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.27.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.27.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.27.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.27.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.27.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.27.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.27.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.27.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.28.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.28.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.28.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.28.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.624-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.28.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.28.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.28.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.28.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.28.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.28.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.28.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.29.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.29.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.29.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.29.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.29.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.29.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.29.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.29.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.29.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.29.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.29.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.30.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.30.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.30.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.30.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.30.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.30.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.30.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.30.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.30.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.30.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.30.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.31.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.31.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.31.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.31.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.31.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.31.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.31.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.31.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.31.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.31.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.31.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.32.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.32.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.32.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.32.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.32.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.32.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.32.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.32.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.32.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.32.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.32.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.33.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.33.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.33.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.33.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.33.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.33.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.33.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.33.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.33.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.33.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.33.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.34.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.34.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.34.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.34.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.34.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.34.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.34.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.34.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.34.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.34.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.34.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.35.attn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.35.attn_q.weight type=bf16 shape="[2560 4096]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.35.attn_q_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.35.attn_k.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.35.attn_k_norm.weight type=f32 shape=[128]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.35.attn_v.weight type=bf16 shape="[2560 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.35.attn_output.weight type=bf16 shape="[4096 2560]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.35.ffn_norm.weight type=f32 shape=[2560]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.35.ffn_gate.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.35.ffn_up.weight type=bf16 shape="[2560 9728]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.35.ffn_down.weight type=bf16 shape="[9728 2560]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.patch_embd_0.weight type=f16 shape="[16 16 3 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.patch_embd_1.weight type=f16 shape="[16 16 3 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.pos_embed.weight type=f16 shape="[1024 2304]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.0.ln1.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.0.ln1.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.0.attn_q.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.0.attn_q.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.0.attn_k.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.0.attn_k.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.0.attn_v.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.0.attn_v.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.0.attn_out.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.0.attn_out.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.0.ln2.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.0.ln2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.0.mlp.fc1.weight type=f16 shape="[1024 4096]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.0.mlp.fc1.bias type=f32 shape=[4096]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.0.mlp.fc2.weight type=f16 shape="[4096 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.0.mlp.fc2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.1.ln1.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.1.ln1.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.1.attn_q.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.1.attn_q.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.1.attn_k.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.1.attn_k.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.1.attn_v.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.1.attn_v.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.1.attn_out.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.1.attn_out.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.1.ln2.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.1.ln2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.1.mlp.fc1.weight type=f16 shape="[1024 4096]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.1.mlp.fc1.bias type=f32 shape=[4096]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.1.mlp.fc2.weight type=f16 shape="[4096 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.1.mlp.fc2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.2.ln1.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.2.ln1.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.2.attn_q.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.2.attn_q.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.2.attn_k.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.2.attn_k.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.2.attn_v.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.2.attn_v.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.2.attn_out.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.2.attn_out.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.2.ln2.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.2.ln2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.2.mlp.fc1.weight type=f16 shape="[1024 4096]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.2.mlp.fc1.bias type=f32 shape=[4096]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.2.mlp.fc2.weight type=f16 shape="[4096 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.2.mlp.fc2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.3.ln1.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.3.ln1.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.3.attn_q.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.3.attn_q.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.3.attn_k.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.3.attn_k.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.3.attn_v.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.3.attn_v.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.3.attn_out.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.3.attn_out.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.3.ln2.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.3.ln2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.3.mlp.fc1.weight type=f16 shape="[1024 4096]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.3.mlp.fc1.bias type=f32 shape=[4096]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.3.mlp.fc2.weight type=f16 shape="[4096 1024]"
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.3.mlp.fc2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.4.ln1.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.625-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.4.ln1.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.4.attn_q.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.4.attn_q.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.4.attn_k.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.4.attn_k.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.4.attn_v.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.4.attn_v.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.4.attn_out.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.4.attn_out.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.4.ln2.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.4.ln2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.4.mlp.fc1.weight type=f16 shape="[1024 4096]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.4.mlp.fc1.bias type=f32 shape=[4096]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.4.mlp.fc2.weight type=f16 shape="[4096 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.4.mlp.fc2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.5.ln1.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.5.ln1.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.5.attn_q.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.5.attn_q.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.5.attn_k.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.5.attn_k.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.5.attn_v.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.5.attn_v.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.5.attn_out.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.5.attn_out.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.5.ln2.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.5.ln2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.5.mlp.fc1.weight type=f16 shape="[1024 4096]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.5.mlp.fc1.bias type=f32 shape=[4096]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.5.mlp.fc2.weight type=f16 shape="[4096 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.5.mlp.fc2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.6.ln1.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.6.ln1.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.6.attn_q.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.6.attn_q.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.6.attn_k.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.6.attn_k.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.6.attn_v.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.6.attn_v.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.6.attn_out.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.6.attn_out.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.6.ln2.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.6.ln2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.6.mlp.fc1.weight type=f16 shape="[1024 4096]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.6.mlp.fc1.bias type=f32 shape=[4096]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.6.mlp.fc2.weight type=f16 shape="[4096 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.6.mlp.fc2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.7.ln1.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.7.ln1.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.7.attn_q.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.7.attn_q.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.7.attn_k.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.7.attn_k.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.7.attn_v.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.7.attn_v.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.7.attn_out.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.7.attn_out.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.7.ln2.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.7.ln2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.7.mlp.fc1.weight type=f16 shape="[1024 4096]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.7.mlp.fc1.bias type=f32 shape=[4096]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.7.mlp.fc2.weight type=f16 shape="[4096 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.7.mlp.fc2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.8.ln1.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.8.ln1.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.8.attn_q.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.8.attn_q.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.8.attn_k.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.8.attn_k.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.8.attn_v.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.8.attn_v.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.8.attn_out.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.8.attn_out.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.8.ln2.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.8.ln2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.8.mlp.fc1.weight type=f16 shape="[1024 4096]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.8.mlp.fc1.bias type=f32 shape=[4096]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.8.mlp.fc2.weight type=f16 shape="[4096 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.8.mlp.fc2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.9.ln1.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.9.ln1.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.9.attn_q.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.9.attn_q.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.9.attn_k.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.9.attn_k.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.9.attn_v.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.9.attn_v.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.9.attn_out.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.9.attn_out.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.9.ln2.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.9.ln2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.9.mlp.fc1.weight type=f16 shape="[1024 4096]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.9.mlp.fc1.bias type=f32 shape=[4096]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.9.mlp.fc2.weight type=f16 shape="[4096 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.9.mlp.fc2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.10.ln1.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.10.ln1.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.10.attn_q.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.10.attn_q.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.10.attn_k.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.10.attn_k.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.10.attn_v.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.10.attn_v.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.10.attn_out.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.10.attn_out.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.10.ln2.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.10.ln2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.10.mlp.fc1.weight type=f16 shape="[1024 4096]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.10.mlp.fc1.bias type=f32 shape=[4096]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.10.mlp.fc2.weight type=f16 shape="[4096 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.10.mlp.fc2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.11.ln1.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.11.ln1.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.11.attn_q.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.11.attn_q.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.11.attn_k.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.11.attn_k.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.11.attn_v.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.11.attn_v.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.11.attn_out.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.11.attn_out.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.11.ln2.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.11.ln2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.11.mlp.fc1.weight type=f16 shape="[1024 4096]"
+time=2025-10-27T04:54:09.626-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.11.mlp.fc1.bias type=f32 shape=[4096]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.11.mlp.fc2.weight type=f16 shape="[4096 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.11.mlp.fc2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.12.ln1.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.12.ln1.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.12.attn_q.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.12.attn_q.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.12.attn_k.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.12.attn_k.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.12.attn_v.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.12.attn_v.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.12.attn_out.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.12.attn_out.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.12.ln2.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.12.ln2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.12.mlp.fc1.weight type=f16 shape="[1024 4096]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.12.mlp.fc1.bias type=f32 shape=[4096]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.12.mlp.fc2.weight type=f16 shape="[4096 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.12.mlp.fc2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.13.ln1.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.13.ln1.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.13.attn_q.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.13.attn_q.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.13.attn_k.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.13.attn_k.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.13.attn_v.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.13.attn_v.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.13.attn_out.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.13.attn_out.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.13.ln2.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.13.ln2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.13.mlp.fc1.weight type=f16 shape="[1024 4096]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.13.mlp.fc1.bias type=f32 shape=[4096]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.13.mlp.fc2.weight type=f16 shape="[4096 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.13.mlp.fc2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.14.ln1.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.14.ln1.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.14.attn_q.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.14.attn_q.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.14.attn_k.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.14.attn_k.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.14.attn_v.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.14.attn_v.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.14.attn_out.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.14.attn_out.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.14.ln2.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.14.ln2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.14.mlp.fc1.weight type=f16 shape="[1024 4096]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.14.mlp.fc1.bias type=f32 shape=[4096]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.14.mlp.fc2.weight type=f16 shape="[4096 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.14.mlp.fc2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.15.ln1.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.15.ln1.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.15.attn_q.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.15.attn_q.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.15.attn_k.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.15.attn_k.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.15.attn_v.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.15.attn_v.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.15.attn_out.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.15.attn_out.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.15.ln2.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.15.ln2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.15.mlp.fc1.weight type=f16 shape="[1024 4096]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.15.mlp.fc1.bias type=f32 shape=[4096]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.15.mlp.fc2.weight type=f16 shape="[4096 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.15.mlp.fc2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.16.ln1.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.16.ln1.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.16.attn_q.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.16.attn_q.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.16.attn_k.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.16.attn_k.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.16.attn_v.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.16.attn_v.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.16.attn_out.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.16.attn_out.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.16.ln2.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.16.ln2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.16.mlp.fc1.weight type=f16 shape="[1024 4096]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.16.mlp.fc1.bias type=f32 shape=[4096]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.16.mlp.fc2.weight type=f16 shape="[4096 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.16.mlp.fc2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.17.ln1.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.17.ln1.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.17.attn_q.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.17.attn_q.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.17.attn_k.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.17.attn_k.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.17.attn_v.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.17.attn_v.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.17.attn_out.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.17.attn_out.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.17.ln2.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.17.ln2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.17.mlp.fc1.weight type=f16 shape="[1024 4096]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.17.mlp.fc1.bias type=f32 shape=[4096]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.17.mlp.fc2.weight type=f16 shape="[4096 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.17.mlp.fc2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.18.ln1.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.18.ln1.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.18.attn_q.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.18.attn_q.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.18.attn_k.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.18.attn_k.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.18.attn_v.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.18.attn_v.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.18.attn_out.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.18.attn_out.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.18.ln2.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.18.ln2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.18.mlp.fc1.weight type=f16 shape="[1024 4096]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.18.mlp.fc1.bias type=f32 shape=[4096]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.18.mlp.fc2.weight type=f16 shape="[4096 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.18.mlp.fc2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.19.ln1.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.19.ln1.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.19.attn_q.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.19.attn_q.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.19.attn_k.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.19.attn_k.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.19.attn_v.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.19.attn_v.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.19.attn_out.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.19.attn_out.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.19.ln2.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.19.ln2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.19.mlp.fc1.weight type=f16 shape="[1024 4096]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.19.mlp.fc1.bias type=f32 shape=[4096]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.19.mlp.fc2.weight type=f16 shape="[4096 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.19.mlp.fc2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.20.ln1.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.20.ln1.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.20.attn_q.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.20.attn_q.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.20.attn_k.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.20.attn_k.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.20.attn_v.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.20.attn_v.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.20.attn_out.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.20.attn_out.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.20.ln2.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.20.ln2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.20.mlp.fc1.weight type=f16 shape="[1024 4096]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.20.mlp.fc1.bias type=f32 shape=[4096]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.20.mlp.fc2.weight type=f16 shape="[4096 1024]"
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.20.mlp.fc2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.ln1.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.627-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.ln1.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.attn_q.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.attn_q.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.attn_k.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.attn_k.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.attn_v.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.attn_v.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.attn_out.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.attn_out.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.ln2.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.ln2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.mlp.fc1.weight type=f16 shape="[1024 4096]"
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.mlp.fc1.bias type=f32 shape=[4096]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.mlp.fc2.weight type=f16 shape="[4096 1024]"
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.mlp.fc2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.ln1.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.ln1.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.attn_q.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.attn_q.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.attn_k.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.attn_k.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.attn_v.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.attn_v.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.attn_out.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.attn_out.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.ln2.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.ln2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.mlp.fc1.weight type=f16 shape="[1024 4096]"
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.mlp.fc1.bias type=f32 shape=[4096]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.mlp.fc2.weight type=f16 shape="[4096 1024]"
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.mlp.fc2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.ln1.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.ln1.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.attn_q.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.attn_q.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.attn_k.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.attn_k.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.attn_v.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.attn_v.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.attn_out.weight type=f16 shape="[1024 1024]"
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.attn_out.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.ln2.weight type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.ln2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.mlp.fc1.weight type=f16 shape="[1024 4096]"
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.mlp.fc1.bias type=f32 shape=[4096]
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.mlp.fc2.weight type=f16 shape="[4096 1024]"
+time=2025-10-27T04:54:09.628-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.mlp.fc2.bias type=f32 shape=[1024]
+time=2025-10-27T04:54:09.819-05:00 level=DEBUG source=ggml.go:838 msg="compute graph" nodes=1266 splits=1
+time=2025-10-27T04:54:09.819-05:00 level=TRACE source=ggml.go:849 msg="compute graph" backend=Vulkan0 buffer_type=Vulkan0 size="0 B"
+time=2025-10-27T04:54:09.819-05:00 level=TRACE source=ggml.go:849 msg="compute graph" backend=CPU buffer_type=CPU size="4.1 GiB"
+ggml_vulkan: Device memory allocation of size 33978056704 failed.
+ggml_vulkan: Requested buffer size exceeds device buffer size limit: ErrorOutOfDeviceMemory
+ggml_gallocr_reserve_n: failed to allocate Vulkan0 buffer of size 35836361408
+time=2025-10-27T04:54:11.253-05:00 level=DEBUG source=ggml.go:838 msg="compute graph" nodes=1377 splits=3
+time=2025-10-27T04:54:11.253-05:00 level=TRACE source=ggml.go:849 msg="compute graph" backend=Vulkan0 buffer_type=Vulkan0 size="33.4 GiB"
+time=2025-10-27T04:54:11.253-05:00 level=TRACE source=ggml.go:849 msg="compute graph" backend=CPU buffer_type=CPU size="32.1 GiB"
+time=2025-10-27T04:54:11.555-05:00 level=DEBUG source=sched.go:262 msg="shutting down scheduler completed loop"
+time=2025-10-27T04:54:11.555-05:00 level=INFO source=device.go:212 msg="model weights" device=Vulkan1 size="6.4 GiB"
+time=2025-10-27T04:54:11.555-05:00 level=INFO source=device.go:217 msg="model weights" device=CPU size="2.5 GiB"
+time=2025-10-27T04:54:11.555-05:00 level=INFO source=device.go:223 msg="kv cache" device=Vulkan1 size="4.2 GiB"
+time=2025-10-27T04:54:11.555-05:00 level=INFO source=device.go:228 msg="kv cache" device=CPU size="256.0 MiB"
+time=2025-10-27T04:54:11.555-05:00 level=INFO source=device.go:234 msg="compute graph" device=Vulkan1 size="33.4 GiB"
+time=2025-10-27T04:54:11.555-05:00 level=INFO source=device.go:239 msg="compute graph" device=CPU size="32.1 GiB"
+time=2025-10-27T04:54:11.555-05:00 level=INFO source=device.go:244 msg="total memory" size="78.9 GiB"
+time=2025-10-27T04:54:11.555-05:00 level=INFO source=sched.go:446 msg="Load failed" model=C:\Users\iosuc\.ollama\models\blobs\sha256-0ab5180de12a0bb7e10c9834cf24fc8e5c4591e3ecb40e8443bf451711e7c62e error="do load request: Post \"http://127.0.0.1:64903/load\": context canceled"
+time=2025-10-27T04:54:11.555-05:00 level=DEBUG source=sched.go:813 msg="shutting down currently loading runner"
+time=2025-10-27T04:54:11.556-05:00 level=DEBUG source=server.go:1699 msg="stopping llama server" pid=41032
+time=2025-10-27T04:54:11.556-05:00 level=DEBUG source=server.go:1699 msg="stopping llama server" pid=41032
