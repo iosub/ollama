@@ -1,6 +1,6 @@
-UPSTREAM=https://github.com/ggml-org/llama.cpp.git
+UPSTREAM=https://github.com/JJJYmmm/llama.cpp.git
 WORKDIR=llama/vendor
-FETCH_HEAD=7049736b2dd9011bf819e298b844ebbc4b5afdc9
+FETCH_HEAD=origin/add_qwen3vl 
 
 .PHONY: help
 help:
@@ -18,7 +18,7 @@ help:
 sync: llama/build-info.cpp ml/backend/ggml/ggml/src/ggml-metal/ggml-metal-embed.metal
 
 llama/build-info.cpp: llama/build-info.cpp.in llama/llama.cpp
-	sed -e 's|@FETCH_HEAD@|$(FETCH_HEAD)|' <$< >$@
+	powershell -ExecutionPolicy Bypass -File build-info.ps1 -InputFile $< -OutputFile $@ -FetchHead "$(FETCH_HEAD)"
 
 ml/backend/ggml/ggml/src/ggml-metal/ggml-metal-embed.metal: ml/backend/ggml/ggml
 	go generate ./$(@D)
@@ -39,15 +39,7 @@ PATCHED=$(join $(dir $(PATCHES)), $(addsuffix ed, $(addprefix ., $(notdir $(PATC
 apply-patches: $(PATCHED)
 
 llama/patches/.%.patched: llama/patches/%.patch
-	@if git -c user.name=nobody -c 'user.email=<>' -C $(WORKDIR) am -3 $(realpath $<); then \
-		touch $@;                                                                           \
-	else                                                                                    \
-		echo "Patch failed. Resolve any conflicts then continue.";                          \
-		echo "1. Run 'git -C $(WORKDIR) am --continue'";                                    \
-		echo "2. Run 'make -f $(lastword $(MAKEFILE_LIST)) format-patches'";                \
-		echo "3. Run 'make -f $(lastword $(MAKEFILE_LIST)) clean apply-patches'";           \
-		exit 1;                                                                             \
-	fi
+	@powershell -NoProfile -ExecutionPolicy Bypass -File apply-patch.ps1 -PatchFile $< -WorkDir $(WORKDIR) -MarkerFile $@
 
 .PHONY: checkout
 checkout: $(WORKDIR)
@@ -68,5 +60,5 @@ format-patches: llama/patches
 
 .PHONE: clean
 clean: checkout
-	@git -C $(WORKDIR) am --abort || true
-	$(RM) llama/patches/.*.patched
+	@git -C $(WORKDIR) am --abort 2>nul || exit /b 0
+	@powershell -NoProfile -Command "Remove-Item -Path 'llama/patches/.*.patched' -Force -ErrorAction SilentlyContinue"

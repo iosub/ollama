@@ -5,6 +5,15 @@
 
 #include "llama.h"
 
+// fix problem with std::min and std::max
+#if defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN
+#ifndef NOMINMAX
+#   define NOMINMAX
+#endif
+#include <windows.h>
+#endif
+
 #include <algorithm>
 #include <cerrno>
 #include <cstdio>
@@ -79,16 +88,6 @@ enum mtmd_slice_tmpl {
     MTMD_SLICE_TMPL_IDEFICS3,
 };
 
-mtmd_input_text * mtmd_input_text_init(const char * text, bool add_special, bool parse_special) {
-    return new mtmd_input_text{ text, add_special, parse_special };
-}
-
-void mtmd_input_text_free(mtmd_input_text * input_text) {
-    if (input_text) {
-        delete input_text;
-    }
-}
-
 const char * mtmd_default_marker() {
     return "<__media__>";
 }
@@ -162,14 +161,12 @@ struct mtmd_context {
             throw std::runtime_error("media_marker must not be empty");
         }
 
-        LOG_DBG("%s: initializing clip context from %s\n", __func__, mmproj_fname ? mmproj_fname : "<null>");
         clip_context_params ctx_clip_params;
         ctx_clip_params.use_gpu   = ctx_params.use_gpu;
         ctx_clip_params.verbosity = ctx_params.verbosity;
         auto res = clip_init(mmproj_fname, ctx_clip_params);
         ctx_v = res.ctx_v;
         ctx_a = res.ctx_a;
-        LOG_DBG("%s: clip init result ctx_v=%p ctx_a=%p\n", __func__, (void *)ctx_v, (void *)ctx_a);
         if (!ctx_v && !ctx_a) {
             throw std::runtime_error(string_format("Failed to load CLIP model from %s\n", mmproj_fname));
         }
@@ -187,23 +184,19 @@ struct mtmd_context {
 
         // since we already validate n_embd of vision and audio mmproj,
         // we can safely assume that they are the same
-        const clip_ctx * ctx_for_embd = ctx_v ? ctx_v : ctx_a;
-        LOG_DBG("%s: computing clip embedding size from ctx=%p\n", __func__, (void *)ctx_for_embd);
-        int n_embd_clip = clip_n_mmproj_embd(ctx_for_embd);
+        int n_embd_clip = clip_n_mmproj_embd(ctx_v ? ctx_v : ctx_a);
         if (n_embd_text != n_embd_clip) {
             throw std::runtime_error(string_format(
                 "mismatch between text model (n_embd = %d) and mmproj (n_embd = %d)\n"
                 "hint: you may be using wrong mmproj\n",
                 n_embd_text, n_embd_clip));
         }
-        LOG_DBG("%s: validated embedding sizes text=%d clip=%d\n", __func__, n_embd_text, n_embd_clip);
         if (ctx_v) {
             init_vision();
         }
         if (ctx_a) {
             init_audio();
         }
-        LOG_DBG("%s: initialization complete\n", __func__);
     }
 
     void init_vision() {
@@ -1047,7 +1040,9 @@ const char * mtmd_image_tokens_get_id(const mtmd_image_tokens * image_tokens) {
 
 llama_pos mtmd_image_tokens_get_n_pos(const mtmd_image_tokens * image_tokens) {
     if (image_tokens->use_mrope_pos) {
-        return 1; // for M-RoPE, the whole image is 1 in temporal dimension
+        // for M-RoPE, temporal dimension = max(t,h,w)
+        // t is omitted as we don't support video input
+        return std::max(image_tokens->nx, image_tokens->ny);
     }
     return image_tokens->n_tokens();
 }
@@ -1085,4 +1080,16 @@ mtmd_input_chunks * mtmd_test_create_input_chunks() {
     chunks->entries.emplace_back(std::move(chunk_image));
 
     return chunks;
+}
+
+// mtmd_input_text
+
+mtmd_input_text * mtmd_input_text_init(const char * text, bool add_special, bool parse_special) {
+    return new mtmd_input_text{text, add_special, parse_special};
+}
+
+void mtmd_input_text_free(mtmd_input_text * input_text) {
+    if (input_text) {
+        delete input_text;
+    }
 }

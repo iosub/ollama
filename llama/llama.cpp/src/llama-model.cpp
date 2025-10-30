@@ -1027,7 +1027,7 @@ void llama_model::load_hparams(llama_model_loader & ml) {
             } break;
         case LLM_ARCH_QWEN3VL:
             {
-                ml.get_key(LLM_KV_NUM_DEEPSTACK_LAYERS, hparams.n_deepstack_layers, 0);
+                ml.get_key(LLM_KV_NUM_DEEPSTACK_LAYERS, hparams.n_deepstack_layers, false);
                 ml.get_key_or_arr(LLM_KV_ROPE_DIMENSION_SECTIONS, hparams.rope_sections, 4, true);
                 ml.get_key(LLM_KV_ATTENTION_LAYERNORM_RMS_EPS, hparams.f_norm_rms_eps);
                 switch (hparams.n_layer) {
@@ -1036,8 +1036,9 @@ void llama_model::load_hparams(llama_model_loader & ml) {
                     case 64: type = LLM_TYPE_32B; break;
                     default: type = LLM_TYPE_UNKNOWN;
                 }
-                // for deepstack patch, we consider the embd to be [main_embd, deepstack_embd_1, deepstack_embd_2, ...]
-                hparams.n_embd = hparams.n_embd * (hparams.n_deepstack_layers + 1);
+                // since vision model stacks deepstack features along feature dim
+                // we also create a fake "n_embd" for text model to be the main embd + deepstack embds
+                hparams.n_embd *= hparams.n_deepstack_layers + 1;
             } break;
         case LLM_ARCH_QWEN3MOE:
             {
@@ -1052,17 +1053,18 @@ void llama_model::load_hparams(llama_model_loader & ml) {
             } break;
         case LLM_ARCH_QWEN3VLMOE:
             {
-                ml.get_key(LLM_KV_NUM_DEEPSTACK_LAYERS, hparams.n_deepstack_layers, 0);
+                ml.get_key(LLM_KV_NUM_DEEPSTACK_LAYERS, hparams.n_deepstack_layers, false);
                 ml.get_key_or_arr(LLM_KV_ROPE_DIMENSION_SECTIONS, hparams.rope_sections, 4, true);
-                ml.get_key(LLM_KV_EXPERT_FEED_FORWARD_LENGTH,        hparams.n_ff_exp, false);
+                ml.get_key(LLM_KV_EXPERT_FEED_FORWARD_LENGTH, hparams.n_ff_exp, false);
                 ml.get_key(LLM_KV_ATTENTION_LAYERNORM_RMS_EPS, hparams.f_norm_rms_eps);
                 switch (hparams.n_layer) {
                     case 48: type = LLM_TYPE_30B_A3B; break;
                     case 94: type = LLM_TYPE_235B_A22B; break;
                     default: type = LLM_TYPE_UNKNOWN;
                 }
-                // for deepstack patch, we consider the embd to be [main_embd, deepstack_embd_1, deepstack_embd_2, ...]
-                hparams.n_embd = hparams.n_embd * (hparams.n_deepstack_layers + 1);
+                // since vision model stacks deepstack features along feature dim
+                // we also create a fake "n_embd" for text model to be the main embd + deepstack embds
+                hparams.n_embd *= hparams.n_deepstack_layers + 1;
             } break;
         case LLM_ARCH_PHI2:
             {
@@ -3307,11 +3309,10 @@ bool llama_model::load_tensors(llama_model_loader & ml) {
             case LLM_ARCH_QWEN3:
             case LLM_ARCH_QWEN3VL:
                 {
-                    int64_t n_embd = hparams.n_embd;
-                    // for deepstack features, we consider the embd to be [main_embd, deepstack_embd_1, deepstack_embd_2, ...]
-                    if (arch == LLM_ARCH_QWEN3VL) { 
-                        n_embd = hparams.n_embd / (hparams.n_deepstack_layers + 1);
-                    }
+                    // for model loading, the weights only have the main embd
+                    // so we need to divide by the number of deepstack layers + 1
+                    // n_embd is const int so we declare a new variable
+                    int64_t n_embd = hparams.n_embd / (hparams.n_deepstack_layers + 1);
                     tok_embd = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), {n_embd, n_vocab}, 0);
 
                     // output
@@ -3347,11 +3348,10 @@ bool llama_model::load_tensors(llama_model_loader & ml) {
             case LLM_ARCH_QWEN3MOE:
             case LLM_ARCH_QWEN3VLMOE:
                 {
-                    // for deepstack features, we consider the embd to be [main_embd, deepstack_embd_1, deepstack_embd_2, ...]
-                    int64_t n_embd = hparams.n_embd;
-                    if (arch == LLM_ARCH_QWEN3VLMOE) { 
-                        n_embd = hparams.n_embd / (hparams.n_deepstack_layers + 1);
-                    }
+                    // for model loading, the weights only have the main embd
+                    // so we need to divide by the number of deepstack layers + 1
+                    // n_embd is const int so we declare a new variable
+                    int64_t n_embd = hparams.n_embd / (hparams.n_deepstack_layers + 1);
                     tok_embd = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), {n_embd, n_vocab}, 0);
 
                     // output
@@ -19980,7 +19980,7 @@ struct llm_build_apertus : public llm_graph_context {
     }
 };
 
-llama_memory_i * llama_model::create_memory(const llama_memory_params & params, llama_cparams & cparams) const {
+llama_memory_i * llama_model::create_memory(const llama_memory_params & params, const llama_cparams & cparams) const {
     llama_memory_i * res;
 
     switch (arch) {
@@ -20031,17 +20031,13 @@ llama_memory_i * llama_model::create_memory(const llama_memory_params & params, 
                         };
                     }
 
-                    const auto padding = llama_kv_cache::get_padding(cparams);
-
-                    cparams.n_ctx = GGML_PAD(cparams.n_ctx, padding);
-
                     res = new llama_memory_hybrid(
                         /* model             */ *this,
                         /* attn_type_k       */ params.type_k,
                         /* attn_type_v       */ params.type_v,
                         /* attn_v_trans      */ !cparams.flash_attn,
                         /* attn_kv_size      */ cparams.n_ctx,
-                        /* attn_n_pad        */ padding,
+                        /* attn_n_pad        */ 1,
                         /* attn_n_swa        */ hparams.n_swa,
                         /* attn_swa_type     */ hparams.swa_type,
                         /* recurrent_type_k  */ GGML_TYPE_F32,
@@ -20053,22 +20049,11 @@ llama_memory_i * llama_model::create_memory(const llama_memory_params & params, 
                         /* filter_attn       */ std::move(filter_attn),
                         /* filter_recr       */ std::move(filter_recr));
                 } else {
-                    const auto padding = llama_kv_cache::get_padding(cparams);
-
                     uint32_t n_ctx_per_stream = cparams.n_ctx;
 
                     if (!cparams.kv_unified) {
                         n_ctx_per_stream = (cparams.n_ctx + cparams.n_seq_max - 1)/cparams.n_seq_max;
-                        n_ctx_per_stream = GGML_PAD(n_ctx_per_stream, padding);
-
-                        cparams.n_ctx = n_ctx_per_stream*cparams.n_seq_max;
-                    } else {
-                        n_ctx_per_stream = GGML_PAD(n_ctx_per_stream, padding);
-
-                        cparams.n_ctx = n_ctx_per_stream;
                     }
-
-                    LLAMA_LOG_DEBUG("%s: n_ctx = %u (padded)\n", __func__, cparams.n_ctx);
 
                     llama_memory_i::layer_reuse_cb reuse = nullptr;
 
@@ -20096,7 +20081,7 @@ llama_memory_i * llama_model::create_memory(const llama_memory_params & params, 
                                 n_ctx_per_stream,
                                 cparams.n_seq_max,
                                 cparams.n_ubatch,
-                                padding,
+                                1,
                                 nullptr,
                                 reuse);
                     } else {
@@ -20111,7 +20096,7 @@ llama_memory_i * llama_model::create_memory(const llama_memory_params & params, 
                                 cparams.kv_unified,
                                 n_ctx_per_stream,
                                 cparams.n_seq_max,
-                                padding,
+                                1,
                                 hparams.n_swa,
                                 hparams.swa_type,
                                 nullptr,
