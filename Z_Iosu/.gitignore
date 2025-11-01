@@ -1,0 +1,7 @@
+# Ignorar modelos pesados locales
+*.gguf
+*.safetensors
+# Opcional: artefactos temporales
+*.tmp
+*.bak
+~$*

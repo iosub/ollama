@@ -1,0 +1,4 @@
+git -C llama/vendor log --oneline -1
+
+git -C llama/vendor log --oneline --all | Select-String "d261223"
+cd llama/vendor; git checkout d261223d24e97f2df50220e4a5b7f0adb69bba81
