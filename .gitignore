@@ -16,3 +16,6 @@ llama/build
 llama/vendor
 /ollama
 Z_Iosu_restore_20251101_033620/
+# Ignore local model files
+*.gguf
+
