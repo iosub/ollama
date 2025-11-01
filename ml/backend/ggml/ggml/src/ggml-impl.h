@@ -565,14 +565,23 @@ static inline ggml_bf16_t ggml_compute_fp32_to_bf16(float s) {
 #define GGML_FP32_TO_BF16(x) ggml_compute_fp32_to_bf16(x)
 #define GGML_BF16_TO_FP32(x) ggml_compute_bf16_to_fp32(x)
 
+static inline int32_t ggml_node_get_use_count(const struct ggml_cgraph * cgraph, int node_idx) {
+    const struct ggml_tensor * node = cgraph->nodes[node_idx];
+
+    size_t hash_pos = ggml_hash_find(&cgraph->visited_hash_set, node);
+    if (!ggml_bitset_get(cgraph->visited_hash_set.used, hash_pos)) {
+        return 0;
+    }
+    return cgraph->use_counts[hash_pos];
+}
+
 // return true if the node's results are only used by N other nodes
 // and can be fused into their calculations.
 static inline bool ggml_node_has_n_uses(const struct ggml_cgraph * cgraph, int node_idx, int32_t n_uses) {
     const struct ggml_tensor * node = cgraph->nodes[node_idx];
 
     // check the use count against how many we're replacing
-    size_t hash_pos = ggml_hash_find(&cgraph->visited_hash_set, node);
-    if (!ggml_bitset_get(cgraph->visited_hash_set.used, hash_pos) || cgraph->use_counts[hash_pos] != n_uses) {
+    if (ggml_node_get_use_count(cgraph, node_idx) != n_uses) {
         return false;
     }
 
@@ -646,17 +655,66 @@ GGML_API int ggml_hip_mgmt_init();
 GGML_API int ggml_hip_get_device_memory(const char *id, size_t *free, size_t *total);
 GGML_API void ggml_hip_mgmt_release();
 
+// expose subgraph fuse checker used by backends
+// NOTE: recent ggml versions renamed the helper to "ggml_can_fuse_subgraph_ext"
+// Provide the declaration here so C++ helpers can call it.
+GGML_API bool ggml_can_fuse_subgraph_ext(
+    const struct ggml_cgraph * cgraph,
+    const int *                node_idxs,
+    int                        count,
+    const enum ggml_op *       ops,
+    const int *                outputs,
+    int                        num_outputs);
+
 #ifdef __cplusplus
 }
 #endif
 
 #ifdef __cplusplus
+#include <array>
 #include <initializer_list>
 #include <vector>
 
 // nicer C++ syntax for ggml_can_fuse
 inline bool ggml_can_fuse(const struct ggml_cgraph * cgraph, int node_idx, std::initializer_list<enum ggml_op> ops) {
     return ggml_can_fuse(cgraph, node_idx, ops.begin(), (int)ops.size());
+}
+
+inline bool ggml_can_fuse_subgraph(const struct ggml_cgraph *          cgraph,
+                                   int                                 start_idx,
+                                   std::initializer_list<enum ggml_op> ops,
+                                   std::initializer_list<int>          outputs = {}) {
+    // Build sequential node indices starting at start_idx and forward to the C implementation
+    const int num_ops = (int)ops.size();
+    GGML_ASSERT(num_ops < 32);
+
+    int idxs[32];
+    for (int i = 0; i < num_ops; ++i) {
+        idxs[i] = start_idx + i;
+    }
+
+    return ggml_can_fuse_subgraph_ext(
+        cgraph,
+        idxs,
+        num_ops,
+        ops.begin(),
+        outputs.begin(),
+        (int)outputs.size());
+}
+
+// Return true if the edges in the graph match expectations.
+inline bool ggml_check_edges(const struct ggml_cgraph *                cgraph,
+                             int                                       start_idx,
+                             std::initializer_list<std::array<int, 3>> edges) {
+    for (const auto & edge : edges) {
+        int dst_node = edge[0];
+        int src_idx  = edge[1];
+        int src_node = edge[2];
+        if (cgraph->nodes[start_idx + dst_node]->src[src_idx] != cgraph->nodes[start_idx + src_node]) {
+            return false;
+        }
+    }
+    return true;
 }
 
 // expose GGUF internals for test code

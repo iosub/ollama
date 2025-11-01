@@ -1,5 +1,5 @@
 # Patch 0026a: Resolver conflicto de merge en ggml-impl.h
-git -C llama/vendor checkout -f d261223d24e97f2df50220e4a5b7f0adb69bba81
+git -C llama/vendor checkout -f master
 
 
 ## Problema
