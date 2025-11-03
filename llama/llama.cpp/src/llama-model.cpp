@@ -13,6 +13,8 @@
 
 #include "ggml-cpp.h"
 
+#include "models/models.h"
+
 #include <algorithm>
 #include <cassert>
 #include <cfloat>
@@ -274,7 +276,7 @@ static bool weight_buft_supported(const llama_hparams & hparams, ggml_tensor * w
             } break;
         case GGML_OP_IM2COL:
             {
-                const int n_embd = hparams.n_embd_full;
+                const int n_embd = hparams.n_embd;
                 ggml_tensor * b = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, n_embd, w->ne[1], 1, 1);
                 op_tensor = ggml_im2col(ctx, w, b, 1, 0, 0, 0, 1, 0, false, GGML_TYPE_F16);
             } break;
@@ -498,7 +500,6 @@ void llama_model::load_hparams(llama_model_loader & ml) {
 
     ml.get_key(LLM_KV_CONTEXT_LENGTH,          hparams.n_ctx_train);
     ml.get_key(LLM_KV_EMBEDDING_LENGTH,        hparams.n_embd);
-    hparams.n_embd_full = hparams.n_embd;
     ml.get_key(LLM_KV_BLOCK_COUNT,             hparams.n_layer);
     ml.get_key(LLM_KV_EXPERT_COUNT,            hparams.n_expert,        false);
     ml.get_key(LLM_KV_EXPERT_USED_COUNT,       hparams.n_expert_used,   false);
@@ -1040,7 +1041,7 @@ void llama_model::load_hparams(llama_model_loader & ml) {
                 }
                 // since vision model stacks deepstack features along feature dim
                 // we also create a fake "n_embd" for text model to be the main embd + deepstack embds
-                hparams.n_embd_full *= hparams.n_deepstack_layers + 1;
+                hparams.n_embd *= hparams.n_deepstack_layers + 1;
             } break;
         case LLM_ARCH_QWEN3MOE:
             {
@@ -1066,7 +1067,7 @@ void llama_model::load_hparams(llama_model_loader & ml) {
                 }
                 // since vision model stacks deepstack features along feature dim
                 // we also create a fake "n_embd" for text model to be the main embd + deepstack embds
-                hparams.n_embd_full *= hparams.n_deepstack_layers + 1;
+                hparams.n_embd *= hparams.n_deepstack_layers + 1;
             } break;
         case LLM_ARCH_PHI2:
             {
@@ -3346,7 +3347,10 @@ bool llama_model::load_tensors(llama_model_loader & ml) {
             case LLM_ARCH_QWEN3:
             case LLM_ARCH_QWEN3VL:
                 {
-                    const int64_t n_embd = hparams.n_embd;
+                    // for model loading, the weights only have the main embd
+                    // so we need to divide by the number of deepstack layers + 1
+                    // n_embd is const int so we declare a new variable
+                    int64_t n_embd = hparams.n_embd / (hparams.n_deepstack_layers + 1);
                     tok_embd = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), {n_embd, n_vocab}, 0);
 
                     // output
@@ -3382,7 +3386,10 @@ bool llama_model::load_tensors(llama_model_loader & ml) {
             case LLM_ARCH_QWEN3MOE:
             case LLM_ARCH_QWEN3VLMOE:
                 {
-                    const int64_t n_embd = hparams.n_embd;
+                    // for model loading, the weights only have the main embd
+                    // so we need to divide by the number of deepstack layers + 1
+                    // n_embd is const int so we declare a new variable
+                    int64_t n_embd = hparams.n_embd / (hparams.n_deepstack_layers + 1);
                     tok_embd = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), {n_embd, n_vocab}, 0);
 
                     // output
@@ -6717,8 +6724,8 @@ ggml_backend_buffer_type_t llama_model::select_buft(int il) const {
     return ::select_buft(
             *pimpl->dev_layer.at(il).buft_list,
             [&](ggml_context * ctx) {
-                ggml_tensor * cur = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, hparams.n_embd_full);
-                ggml_tensor * layer_dir = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, hparams.n_embd_full);
+                ggml_tensor * cur = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, hparams.n_embd);
+                ggml_tensor * layer_dir = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, hparams.n_embd);
                 return ggml_add(ctx, cur, layer_dir);
             });
 }
@@ -6748,14 +6755,14 @@ float llama_model::get_rope_freq_scale(const llama_cparams & cparams, int il) co
 }
 
 ggml_tensor * llama_model::get_rope_factors(const llama_cparams & cparams, int il) const {
-    const uint32_t n_ctx_per_seq = cparams.n_ctx / cparams.n_seq_max;
+    const uint32_t n_ctx_seq = cparams.n_ctx_seq;
 
     // choose long/short freq factors based on the context size
     if (layers[il].rope_freqs != nullptr) {
         return layers[il].rope_freqs;
     }
 
-    if (n_ctx_per_seq > hparams.n_ctx_orig_yarn) {
+    if (n_ctx_seq > hparams.n_ctx_orig_yarn) {
         return layers[il].rope_long;
     }
 
@@ -9782,9 +9789,9 @@ struct llm_build_qwen3moe : public llm_graph_context {
 struct llm_build_qwen3vl : public llm_graph_context {
     llm_build_qwen3vl(const llama_model & model, const llm_graph_params & params) : llm_graph_context(params) {
 
-        const int64_t n_embd_full = hparams.n_embd_full; // main embd + deepstack embds
+        const int64_t n_embd_full = hparams.n_embd; // main embd + deepstack embds
         const size_t n_deepstack_layers = hparams.n_deepstack_layers;
-        const int64_t n_embd = hparams.n_embd;
+        const int64_t n_embd = n_embd_full / (n_deepstack_layers + 1);
         const int64_t n_embd_head = hparams.n_embd_head_v;
 
 
@@ -9926,9 +9933,9 @@ struct llm_build_qwen3vl : public llm_graph_context {
 
 struct llm_build_qwen3vlmoe : public llm_graph_context {
     llm_build_qwen3vlmoe(const llama_model & model, const llm_graph_params & params) : llm_graph_context(params) {
-        const int64_t n_embd_full = hparams.n_embd_full; // main embd + deepstack embds
+        const int64_t n_embd_full = hparams.n_embd; // main embd + deepstack embds
         const size_t n_deepstack_layers = hparams.n_deepstack_layers;
-        const int64_t n_embd = hparams.n_embd;
+        const int64_t n_embd = n_embd_full / (n_deepstack_layers + 1);
         const int64_t n_embd_head = hparams.n_embd_head_v;
 
         GGML_ASSERT(n_embd_head == hparams.n_embd_head_k);
@@ -20553,12 +20560,6 @@ llama_memory_i * llama_model::create_memory(const llama_memory_params & params, 
                         /* filter_attn       */ std::move(filter_attn),
                         /* filter_recr       */ std::move(filter_recr));
                 } else {
-                    uint32_t n_ctx_per_stream = cparams.n_ctx;
-
-                    if (!cparams.kv_unified) {
-                        n_ctx_per_stream = (cparams.n_ctx + cparams.n_seq_max - 1)/cparams.n_seq_max;
-                    }
-
                     llama_memory_i::layer_reuse_cb reuse = nullptr;
 
                     if (arch == LLM_ARCH_GEMMA3N) {
@@ -20582,7 +20583,7 @@ llama_memory_i * llama_model::create_memory(const llama_memory_params & params, 
                                 cparams.offload_kqv,
                                 params.swa_full,
                                 cparams.kv_unified,
-                                n_ctx_per_stream,
+                                cparams.n_ctx_seq,
                                 cparams.n_seq_max,
                                 cparams.n_ubatch,
                                 1,
@@ -20598,7 +20599,7 @@ llama_memory_i * llama_model::create_memory(const llama_memory_params & params, 
                                 !cparams.flash_attn,
                                 cparams.offload_kqv,
                                 cparams.kv_unified,
-                                n_ctx_per_stream,
+                                cparams.n_ctx_seq,
                                 cparams.n_seq_max,
                                 1,
                                 hparams.n_swa,
@@ -21089,10 +21090,6 @@ int32_t llama_model_n_ctx_train(const llama_model * model) {
 
 int32_t llama_model_n_embd(const llama_model * model) {
     return model->hparams.n_embd;
-}
-
-int32_t llama_model_n_embd_full(const llama_model * model) {
-    return model->hparams.n_embd_full;
 }
 
 int32_t llama_model_n_layer(const llama_model * model) {

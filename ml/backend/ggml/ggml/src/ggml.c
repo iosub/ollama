@@ -3996,16 +3996,14 @@ static struct ggml_tensor * ggml_rope_impl(
         bool                  inplace) {
     GGML_ASSERT((mode & 1) == 0 && "mode & 1 == 1 is no longer supported");
 
-    GGML_ASSERT(ggml_is_vector(b) || ggml_is_matrix(b));
+    GGML_ASSERT(ggml_is_vector(b));
     GGML_ASSERT(b->type == GGML_TYPE_I32);
 
     bool mrope_used = mode & GGML_ROPE_TYPE_MROPE;
-    const int64_t n_pos_ids = ggml_nelements(b);
-
     if (mrope_used) {
-        GGML_ASSERT(a->ne[2] * 4 == n_pos_ids); // mrope expecting 4 position ids per token
+        GGML_ASSERT(a->ne[2] * 4 == b->ne[0]); // mrope expecting 4 position ids per token
     } else {
-        GGML_ASSERT(a->ne[2] == n_pos_ids);
+        GGML_ASSERT(a->ne[2] == b->ne[0]);
     }
 
     if (c) {

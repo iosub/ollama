@@ -13,10 +13,10 @@ consistent performance.
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
-index 5a611e3d2..955b67d34 100644
+index 71899c35b..001ca72f9 100644
 --- a/ggml/src/ggml-cuda/ggml-cuda.cu
 +++ b/ggml/src/ggml-cuda/ggml-cuda.cu
-@@ -2845,7 +2845,7 @@ static void ggml_backend_cuda_synchronize(ggml_backend_t backend) {
+@@ -2857,7 +2857,7 @@ static void ggml_backend_cuda_synchronize(ggml_backend_t backend) {
  }
  
  #ifdef USE_CUDA_GRAPH
@@ -25,7 +25,7 @@ index 5a611e3d2..955b67d34 100644
      int batch_size, bool use_cuda_graph) {
  
      // Loop over nodes in GGML graph to obtain info needed for CUDA graph
-@@ -3576,7 +3576,7 @@ static enum ggml_status ggml_backend_cuda_graph_compute(ggml_backend_t backend,
+@@ -3588,7 +3588,7 @@ static enum ggml_status ggml_backend_cuda_graph_compute(ggml_backend_t backend,
      if (use_cuda_graph) {
          cuda_graph_update_required = is_cuda_graph_update_required(cuda_ctx, cgraph);
  

@@ -6,17 +6,18 @@ Subject: [PATCH] clip-unicode
 fixes loading vision models in llama.cpp on windows
 filesystems for paths that include wide characters
 ---
- tools/mtmd/clip.cpp | 39 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
+ tools/mtmd/clip.cpp | 40 +++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 39 insertions(+), 1 deletion(-)
 
 diff --git a/tools/mtmd/clip.cpp b/tools/mtmd/clip.cpp
-index b312fda63..be5cb31d2 100644
+index 99775cb3e..3ff3cb898 100644
 --- a/tools/mtmd/clip.cpp
 +++ b/tools/mtmd/clip.cpp
-@@ -28,6 +28,19 @@
- #include <numeric>
+@@ -24,7 +24,19 @@
+ #include <array>
  #include <functional>
  
+-// TODO: allow to pass callback from user code
 +#if defined(_WIN32)
 +#define WIN32_LEAN_AND_MEAN
 +#ifndef NOMINMAX
@@ -33,7 +34,7 @@ index b312fda63..be5cb31d2 100644
  struct clip_logger_state g_logger_state = {GGML_LOG_LEVEL_CONT, clip_log_callback_default, NULL};
  
  enum ffn_op_type {
-@@ -3138,7 +3151,29 @@ struct clip_model_loader {
+@@ -3219,7 +3231,29 @@ struct clip_model_loader {
          {
              std::vector<uint8_t> read_buf;
  
@@ -63,7 +64,7 @@ index b312fda63..be5cb31d2 100644
              if (!fin) {
                  throw std::runtime_error(string_format("%s: failed to open %s\n", __func__, fname.c_str()));
              }
-@@ -3165,7 +3200,11 @@ struct clip_model_loader {
+@@ -3246,7 +3280,11 @@ struct clip_model_loader {
                      ggml_backend_tensor_set(cur, read_buf.data(), 0, num_bytes);
                  }
              }
