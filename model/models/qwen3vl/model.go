@@ -25,7 +25,8 @@ type Model struct {
 }
 
 func (m *Model) EncodeMultimodal(ctx ml.Context, multimodalData []byte) ([]input.Multimodal, error) {
-	if len(m.VisionModel.Layers) == 0 {
+	// Guard against partially-initialized vision models (e.g., split vision/projector not loaded in this engine)
+	if len(m.VisionModel.Layers) == 0 || m.VisionModel.PatchEmbedding == nil || m.VisionModel.PositionEmbedding == nil {
 		return nil, model.ErrNoVisionModel
 	}
 
@@ -149,7 +150,11 @@ func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
 		}
 	}
 
-	positions := ctx.Input().FromInts(slices.Concat(positionSlice...), len(positionSlice[0])*len(positionSlice))
+	positions := ctx.Input().FromInts(
+		slices.Concat(positionSlice...),
+		len(positionSlice[0]),
+		len(positionSlice),
+	)
 	for i, layer := range m.TextModel.Layers {
 		if m.Cache != nil {
 			m.Cache.SetLayer(i)

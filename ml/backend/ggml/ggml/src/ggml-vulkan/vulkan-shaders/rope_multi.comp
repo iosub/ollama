@@ -2,7 +2,6 @@
 
 #include "rope_head.glsl"
 
-
 void main() {
     const uint i0 = 2*gl_GlobalInvocationID.y;
     uint ne0 = p.ncols;

@@ -8,14 +8,44 @@ https://github.com/LETS-BEE/llama.cpp/commit/de0e3d3c3ce4b394746ade9263736c8edb4
 https://github.com/ggml-org/llama.cpp/issues/16207#issuecomment-3443868720
 https://github.com/ggml-org/llama.cpp/pull/16745
 
+https://github.com/ggml-org/llama.cpp/pull/16928/commits/8e28665014ffa27d7a1a927c64b1e195610d6c6f
 
+https://github.com/ggml-org/llama.cpp/commit/0c2aad7a3eae76e744978d5b79b65ac7b0958841
 
 
 ¿Lo estás haciendo mal? Los modelos están ya bien Porque tengo la versión que está funcionando los dos modelos. El problema está Que hemos aplicado. El PR. https://github.com/LETS-BEE/llama.cpp/commits/qwen3vl/ sin creo haber aplicado https://github.com/ggml-org/llama.cpp/pull/16745 o que cuando aplicamos hace 2 dias https://github.com/ollama/ollama/pull/12665 
 
 
+https://github.com/ollama/ollama/pull/12241/files
+https://github.com/ollama/ollama/pull/12556
+https://github.com/ollama/ollama/pull/12310
+Improve pre-processed image size for Qw
+https://github.com/ggml-org/llama.cpp/issues/16842
+tool
+https://github.com/ggml-org/llama.cpp/issues/16207#issuecomment-3448620056
+
+ git add llama/vendor/ggml/src/ggml-cuda/ggml-cuda.cpp
+
+cd  llama/vendor
 
 
+cd llama/vendor ; git add ggml/src/ggml-cuda/ggml-cuda.cpp
+
+
+/c/IA/tools/ollama/llama
+
+git am --continue
+
+cd /c/IA/tools/ollama/llama/vendor; git am --continue
+
+gml/src/ggml-vulkan/vulkan-shaders/rope_multi.comp
+
+gml/src/ggml-cuda/rope.cu
+
+cd /c/IA/tools/ollama/llama/vendor/ggml/src/ggml-cuda ; git add ggml-cuda
+C:\IA\tools\ollama\llama\vendor\ggml\src\ggml-vulkan\vulkan-shaders
+
+cd /c/IA/tools/ollama
 to do commint
 
 # GUÍA COMPLETA: Compilación Ollama 0.12.8.99 con Interfaz Gráfica Funcional

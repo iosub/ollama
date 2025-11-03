@@ -1,0 +1,58 @@
+
+time=2025-11-02T04:32:00.973-05:00 level=INFO source=server.go:1289 msg="llama runner started in 2.06 seconds"
+time=2025-11-02T04:32:00.973-05:00 level=INFO source=sched.go:493 msg="loaded runners" count=1
+time=2025-11-02T04:32:00.973-05:00 level=INFO source=server.go:1251 msg="waiting for llama runner to start responding"
+time=2025-11-02T04:32:00.973-05:00 level=INFO source=server.go:1289 msg="llama runner started in 2.06 seconds"
+time=2025-11-02T04:32:00.973-05:00 level=DEBUG source=sched.go:505 msg="finished setting up" runner.name=hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M runner.size="6.0 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=4160 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89 runner.num_ctx=4096
+[GIN] 2025/11/02 - 04:32:00 | 200 |    2.2744127s |       127.0.0.1 | POST     "/api/generate"
+time=2025-11-02T04:32:00.973-05:00 level=DEBUG source=sched.go:513 msg="context for request finished"
+time=2025-11-02T04:32:00.974-05:00 level=DEBUG source=sched.go:283 msg="runner with non-zero duration has gone idle, adding timer" runner.name=hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M runner.size="6.0 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=4160 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89 runner.num_ctx=4096 duration=5m0s
+time=2025-11-02T04:32:00.974-05:00 level=DEBUG source=sched.go:301 msg="after processing request finished event" runner.name=hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M runner.size="6.0 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=4160 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89 runner.num_ctx=4096 refCount=0
+time=2025-11-02T04:32:04.079-05:00 level=DEBUG source=sched.go:602 msg="evaluating already loaded" model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89
+time=2025-11-02T04:32:04.081-05:00 level=DEBUG source=server.go:1401 msg="completion request" images=1 prompt=107 format=""
+time=2025-11-02T04:32:04.081-05:00 level=TRACE source=server.go:1402 msg="completion request" prompt="<|im_start|>user\n[img-0]\"\" que hay en las imagenes? extrae todos los datos<|im_end|>\n<|im_start|>assistant\n"
+clip_model_loader: model name:   Qwen3-Vl-8B-Instruct
+clip_model_loader: description:
+clip_model_loader: GGUF version: 3
+clip_model_loader: alignment:    32
+clip_model_loader: n_tensors:    352
+clip_model_loader: n_kv:         31
+
+clip_model_loader: has vision encoder
+clip_ctx: CLIP using CPU backend
+load_hparams: projector:          qwen3vl_merger
+load_hparams: n_embd:             1152
+load_hparams: n_head:             16
+load_hparams: n_ff:               4304
+load_hparams: n_layer:            27
+load_hparams: ffn_op:             gelu
+load_hparams: projection_dim:     4096
+
+--- vision hparams ---
+load_hparams: image_size:         1024
+load_hparams: patch_size:         16
+load_hparams: has_llava_proj:     0
+load_hparams: minicpmv_version:   0
+load_hparams: proj_scale_factor:  0
+load_hparams: n_wa_pattern:       0
+load_hparams: spatial_merge_size: 2
+
+load_hparams: model size:         1105.32 MiB
+load_hparams: metadata size:      0.12 MiB
+alloc_compute_meta:        CPU compute buffer size =     3.00 MiB
+time=2025-11-02T04:32:05.096-05:00 level=DEBUG source=llama.go:595 msg="chunk tokens" index=0 numTokens=1
+time=2025-11-02T04:32:05.096-05:00 level=DEBUG source=llama.go:595 msg="chunk tokens" index=1 numTokens=736
+time=2025-11-02T04:32:31.018-05:00 level=DEBUG source=llama.go:595 msg="chunk tokens" index=2 numTokens=1
+time=2025-11-02T04:32:31.018-05:00 level=DEBUG source=llama.go:660 msg="image tokenization chunks" totalChunks=738
+time=2025-11-02T04:32:31.018-05:00 level=DEBUG source=image.go:186 msg="storing image embeddings in cache" entry=0 used=0001-01-01T00:00:00.000Z
+time=2025-11-02T04:32:31.019-05:00 level=DEBUG source=cache.go:104 msg="loading cache slot" id=0 cache=0 prompt=759 used=0 remaining=759
+time=2025-11-02T04:32:31.150-05:00 level=DEBUG source=runner.go:571 msg="embedding chunk" len=16384
+time=2025-11-02T04:32:31.159-05:00 level=DEBUG source=runner.go:612 msg="processing embedding batch" tokens=512 capacity=512
+time=2025-11-02T04:32:43.716-05:00 level=DEBUG source=runner.go:571 msg="embedding chunk" len=16384
+time=2025-11-02T04:32:43.719-05:00 level=DEBUG source=runner.go:612 msg="processing embedding batch" tokens=224 capacity=512
+ggml-backend.cpp:285: GGML_ASSERT(offset + size <= ggml_nbytes(tensor) && "tensor read out of bounds") failed
+time=2025-11-02T04:32:49.766-05:00 level=ERROR source=server.go:1475 msg="post predict" error="Post \"http://127.0.0.1:53317/completion\": read tcp 127.0.0.1:53323->127.0.0.1:53317: wsarecv: An existing connection was forcibly closed by the remote host."
+[GIN] 2025/11/02 - 04:32:49 | 500 |   45.7431072s |       127.0.0.1 | POST     "/api/chat"
+time=2025-11-02T04:32:49.766-05:00 level=DEBUG source=sched.go:378 msg="context for request finished" runner.name=hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M runner.size="6.0 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=4160 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89 runner.num_ctx=4096
+time=2025-11-02T04:32:49.766-05:00 level=DEBUG source=sched.go:283 msg="runner with non-zero duration has gone idle, adding timer" runner.name=hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M runner.size="6.0 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=4160 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89 runner.num_ctx=4096 duration=5m0s
+time=2025-11-02T04:32:49.766-05:00 level=DEBUG source=sched.go:301 msg="after processing request finished event" runner.name=hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M runner.size="6.0 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=4160 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89 runner.num_ctx=4096 refCount=0

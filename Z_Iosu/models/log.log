@@ -1,0 +1,17 @@
+="chunk tokens" index=0 numTokens=1
+time=2025-11-02T04:47:34.778-05:00 level=DEBUG source=llama.go:595 msg="chunk tokens" index=1 numTokens=736
+time=2025-11-02T04:47:48.163-05:00 level=DEBUG source=llama.go:595 msg="chunk tokens" index=2 numTokens=1
+time=2025-11-02T04:47:48.163-05:00 level=DEBUG source=llama.go:660 msg="image tokenization chunks" totalChunks=738
+time=2025-11-02T04:47:48.164-05:00 level=DEBUG source=image.go:186 msg="storing image embeddings in cache" entry=0 used=0001-01-01T00:00:00.000Z
+time=2025-11-02T04:47:48.164-05:00 level=DEBUG source=cache.go:104 msg="loading cache slot" id=0 cache=0 prompt=759 used=0 remaining=759
+time=2025-11-02T04:47:48.208-05:00 level=DEBUG source=runner.go:571 msg="embedding chunk" len=8192
+time=2025-11-02T04:47:48.212-05:00 level=DEBUG source=runner.go:612 msg="processing embedding batch" tokens=512 capacity=512
+time=2025-11-02T04:47:50.908-05:00 level=DEBUG source=runner.go:571 msg="embedding chunk" len=8192
+time=2025-11-02T04:47:50.908-05:00 level=DEBUG source=runner.go:612 msg="processing embedding batch" tokens=224 capacity=512
+ggml-backend.cpp:285: GGML_ASSERT(offset + size <= ggml_nbytes(tensor) && "tensor read out of bounds") failed
+time=2025-11-02T04:47:52.307-05:00 level=ERROR source=server.go:1475 msg="post predict" error="Post \"http://127.0.0.1:52897/completion\": read tcp 127.0.0.1:52903->127.0.0.1:52897: wsarecv: An existing connection was forcibly closed by the remote host."
+[GIN] 2025/11/02 - 04:47:52 | 500 |   18.4635719s |       127.0.0.1 | POST     "/api/chat"
+time=2025-11-02T04:47:52.307-05:00 level=DEBUG source=sched.go:378 msg="context for request finished" runner.name=hf.co/ggml-org/Qwen3-VL-2B-Instruct-GGUF:Q8_0 runner.size="2.6 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=41156 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-b7802e29f71a9e5b5e3f83f613df898a2204342dcea71a231ea501d481813c39 runner.num_ctx=4096
+time=2025-11-02T04:47:52.308-05:00 level=DEBUG source=sched.go:283 msg="runner with non-zero duration has gone idle, adding timer" runner.name=hf.co/ggml-org/Qwen3-VL-2B-Instruct-GGUF:Q8_0 runner.size="2.6 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=41156 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-b7802e29f71a9e5b5e3f83f613df898a2204342dcea71a231ea501d481813c39 runner.num_ctx=4096 duration=5m0s
+time=2025-11-02T04:47:52.308-05:00 level=DEBUG source=sched.go:301 msg="after processing request finished event" runner.name=hf.co/ggml-org/Qwen3-VL-2B-Instruct-GGUF:Q8_0 runner.size="2.6 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=41156 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-b7802e29f71a9e5b5e3f83f613df898a2204342dcea71a231ea501d481813c39 runner.num_ctx=4096 refCount=0
+time=2025-11-02T04:47:52.459-05:00 level=ERROR source=server.go:273 msg="llama runner terminated" error="exit status 0xc0000409"

@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<!-- saved from url=(0058)https://support.broadbit.hu/downloads/vision/annotate.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="An image object annotation tool using a language model API.">
+    <meta name="keywords" content="image, object, annotation, language model, API">
+    <meta name="author" content="BroadBit Hungary">
+    <title>Image Object Annotation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 10px auto;
+            padding: 20px;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 73% 24%;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .image-container {
+            position: relative;
+            border: 1px solid lightgray;
+            max-width: 100%;
+        }
+
+        .image-resize {
+            max-width: 40%;
+            gap: 32px;
+            display: none;
+            align-items: center;
+        }
+
+        #preview {
+            max-width: 100%;
+            display: none;
+        }
+
+        .bbox {
+            position: absolute;
+            border: 2px solid red;
+            background-color: rgba(255, 0, 0, 0.2);
+        }
+
+        #imageInfo {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+            text-align: left;
+        }
+
+        #imageInfoWarning {
+            margin-top: 10px;
+            font-size: 14px;
+            color: red;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        #imageSummary {
+            margin-top: 10px;
+            font-size: 16px;
+            color: #666;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        #loading {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+            text-align: right;
+        }
+
+        #LLMResponseData {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #AAA;
+            text-align: left;
+        }
+
+        textarea,
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .loading {
+            display: none;
+            color: #666;
+        }
+
+        #response {
+            white-space: pre;
+            font-family: Consolas, monospace;
+            white-space: pre-wrap;
+
+            .string {
+                color: maroon;
+            }
+
+            .number {
+                color: black;
+            }
+
+            .boolean,
+            .null {
+                color: blue;
+            }
+
+            .key {
+                color: teal;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+
+        <div>
+            <input type="file" id="imageUpload" accept="image/*">
+            <div class="image-resize" id="imageResize">
+                <div><input type="number" id="imageWidth" placeholder="Width" value="1008"></div>
+                <div><input type="number" id="imageHeight" placeholder="Height" value="1008"></div>
+                <div><input type="button" id="resizeButton" value="Resize the Image"></div>
+            </div>
+            <div id="imageInfoWarning"></div>
+            <div class="image-container">
+                <img id="preview" alt="Image preview">
+                <div id="imageSummary"></div>
+            </div>
+        </div>
+
+        <div>
+            <h3>
+                <div id="promptSelector"><select><option value="0">Prompt 1</option><option value="1">Prompt 2</option><option value="2">Prompt 3</option><option value="3">Prompt 4</option><option value="4">Prompt 5</option><option value="5">Prompt 6</option><option value="6">Prompt 7</option><option value="7">Prompt 8</option><option value="8">Prompt 9</option><option value="9">Prompt 10</option></select></div>
+            </h3>
+            <textarea id="prompt" rows="40"></textarea>
+            <div>
+                <button id="analyzeBtn">Execute the Prompt</button>
+                <span id="loading" class="loading">Processing...</span>
+                <div>
+                    <pre id="LLMResponseData"></pre>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h3>LLM Response:</h3>
+            <pre id="response" style="background: #f5f5f5; padding: 10px; max-height: 600px; overflow: auto;"></pre>
+        </div>
+
+        <div>
+            <h3>LLM API:</h3>
+            <input type="text" id="apiUrl" value="http://192.168.37.8:8088/v1/chat/completions">
+            <textarea id="LLMConfig" rows="8" style="background: #f5f5f5;">{
+  "temperature": 0,
+  "top_k": 1,
+  "max_tokens": 2048,
+  "repeat_penalty": 1,
+  "cache_prompt": false,
+  "samplers": [
+    "top_k",
+    "temperature"
+  ]
+}</textarea>
+        </div>
+
+    </div>
+
+    <script>
+        // Configuration
+
+        // List of sample prompts
+        const prompts = [
+            `Perform a comprehensive analysis of the provided image to detect and extract all **text** objects present. Your task is to identify every instance of object within the image, regardless of its size and orientation.
+
+Bounding boxes:
+
+- text_label: The label of the bounding box
+- x_min: x-coordinate of the top-left corner (in pixels)
+- y_min: y-coordinate of the top-left corner (in pixels)
+- x_max: x-coordinate of the bottom-right corner (in pixels)
+- y_max: y-coordinate of the bottom-right corner (in pixels)
+- color_name: The color name
+
+JSON format:
+
+\`\`\`json
+{
+  "has": <true|false>,
+  "bounding_boxes": [
+    [ <text_label>, <x_min>, <y_min>, <x_max>, <y_max>, <color_name> ],
+  ],
+  "summary": "Summary of the image"
+}
+\`\`\`
+
+Here is the JSON object with the identified objects and their bounding boxes:`,
+            `Detect all **text** objects in the image and return their locations in the form of coordinates. The format of output should be like {"bbox_2d": [x1, y1, x2, y2], "label": "object name or value"}.`,
+            `Locate the objects, report the bbox coordinates in JSON format.`,
+            `Locate each individual object, report the bbox coordinates in JSON format.`,
+            `Describe the image contents.`,
+            `Locate each **handwritten text**, submit the bbox coordinates in JSON format.`,
+            `Please first output bbox coordinates and colors of every rectangle in this image in JSON bbox2d format.`,
+            `Please first output bbox coordinates and colors of every rectangle in this image in JSON format, and then answer how many rectangles are there in the image.`,
+            `Provide the text on the image.`,
+            `Convert the image content into a PlantUML diagram.`
+        ];
+
+    </script>
+
+    <script>
+        // Set default prompt
+        document.getElementById('prompt').value = prompts[0];
+
+        // Create a prompt selector to choose one prompt from array
+        const promptSelector = document.createElement('select');
+        prompts.forEach((prompt, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = `Prompt ${index + 1}`;
+            promptSelector.appendChild(option);
+        });
+        document.getElementById('promptSelector').appendChild(promptSelector);
+        // If select one prompt is selected, set it to the prompt textarea
+        promptSelector.addEventListener('change', function () {
+            const selectedPrompt = prompts[promptSelector.value];
+            document.getElementById('prompt').value = selectedPrompt;
+        });
+
+        // Set the LLM configuration
+        LLMConfig = {
+            temperature: 0.0,
+            top_k: 1,
+            max_tokens: 2048,
+            repeat_penalty: 1.0,
+            cache_prompt: false,
+            samplers: [
+                "top_k",
+                "temperature"
+            ]
+        }
+        // Show the LLM configuration
+        document.getElementById('LLMConfig').textContent = JSON.stringify(LLMConfig, null, 2);
+
+        /**
+         * Set listeners
+         */
+        document.addEventListener('DOMContentLoaded', function () {
+            const imageUpload = document.getElementById('imageUpload');
+            const imageResize = document.getElementById('imageResize');
+            const preview = document.getElementById('preview');
+            const prompt = document.getElementById('prompt');
+            const apiUrl = document.getElementById('apiUrl');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const loading = document.getElementById('loading');
+            const response = document.getElementById('response');
+            const imageContainer = document.querySelector('.image-container');
+            const imageSummary = document.getElementById('imageSummary');
+            const LLMResponseData = document.getElementById('LLMResponseData');
+
+            let imageFile = null;
+            let resizedImageFile = null;
+
+            /**
+             * Convert image data URL to File object
+             * @param {string} dataUrl - The data URL of the image.
+             * @param {string} fileName - The name of the file.
+             * @returns {File} The File object.
+             */
+            function dataURLtoFile(dataUrl, fileName) {
+                var arr = dataUrl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+                    bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+                while (n--) {
+                    u8arr[n] = bstr.charCodeAt(n);
+                }
+                return new File([u8arr], fileName, { type: mime });
+            }
+
+            /**
+             * Add listener to the file input
+             * @param {Event} event - The change event.
+             */
+            imageUpload.addEventListener('change', function (e) {
+                if (resizedImageFile == null) {
+                    // Process the uploaded file
+                    var file = e.target.files[0];
+                    imageResize.style.display = 'flex';
+                } else {
+                    // Process the resized image
+                    var file = resizedImageFile;
+                    resizedImageFile = null;
+                }
+                if (file) {
+                    imageFile = file;
+                    const reader = new FileReader();
+                    reader.onload = function (event) {
+                        preview.src = event.target.result;
+                        preview.style.display = 'block';
+                        clearBboxes();
+                        imageSummary.textContent = '';
+                        // Show image info
+                        var img = new Image();
+                        img.src = event.target.result;
+                        img.onload = function () {
+                            // Get the image mimetype
+                            const mimeType = file.type;
+                            const imageInfo = document.getElementById('imageInfo');
+                            // Add width and height to the input value for resizing
+                            document.getElementById('imageWidth').value = img.width;
+                            document.getElementById('imageHeight').value = img.height;
+
+                            // Calculate the best pixel number
+                            const imageWidth = img.width;
+                            const imageHeight = img.height;
+
+                            const imageWidth28 = Math.floor(imageWidth / 28) * 28;
+                            const imageHeight28 = Math.floor(imageHeight / 28) * 28;
+                            const imageWidth32 = Math.floor(imageWidth / 32) * 32;
+                            const imageHeight32 = Math.floor(imageHeight / 32) * 32;
+                            if ((imageWidth28 !== imageWidth || imageHeight28 !== imageHeight)
+                                && (imageWidth32 !== imageWidth || imageHeight32 !== imageHeight)) {
+                                const imageInfoWarning = document.getElementById('imageInfoWarning');
+                                imageInfoWarning.textContent = `Should be ${imageWidth28}x${imageHeight28} or ${imageWidth32}x${imageHeight32} pixels for QwenVL - these values will be rounded to the nearest multiple of 28 or 32 (28 for Qwen2.5VL, 32 for Qwen3VL).`;
+                            } else {
+                                imageInfoWarning.textContent = '';
+                            }
+                        };
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+
+            // Add two input for imageResize to get X and Y values
+            const resizeBtn = document.getElementById('resizeButton');
+            resizeBtn.addEventListener('click', async function () {
+                if (imageFile) {
+                    function resizeImage(imageToResize, width, height) {
+                        const canvas = document.createElement('canvas');
+                        if (!width || width == null) {
+                            canvas.width = imageToResize.width;
+                        } else {
+                            canvas.width = width;
+                        }
+                        if (!height || height == null) {
+                            canvas.height = imageToResize.height;
+                        } else {
+                            canvas.height = height;
+                        }
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(imageToResize, 0, 0, canvas.width, canvas.height);
+                        return canvas.toDataURL(imageToResize.mimeType);    // 'image/png'
+                    }
+
+                    // Resize image
+                    preview.src = resizeImage(preview, parseInt(document.getElementById('imageWidth').value), parseInt(document.getElementById('imageHeight').value));
+                    // Convert image to file object
+                    resizedImageFile = dataURLtoFile(preview.src, imageFile.name);
+                    // Trigger an imageUpload change event
+                    imageUpload.dispatchEvent(new Event('change'));
+                }
+            });
+
+            /**
+             * Add listener to the submit button
+             * @param {Event} event - The click event.
+             */
+            analyzeBtn.addEventListener('click', async function () {
+                if (!imageFile || !prompt.value || !apiUrl.value) {
+                    alert('Please upload an image and fill the input!');
+                    return;
+                }
+
+                loading.style.display = 'inline';
+                analyzeBtn.disabled = true;
+                // Set button colour to grey
+                analyzeBtn.style.backgroundColor = '#888';
+
+                // Clear the previous bounding boxes on the image
+                clearBboxes("hide");
+
+                response.textContent = "";
+                LLMResponseData.textContent = "";
+                imageSummary.textContent = '';
+
+                try {
+                    // Start time counter
+                    const startTime = performance.now();
+
+                    const base64Image = await getBase64Image(imageFile);
+
+                    const apiResponse = await callLLMAPI(apiUrl.value, prompt.value, base64Image, imageFile.type);
+
+                    const elapsedTime = (performance.now() - startTime) / 1000;
+                    loading.textContent = `LLM response time: ${elapsedTime.toFixed(2)} seconds`;
+
+                    // Check is apiResponse[0] is a JSON string
+                    if (typeof apiResponse[0] === 'object' ||
+                        (typeof apiResponse[0] === 'string' && (apiResponse[0].startsWith('{') || apiResponse[0].startsWith('[')))
+                    ) {
+                        // response.textContent = JSON.stringify(apiResponse[0], null, 2);
+                        response.innerHTML = syntaxHighlight(apiResponse[0]);
+                    } else {
+                        response.textContent = apiResponse[0];
+                    }
+
+                    // Fill the LLMResponseData div with the response of apiResponse.usage = { completion_tokens: 389, prompt_tokens: 215, total_tokens: 604 }
+                    const LLMResponseData = document.getElementById('LLMResponseData');
+                    LLMResponseData.textContent = `${JSON.stringify({ "model": apiResponse[3], "usage": apiResponse[1], "timings": apiResponse[2] }, null, 2)}`;
+
+                    // Set image summary if exists
+                    if (apiResponse[0].summary) {
+                        imageSummary.textContent = apiResponse[0].summary;
+                    } else {
+                        if (apiResponse[0].description) {
+                            imageSummary.textContent = apiResponse[0].description;
+                        } else {
+                            imageSummary.textContent = '';
+                        }
+                    }
+
+                    const bboxProperties = ['array', 'list', 'items', 'objects', 'bbox', 'bbox2', 'bbox2d', 'bbox_2d', 'bbox2d_array', 'bbox_2d_array', 'bbox_2d_list', 'rectangles', 'object_locations', 'locations', 'boxes', 'bounding_boxes', 'bbox2_array'];
+                    let found = false;
+
+                    if (Array.isArray(apiResponse[0])) {
+                        // Process an array, e.g.:
+                        /*
+                        [
+                            {
+                                "bbox_2d": [
+                                15,
+                                32,
+                                160,
+                                62
+                                ],
+                                "text_content": "O365 MTA"
+                            },
+                            {
+                                "bbox_2d": [
+                                273,
+                                36,
+                                433,
+                                67
+                                ],
+                                "label": "SAP Cloud ERP"
+                            }
+                        ] 
+                        */
+                        drawBboxes(apiResponse[0]);
+                        found = true;
+                    } else {
+                        // Process an object
+                        for (const prop of bboxProperties) {
+                            if (apiResponse[0][prop]) {
+                                drawBboxes(apiResponse[0][prop]);
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!found) {
+                        clearBboxes();
+                        console.log('The response does not contain any bbox2, bbox_2d, rectangles, locations, boxes, or bounding_boxes array!');
+                    }
+                } catch (error) {
+                    loading.textContent = ":(";
+                    response.textContent = 'ERROR: ' + error.message;
+                    clearBboxes();
+                } finally {
+                    analyzeBtn.disabled = false;
+                    analyzeBtn.style.backgroundColor = '#007bff';
+                }
+            });
+
+            /**
+             * Get the base64 encoded image from the file input.
+             * @param {File} file - The file input.
+             * @returns {Promise} - A promise that resolves with the base64 encoded image.
+             */
+            function getBase64Image(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result.split(',')[1]);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            /**
+             * Call the LLM API and return the response.
+             * @param {string} url - The URL of the LLM API.
+             * @param {string} prompt - The prompt to send to the LLM.
+             * @param {string} image - The base64 encoded image.
+             * @param {string} mimeType - The MIME type of the image.
+             * @returns {Promise} - A promise that resolves with the response of the LLM API.
+             */
+            async function callLLMAPI(url, prompt, image, mimeType) {
+                // Get the updated LLMConfig from the textarea
+                const LLMConfig = JSON.parse(document.getElementById('LLMConfig').value);
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        messages: [
+                            {
+                                role: 'user',
+                                content: [
+                                    { type: 'image_url', image_url: { url: `data:${mimeType};base64,${image}` } },
+                                    { type: 'text', text: prompt }
+                                ]
+                            }
+                        ],
+                        max_tokens: LLMConfig.max_tokens,
+                        temperature: LLMConfig.temperature,
+                        top_k: LLMConfig.top_k,
+                        repeat_penalty: LLMConfig.repeat_penalty,
+                        cache_prompt: LLMConfig.cache_prompt,
+                        samplers: LLMConfig.samplers
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API ERROR: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                try {
+                    var LLMResults = [];
+                    var result = data.choices[0].message.content;
+                    // Remove ```json and ``` from the result string
+                    // LLMResults[0] = JSON.parse(result.replace(/```json/, '').replace(/```/, ''));
+                    LLMResults[0] = JSON.parse(cleanupResponse(result));
+                    LLMResults[1] = data.usage;
+                    LLMResults[2] = data.timings;
+                    LLMResults[3] = data.model;
+                    return (LLMResults);
+                } catch (e) {
+                    //throw new Error('Unable to parse the LLM answer to JSON: ' + e.message + '\n' + result);
+                    LLMResults[0] = result;
+                    LLMResults[1] = data.usage;
+                    LLMResults[2] = data.timings;
+                    LLMResults[3] = data.model;
+                    return (LLMResults);
+                }
+            }
+
+            /**
+             * Clean up the response text to remove unnecessary parts.
+             * @param {string} resultText - The response text from the LLM.
+             * @returns {string} - The cleaned up response text.
+             */
+            function cleanupResponse(resultText) {
+                // Remove each texts outside a JSON block, before the first "{" or "[", and after the last "}" or "]"
+                const startIndex = Math.min(
+                    resultText.indexOf('{'),
+                    resultText.indexOf('[')
+                );
+                const endIndex = Math.max(
+                    resultText.lastIndexOf('}'),
+                    resultText.lastIndexOf(']')
+                );
+                if (startIndex !== -1 && endIndex !== -1) {
+                    resultText = resultText.substring(startIndex, endIndex + 1);
+                }
+
+                // Remove ```json and ``` from the result string
+                resultText = resultText.replace(/```json/, '').replace(/```/, '');
+
+                return (resultText);
+            }
+
+            /**
+             * Draw bounding boxes on the image.
+             * @param {Array} bboxes - Array of bounding boxes.
+             */
+            function drawBboxes(bboxes) {
+
+                clearBboxes();
+                const img = document.getElementById('preview');
+                const container = imageContainer;
+
+                if (bboxes.length > 0) {
+                    if (typeof bboxes[0][0] == "string") {
+                        // Simple array response format
+                        /*
+                            {
+                                "has": <true|false>,
+                                "boxes": [
+                                    [ <label>, <x_min>, <y_min>, <x_max>, <y_max> ]
+                                ],
+                                "summary": "Summary of the image"
+                            }
+                        */
+                        bboxes.forEach(bbox => {
+                            const [label, x1, y1, x2, y2] = bbox;
+                            const box = document.createElement('div');
+                            box.className = 'bbox';
+                            box.style.left = `${x1}px`;
+                            box.style.top = `${y1}px`;
+                            box.style.width = `${x2 - x1}px`;
+                            box.style.height = `${y2 - y1}px`;
+                            // Add label to the box
+                            box.title = label;
+                            container.appendChild(box);
+                        });
+                    } else {
+                        if (bboxes[0].bbox_2d != null) {
+                            // Array of bbox_2d objects (prefered by Qwen VL models)
+                            // https://qwen.ai/blog?id=c5e7415d9a9e89adc18c59d9e466e5a1a459b8f4&from=research.research-list
+                            /*
+                                {
+                                    "has": <true|false>,
+                                    "boxes": [
+                                        {
+                                            "bbox_2d": [ <x_min>, <y_min>, <x_max>, <y_max> ],
+                                            "label": <label>
+                                        }
+                                    ],
+                                    "summary": "Summary of the image"
+                                }
+                            */
+                            bboxes.forEach(function (bbox) {
+                                var box = document.createElement('div');
+                                box.className = 'bbox';
+                                box.style.left = bbox.bbox_2d[0] + 'px';
+                                box.style.top = bbox.bbox_2d[1] + 'px';
+                                box.style.width = (bbox.bbox_2d[2] - bbox.bbox_2d[0]) + 'px';
+                                box.style.height = (bbox.bbox_2d[3] - bbox.bbox_2d[1]) + 'px';
+                                // Add label to the box
+                                if (bbox.label != null) box.title = bbox.label;
+                                if (bbox.text_content != null) box.title = bbox.text_content;
+                                if (bbox.content != null) box.title = bbox.content;
+                                if (bbox.text != null) box.title = bbox.text;
+                                container.appendChild(box);
+                            });
+                        } else {
+                            if (bboxes[0].label != null) {
+                                // Named object response format
+                                /*
+                                    {
+                                        "has": <true|false>,
+                                        "boxes": [
+                                            {
+                                            "label": String,
+                                            "x_min": Number,
+                                            "y_min": Number,
+                                            "x_max": Number,
+                                            "y_max": Number
+                                            }
+                                        ],
+                                        "summary": "Summary of the image"
+                                    }
+                                */
+                                bboxes.forEach(function (bbox) {
+                                    var box = document.createElement('div');
+                                    box.className = 'bbox';
+                                    if (typeof bbox.x_min == "undefined") {
+                                        // Use x1 instead of x_min
+                                        bbox.x_min = bbox.x1;
+                                        bbox.y_min = bbox.y1;
+                                        bbox.x_max = bbox.x2;
+                                        bbox.y_max = bbox.y2;
+                                    }
+                                    box.style.left = bbox.x_min + 'px';
+                                    box.style.top = bbox.y_min + 'px';
+                                    box.style.width = (bbox.x_max - bbox.x_min) + 'px';
+                                    box.style.height = (bbox.y_max - bbox.y_min) + 'px';
+                                    // Add label to the box
+                                    box.title = bbox.label;
+                                    container.appendChild(box);
+                                });
+                            } else {
+                                // TODO: Handle other response formats
+                                alert('Unhandled response format!');
+                            }
+                        }
+                    }
+                } else {
+                    // The response does not contain any bbox2, bbox_2d, rectangles, locations, boxes, or bounding_boxes array!
+                    clearBboxes();
+                }
+            }
+
+            /**
+             * Clear all bounding boxes from the image container
+             * @param {string} mode - "hide" to hide the boxes, "remove" to remove them entirely
+             */
+            function clearBboxes(mode) {
+                const boxes = document.querySelectorAll('.bbox');
+                switch (mode) {
+                    case "hide":
+                        // Set the border of the boxes to lightgrey
+                        boxes.forEach(box => box.style.border = '1px solid darkgray');
+                        // Set the background of the boxes to transparent white
+                        boxes.forEach(box => box.style.background = 'rgba(255,255,255,0.5)');
+                        break;
+                    default:
+                        // Remove all boxes
+                        boxes.forEach(box => box.remove());
+                }
+            }
+
+            /**
+             * Syntax highlight JSON code.
+             * @param {string} json - The JSON code to highlight.
+             * @returns {string} - The highlighted JSON code.
+             */
+            function syntaxHighlight(json) {
+                if (typeof json != "string") {
+                    json = JSON.stringify(json, null, "\t");
+                }
+
+                json = json
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;");
+
+                return json.replace(
+                    /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+                    function (match) {
+                        var cls = "number";
+                        if (/^"/.test(match)) {
+                            if (/:$/.test(match)) {
+                                cls = "key";
+                            } else {
+                                cls = "string";
+                            }
+                        } else if (/true|false/.test(match)) {
+                            cls = "boolean";
+                        } else if (/null/.test(match)) {
+                            cls = "null";
+                        }
+                        return '<span class="' + cls + '">' + match + "</span>";
+                    }
+                );
+            }
+        });
+    </script>
+
+
+</body></html>

@@ -1037,7 +1037,10 @@ func (s *Server) reserveWorstCaseGraph(prompt bool) error {
 	// - The result may now be larger than a batch (images may not fit in a
 	//   single batch), so trim based on what will fit and must be grouped together.
 	// - Fill out the rest of the space with text tokens.
-	if multimodalProcessor, ok := s.model.(model.MultimodalProcessor); prompt && ok {
+	// If we're explicitly allowing text-only usage for split-vision models,
+	// skip multimodal worst-case reservation to avoid initializing vision paths.
+	skipMM := os.Getenv("OLLAMA_ALLOW_TEXT_ONLY_SPLIT_VISION") == "1"
+	if multimodalProcessor, ok := s.model.(model.MultimodalProcessor); prompt && ok && !skipMM {
 		mmCtx := s.model.Backend().NewContext()
 		defer mmCtx.Close()
 

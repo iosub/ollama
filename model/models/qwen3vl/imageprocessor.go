@@ -36,7 +36,7 @@ func newImageProcessor(c fs.Config) ImageProcessor {
 		mergeSize:         mergeSize,
 		shortestEdge:      int(c.Uint("vision.shortest_edge", 64<<10)),
 		// FIXME(mxyng): the model defined longest edge (16M) is too large for the default
-		// context length of 8K and will panic. Adjusting to 2M for now.
+		// context length of 4K and will panic. Adjusting to 2M for now.
 		// longestEdge:   int(c.Uint("vision.longest_edge", 16<<20)),
 		longestEdge:   2 << 20,
 		factor:        patchSize * mergeSize,
@@ -83,10 +83,11 @@ type Grid struct {
 }
 
 func (p *ImageProcessor) ProcessImage(ctx ml.Context, img image.Image) (ml.Tensor, *Grid, error) {
-	img = imageproc.Composite(img)
-
 	origWidth := img.Bounds().Dx()
 	origHeight := img.Bounds().Dy()
+
+	// Flatten any alpha channel to keep preprocessing aligned with legacy pipeline.
+	img = imageproc.Composite(img)
 
 	// Calculate smart resize dimensions
 	resizedHeight, resizedWidth := p.SmartResize(origHeight, origWidth)
@@ -118,7 +119,7 @@ func (p *ImageProcessor) ProcessImage(ctx ml.Context, img image.Image) (ml.Tenso
 		p.patchSize * p.patchSize
 	numPatches := grid.Temporal * grid.Height * grid.Width
 
-	pixelValues := ctx.Input().FromFloats(patches, patchDim, numPatches)
+	pixelValues := ctx.Input().FromFloatSlice(patches, patchDim, numPatches)
 
 	// Return patches and grid dimensions
 	return pixelValues, grid, nil

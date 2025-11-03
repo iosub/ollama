@@ -178,10 +178,10 @@ index 3191faaa4..32f14c811 100644
  
  static const struct ggml_backend_i ggml_backend_cpu_i = {
 diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
-index 4b122a35f..7af9a3f98 100644
+index c5f787dc5..5a611e3d2 100644
 --- a/ggml/src/ggml-cuda/ggml-cuda.cu
 +++ b/ggml/src/ggml-cuda/ggml-cuda.cu
-@@ -2844,8 +2844,8 @@ static void ggml_backend_cuda_synchronize(ggml_backend_t backend) {
+@@ -2845,8 +2845,8 @@ static void ggml_backend_cuda_synchronize(ggml_backend_t backend) {
  }
  
  #ifdef USE_CUDA_GRAPH
@@ -192,7 +192,7 @@ index 4b122a35f..7af9a3f98 100644
  
      // Loop over nodes in GGML graph to obtain info needed for CUDA graph
  
-@@ -2878,24 +2878,34 @@ static bool check_node_graph_compatibility(ggml_cgraph * cgraph,
+@@ -2879,24 +2879,34 @@ static bool check_node_graph_compatibility(ggml_cgraph * cgraph,
  #endif
          }
  
@@ -243,7 +243,7 @@ index 4b122a35f..7af9a3f98 100644
          }
  
          if (!use_cuda_graph) {
-@@ -3502,7 +3512,7 @@ static void evaluate_and_capture_cuda_graph(ggml_backend_cuda_context * cuda_ctx
+@@ -3528,7 +3538,7 @@ static void evaluate_and_capture_cuda_graph(ggml_backend_cuda_context * cuda_ctx
      }
  }
  
@@ -252,7 +252,7 @@ index 4b122a35f..7af9a3f98 100644
      ggml_backend_cuda_context * cuda_ctx = (ggml_backend_cuda_context *)backend->context;
  
      ggml_cuda_set_device(cuda_ctx->device);
-@@ -3540,7 +3550,7 @@ static enum ggml_status ggml_backend_cuda_graph_compute(ggml_backend_t backend,
+@@ -3566,7 +3576,7 @@ static enum ggml_status ggml_backend_cuda_graph_compute(ggml_backend_t backend,
      if (use_cuda_graph) {
          cuda_graph_update_required = is_cuda_graph_update_required(cuda_ctx, cgraph);
  
@@ -280,10 +280,10 @@ index f2ff9f322..05ff6a5a6 100644
  
  static void ggml_backend_metal_graph_optimize(ggml_backend_t backend, ggml_cgraph * cgraph) {
 diff --git a/ggml/src/ggml-vulkan/ggml-vulkan.cpp b/ggml/src/ggml-vulkan/ggml-vulkan.cpp
-index 4223bd0cc..99936b5b2 100644
+index 651e7ca32..3d4a131d7 100644
 --- a/ggml/src/ggml-vulkan/ggml-vulkan.cpp
 +++ b/ggml/src/ggml-vulkan/ggml-vulkan.cpp
-@@ -12645,7 +12645,7 @@ static uint32_t ggml_vk_fuse_multi_add(ggml_backend_vk_context * ctx, const stru
+@@ -12651,7 +12651,7 @@ static uint32_t ggml_vk_fuse_multi_add(ggml_backend_vk_context * ctx, const stru
      return num_adds;
  }
  
@@ -292,7 +292,7 @@ index 4223bd0cc..99936b5b2 100644
      VK_LOG_DEBUG("ggml_backend_vk_graph_compute(" << cgraph->n_nodes << " nodes)");
      ggml_backend_vk_context * ctx = (ggml_backend_vk_context *)backend->context;
  
-@@ -12881,6 +12881,7 @@ static ggml_status ggml_backend_vk_graph_compute(ggml_backend_t backend, ggml_cg
+@@ -12887,6 +12887,7 @@ static ggml_status ggml_backend_vk_graph_compute(ggml_backend_t backend, ggml_cg
      return GGML_STATUS_SUCCESS;
  
      UNUSED(backend);

@@ -337,7 +337,6 @@ func StartRunner(ollamaEngine bool, modelPath string, gpuLibs []string, out io.W
 	}
 
 	cmd = exec.Command(exe, params...)
-
 	cmd.Env = os.Environ()
 
 	if out != nil {
