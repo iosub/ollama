@@ -22,6 +22,12 @@ package llama
 
 extern bool llamaProgressCallback(float progress, void *user_data);
 extern void llamaLog(int level, char* text, void* user_data);
+
+#if defined(__GNUC__) || defined(__clang__)
+extern int32_t llama_model_n_embd_full(const struct llama_model * model) __attribute__((weak));
+#endif
+
+int32_t llama_model_n_embd_full_compat(const struct llama_model * model);
 */
 import "C"
 
@@ -117,7 +123,7 @@ func NewContextParams(numCtx int, batchSize int, numSeqMax int, threads int, fla
 	params.n_seq_max = C.uint(numSeqMax)
 	params.n_threads = C.int(threads)
 	params.n_threads_batch = params.n_threads
-	params.embeddings = C.bool(true)
+	params.embeddings = C.bool(false)
 	if flashAttention {
 		params.flash_attn_type = C.LLAMA_FLASH_ATTN_TYPE_ENABLED
 	} else {
@@ -192,6 +198,10 @@ func (c *Context) KvCacheClear() {
 
 func (c *Context) KvCacheCanShift() bool {
 	return bool(C.llama_memory_can_shift(C.llama_get_memory(c.c)))
+}
+
+func (c *Context) SetEmbeddings(value bool) {
+	C.llama_set_embeddings(c.c, C.bool(value))
 }
 
 // Get the embeddings for a sequence id
@@ -482,6 +492,10 @@ func (m *Model) NEmbd() int {
 	return int(C.llama_model_n_embd(m.c))
 }
 
+func (m *Model) NEmbdFull() int {
+	return int(C.llama_model_n_embd_full_compat(m.c))
+}
+
 // vision processing
 type MtmdContext struct {
 	c *C.struct_mtmd_context
@@ -512,6 +526,9 @@ type MtmdChunk struct {
 }
 
 func (c *MtmdContext) MultimodalTokenize(llamaContext *Context, data []byte) ([]MtmdChunk, error) {
+	llamaContext.SetEmbeddings(true)
+	defer llamaContext.SetEmbeddings(false)
+
 	// Initialize the input chunks pointer
 	ic := C.mtmd_input_chunks_init()
 	defer C.mtmd_input_chunks_free(ic)
@@ -529,7 +546,7 @@ func (c *MtmdContext) MultimodalTokenize(llamaContext *Context, data []byte) ([]
 		return nil, errors.New("unable to tokenize mtmd embedding from image")
 	}
 	nChunks := C.mtmd_input_chunks_size(ic)
-	numEmbed := llamaContext.Model().NEmbd()
+	numEmbed := llamaContext.Model().NEmbdFull()
 	outChunks := make([]MtmdChunk, 0)
 	for i := range int(nChunks) {
 		chunk := C.mtmd_input_chunks_get(ic, C.size_t(i))

@@ -119,7 +119,7 @@ func (p *ImageProcessor) ProcessImage(ctx ml.Context, img image.Image) (ml.Tenso
 		p.patchSize * p.patchSize
 	numPatches := grid.Temporal * grid.Height * grid.Width
 
-	pixelValues := ctx.Input().FromFloatSlice(patches, patchDim, numPatches)
+	pixelValues := ctx.Input().FromFloats(patches, patchDim, numPatches)
 
 	// Return patches and grid dimensions
 	return pixelValues, grid, nil

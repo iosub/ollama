@@ -464,6 +464,20 @@ func (s *Server) processBatch(tokenBatch *llama.Batch, embedBatch *llama.Batch) 
 		return nil
 	}
 
+	needEmbeddings := false
+	for _, seq := range s.seqs {
+		if seq != nil && seq.embeddingOnly {
+			needEmbeddings = true
+			break
+		}
+	}
+
+	if batch.IsEmbedding() {
+		s.lc.SetEmbeddings(false)
+	} else {
+		s.lc.SetEmbeddings(needEmbeddings)
+	}
+
 	t := time.Now()
 	if err := s.lc.Decode(batch); err != nil {
 		return fmt.Errorf("failed to decode batch: %w", err)
