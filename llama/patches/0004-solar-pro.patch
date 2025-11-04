@@ -15,7 +15,7 @@ adds support for the Solar Pro architecture
  7 files changed, 248 insertions(+), 1 deletion(-)
 
 diff --git a/src/llama-arch.cpp b/src/llama-arch.cpp
-index 869e4dcc..9f6b6ad2 100644
+index 869e4dccf..9f6b6ad20 100644
 --- a/src/llama-arch.cpp
 +++ b/src/llama-arch.cpp
 @@ -81,6 +81,7 @@ static const std::map<llm_arch, const char *> LLM_ARCH_NAMES = {
@@ -68,7 +68,7 @@ index 869e4dcc..9f6b6ad2 100644
      {LLM_TENSOR_POS_NET_NORM,               {LLM_TENSOR_LAYER_REPEATING, GGML_OP_MUL}},
      {LLM_TENSOR_POS_NET_NORM1,              {LLM_TENSOR_LAYER_REPEATING, GGML_OP_MUL}},
 diff --git a/src/llama-arch.h b/src/llama-arch.h
-index c3ae7165..dc7a362a 100644
+index c3ae71655..dc7a362af 100644
 --- a/src/llama-arch.h
 +++ b/src/llama-arch.h
 @@ -85,6 +85,7 @@ enum llm_arch {
@@ -96,7 +96,7 @@ index c3ae7165..dc7a362a 100644
      LLM_TENSOR_CONVNEXT_DW,
      LLM_TENSOR_CONVNEXT_NORM,
 diff --git a/src/llama-hparams.cpp b/src/llama-hparams.cpp
-index db65d69e..b6bf6bbf 100644
+index db65d69ea..b6bf6bbf2 100644
 --- a/src/llama-hparams.cpp
 +++ b/src/llama-hparams.cpp
 @@ -151,6 +151,14 @@ uint32_t llama_hparams::n_pos_per_embd() const {
@@ -115,7 +115,7 @@ index db65d69e..b6bf6bbf 100644
      if (il < n_layer) {
          return swa_layers[il];
 diff --git a/src/llama-hparams.h b/src/llama-hparams.h
-index 4e7f73ec..80582728 100644
+index 4e7f73ec2..80582728a 100644
 --- a/src/llama-hparams.h
 +++ b/src/llama-hparams.h
 @@ -64,6 +64,8 @@ struct llama_hparams {
@@ -138,7 +138,7 @@ index 4e7f73ec..80582728 100644
  
      bool has_kv(uint32_t il) const;
 diff --git a/src/llama-model-loader.cpp b/src/llama-model-loader.cpp
-index aa3a65f8..ee303bd5 100644
+index aa3a65f87..ee303bd58 100644
 --- a/src/llama-model-loader.cpp
 +++ b/src/llama-model-loader.cpp
 @@ -466,7 +466,7 @@ namespace GGUFMeta {
@@ -151,7 +151,7 @@ index aa3a65f8..ee303bd5 100644
  llama_model_loader::llama_model_loader(
          const std::string & fname,
 diff --git a/src/llama-model.cpp b/src/llama-model.cpp
-index 36d495d6..74e1d162 100644
+index 36d495d6c..74e1d1623 100644
 --- a/src/llama-model.cpp
 +++ b/src/llama-model.cpp
 @@ -1865,6 +1865,21 @@ void llama_model::load_hparams(llama_model_loader & ml) {
@@ -397,7 +397,7 @@ index 36d495d6..74e1d162 100644
          case LLM_ARCH_NEO_BERT:
          case LLM_ARCH_SMOLLM3:
 diff --git a/src/llama-model.h b/src/llama-model.h
-index 7f48662f..ec3fbd33 100644
+index 7f48662f2..ec3fbd334 100644
 --- a/src/llama-model.h
 +++ b/src/llama-model.h
 @@ -76,6 +76,7 @@ enum llm_type {

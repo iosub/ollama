@@ -12,7 +12,7 @@ with tools (e.g. nvidia-smi) and system management libraries (e.g. nvml).
  3 files changed, 63 insertions(+), 6 deletions(-)
 
 diff --git a/ggml/include/ggml-backend.h b/ggml/include/ggml-backend.h
-index c54ff98b..229bf387 100644
+index c54ff98bf..229bf387b 100644
 --- a/ggml/include/ggml-backend.h
 +++ b/ggml/include/ggml-backend.h
 @@ -158,6 +158,7 @@ extern "C" {
@@ -24,7 +24,7 @@ index c54ff98b..229bf387 100644
          size_t memory_total;
          // device type
 diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
-index c0b1e4c1..5b852f69 100644
+index c0b1e4c1f..5b852f690 100644
 --- a/ggml/src/ggml-cuda/ggml-cuda.cu
 +++ b/ggml/src/ggml-cuda/ggml-cuda.cu
 @@ -183,6 +183,51 @@ static int ggml_cuda_parse_id(char devName[]) {
@@ -147,7 +147,7 @@ index c0b1e4c1..5b852f69 100644
                  char pci_bus_id[16] = {};
                  snprintf(pci_bus_id, sizeof(pci_bus_id), "%04x:%02x:%02x.0", prop.pciDomainID, prop.pciBusID, prop.pciDeviceID);
 diff --git a/ggml/src/ggml-metal/ggml-metal.cpp b/ggml/src/ggml-metal/ggml-metal.cpp
-index bf096227..f2ff9f32 100644
+index bf0962274..f2ff9f322 100644
 --- a/ggml/src/ggml-metal/ggml-metal.cpp
 +++ b/ggml/src/ggml-metal/ggml-metal.cpp
 @@ -538,6 +538,7 @@ static enum ggml_backend_dev_type ggml_backend_metal_device_get_type(ggml_backen
