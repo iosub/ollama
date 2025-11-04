@@ -16,7 +16,178 @@ https://github.com/ggml-org/llama.cpp/pull/16745
 
 
 
-to do commint
+⚠️ **IMPORTANTE:** No se puede hacer push al upstream (repositorio original de Ollama). Los cambios solo se mantienen en el fork local.
+
+### 🔒 Configuración Git para Prevenir Push al Upstream
+
+**Ejecuta estos comandos en `C:\IA\tools\ollama` para proteger el repositorio:**
+
+```powershell
+# Configurar el remote upstream como solo lectura (fetch-only)
+git remote set-url --push upstream no_push
+
+# Verificar configuración
+git remote -v
+# Debe mostrar:
+# origin  https://github.com/iosub/ollama.git (fetch)
+# origin  https://github.com/iosub/ollama.git (push)
+# upstream        https://github.com/ollama/ollama.git (fetch)
+# upstream        no_push (push)
+```
+
+**Ahora:**
+- ✅ Puedes hacer `git fetch upstream` (sincronizar cambios del original)
+- ✅ Puedes hacer `git push origin` (tu fork)
+- ❌ `git push upstream` dará error (protegido)
+
+### 🔄 Actualizar Submódulo llama/vendor a Commit Específico
+
+**Cuando necesites cambiar a un commit específico de llama.cpp:**
+
+```powershell
+# Navegar al submódulo
+cd llama\vendor
+
+# Cambiar a commit específico (ejemplo)
+git checkout d261223d24e97f2df50220e4a5b7f0adb69bba81
+
+# Sincronizar todo (fetch + pull)
+git fetch --all
+git pull origin main
+
+# Volver al directorio raíz
+cd ..\..
+
+# Actualizar referencia del submódulo en el repo principal
+git add llama\vendor
+git commit -m "Update llama/vendor to commit d261223d"
+```
+
+**Comandos útiles para submódulos:**
+
+```powershell
+# Ver estado del submódulo
+git submodule status
+
+# Actualizar todos los submódulos a sus commits registrados
+git submodule update --init --recursive
+
+# Ver qué commit está usando actualmente
+cd llama\vendor; git log -1 --oneline; cd ..\..
+```
+
+### 📥 Sincronizar con Upstream de Ollama
+
+**Para actualizar tu fork con los últimos cambios del repositorio original:**
+
+```powershell
+# 1. Asegurarse de estar en la rama main
+git checkout main
+
+# 2. Fetch de cambios del upstream
+git fetch upstream
+
+# 3. Mergear cambios del upstream a tu rama local
+git merge upstream/main
+
+# 4. Resolver conflictos si existen (Git te avisará)
+# Edita archivos en conflicto, luego:
+# git add <archivos_resueltos>
+# git merge --continue
+
+# 5. Pushear cambios a tu fork (origin)
+git push origin main
+
+# 6. Actualizar submódulos después del merge
+git submodule update --init --recursive
+```
+
+**Flujo completo con verificación:**
+
+```powershell
+# Ver diferencias antes de mergear
+git fetch upstream
+git log HEAD..upstream/main --oneline
+
+# Si todo se ve bien, mergear
+git merge upstream/main
+
+# Verificar estado
+git status
+
+# Si hay conflictos, listarlos
+git diff --name-only --diff-filter=U
+```
+
+### 🔐 Mantener Carpeta Z_Iosu al Cambiar de Rama
+
+**Opción 1: Excluir Z_Iosu del seguimiento de Git (RECOMENDADO)**
+
+```powershell
+# Agregar Z_Iosu al .git/info/exclude (no se comparte con otros)
+echo "Z_Iosu/" >> .git\info\exclude
+
+# Verificar que ya no se rastrea
+git status
+# Z_Iosu/ no debe aparecer como "Untracked"
+```
+
+**Ventajas:**
+- ✅ Z_Iosu permanece intacto al cambiar de rama
+- ✅ No interfiere con pulls de upstream
+- ✅ No se comparte (queda local en tu máquina)
+
+**Opción 2: Crear rama de desarrollo personal**
+
+```powershell
+# Crear rama personal que incluya Z_Iosu
+git checkout -b iosub-dev
+
+# Agregar y commitear Z_Iosu en esta rama
+git add Z_Iosu/
+git commit -m "Add Z_Iosu custom scripts and docs"
+
+# Pushear a tu fork
+git push origin iosub-dev
+
+# Ahora puedes:
+# - Trabajar en iosub-dev (con Z_Iosu)
+# - Cambiar a main para sincronizar con upstream
+# - Mergear cambios de main a iosub-dev cuando necesites
+```
+
+**Flujo de trabajo con rama personal:**
+
+```powershell
+# Actualizar desde upstream
+git checkout main
+git fetch upstream
+git merge upstream/main
+git push origin main
+
+# Traer cambios a tu rama de desarrollo
+git checkout iosub-dev
+git merge main
+
+# Resolver conflictos si los hay
+# Seguir trabajando en iosub-dev con Z_Iosu intacto
+```
+
+**Opción 3: Stash temporal (para cambios rápidos de rama)**
+
+```powershell
+# Antes de cambiar de rama
+git stash push -u -m "Z_Iosu scripts"
+
+# Cambiar de rama
+git checkout otra-rama
+
+# Volver y recuperar
+git checkout main
+git stash pop
+```
+
+**Recomendación:** Usa **Opción 1** (.git/info/exclude) si Z_Iosu es solo para tu uso local, o **Opción 2** (rama personal) si quieres versionarlo en tu fork.
 
 # GUÍA COMPLETA: Compilación Ollama 0.12.7.99 con Interfaz Gráfica Funcional
 
