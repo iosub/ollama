@@ -11,11 +11,7 @@ with the fastest acceleration is loaded
  1 file changed, 13 insertions(+), 8 deletions(-)
 
 diff --git a/ggml/src/ggml-backend-reg.cpp b/ggml/src/ggml-backend-reg.cpp
-<<<<<<< HEAD
-index 136afec74..f794d9cfa 100644
-=======
 index e96b5c403..a55d9b280 100644
->>>>>>> dhiltgen/ggml_bump
 --- a/ggml/src/ggml-backend-reg.cpp
 +++ b/ggml/src/ggml-backend-reg.cpp
 @@ -179,7 +179,7 @@ struct ggml_backend_reg_entry {

@@ -24,11 +24,7 @@ index c54ff98bf..229bf387b 100644
          size_t memory_total;
          // device type
 diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
-<<<<<<< HEAD
-index c0b1e4c1f..5b852f690 100644
-=======
 index aefc6935e..cc201afff 100644
->>>>>>> dhiltgen/ggml_bump
 --- a/ggml/src/ggml-cuda/ggml-cuda.cu
 +++ b/ggml/src/ggml-cuda/ggml-cuda.cu
 @@ -183,6 +183,51 @@ static int ggml_cuda_parse_id(char devName[]) {

@@ -8,11 +8,7 @@ Subject: [PATCH] add phony target ggml-cpu for all cpu variants
  1 file changed, 2 insertions(+)
 
 diff --git a/ggml/src/CMakeLists.txt b/ggml/src/CMakeLists.txt
-<<<<<<< HEAD
-index 892c23318..09fdf5fcf 100644
-=======
 index ba281b8e6..ead235878 100644
->>>>>>> dhiltgen/ggml_bump
 --- a/ggml/src/CMakeLists.txt
 +++ b/ggml/src/CMakeLists.txt
 @@ -314,6 +314,7 @@ function(ggml_add_cpu_backend_variant tag_name)

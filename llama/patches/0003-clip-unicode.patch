@@ -10,11 +10,7 @@ filesystems for paths that include wide characters
  1 file changed, 39 insertions(+)
 
 diff --git a/tools/mtmd/clip.cpp b/tools/mtmd/clip.cpp
-<<<<<<< HEAD
-index 98e68af27..6699b75a4 100644
-=======
 index f2abf8852..c984e6282 100644
->>>>>>> dhiltgen/ggml_bump
 --- a/tools/mtmd/clip.cpp
 +++ b/tools/mtmd/clip.cpp
 @@ -28,6 +28,19 @@
