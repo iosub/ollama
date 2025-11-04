@@ -645,6 +645,124 @@ make -f Makefile.sync format-patches
 make -f Makefile.sync clean apply-patches
 ```
 
+### 8. Error "'true' is not recognized" en Windows con Makefile.sync
+
+**Síntoma:** Al ejecutar `make -f Makefile.sync clean apply-patches` aparece:
+```
+'true' is not recognized as an internal or external command
+make: *** [Makefile.sync:71: clean] Error 1
+```
+
+**Causa:** El comando `true` no existe en Windows (es de Unix/Linux).
+
+**Solución - Limpiar manualmente y aplicar patches:**
+
+```powershell
+# 1. Abortar cualquier proceso de patch en curso
+git -C llama/vendor am --abort
+
+# 2. Volver al commit base
+git -C llama/vendor checkout -f 835e918d8428f5119927d7150bf5a26176dedda0
+
+# 3. Limpiar archivos de control de patches
+Remove-Item -Force -ErrorAction SilentlyContinue llama\patches\.*.patched
+
+# 4. Aplicar patches desde cero
+make -f Makefile.sync apply-patches
+```
+
+**Si siguen los errores de patch corrupto:**
+
+```powershell
+# Opción nuclear: Reinicializar submódulo completamente
+git submodule deinit -f llama/vendor
+git submodule update --init --recursive llama/vendor
+cd llama/vendor
+git checkout 835e918d8428f5119927d7150bf5a26176dedda0
+cd ../..
+make -f Makefile.sync apply-patches
+```
+
+### 9. Error "sha1 information is lacking or useless" al aplicar patches
+
+**Síntoma:** Al ejecutar `make -f Makefile.sync apply-patches` aparece:
+```bash
+error: sha1 information is lacking or useless (ggml/src/ggml-cuda/ggml-cuda.cu).
+error: could not build fake ancestor
+Patch failed at 0001 ggml: Add batch size hint
+```
+
+**Causa:** Git no puede calcular el hash SHA1 del archivo. Esto NO es un conflicto de merge. Las causas más comunes son:
+- Line endings mezclados (CRLF vs LF) en Windows
+- Archivo modificado durante el proceso de patch
+- Índice de Git corrupto
+- Espacios en blanco inconsistentes
+
+**Diagnóstico:**
+
+```powershell
+# Ver si el archivo tiene cambios (aunque parezca limpio)
+git -C llama/vendor diff ggml/src/ggml-cuda/ggml-cuda.cu
+
+# Ver el estado del índice
+git -C llama/vendor status
+
+# Ver line endings del archivo
+git -C llama/vendor ls-files --eol ggml/src/ggml-cuda/ggml-cuda.cu
+```
+
+**Solución 1: Restaurar archivo y limpiar índice (RECOMENDADO)**
+
+```bash
+# EJECUTAR EN GIT BASH (no PowerShell)
+cd /c/IA/tools/ollama
+
+# 1. Abortar proceso de patch
+git -C llama/vendor am --abort
+
+# 2. Restaurar archivo al estado limpio
+git -C llama/vendor checkout HEAD -- ggml/src/ggml-cuda/ggml-cuda.cu
+
+# 3. Limpiar índice
+git -C llama/vendor reset --hard HEAD
+
+# 4. Verificar que está limpio
+git -C llama/vendor status
+
+# 5. Aplicar patches desde cero (EN GIT BASH)
+make -f Makefile.sync apply-patches
+```
+
+**Solución 2: Normalizar line endings**
+
+```bash
+# Si el problema persiste, normalizar line endings
+cd llama/vendor
+git config core.autocrlf false
+git rm --cached -r .
+git reset --hard HEAD
+cd ../..
+make -f Makefile.sync apply-patches
+```
+
+**Solución 3: Reiniciar submódulo completamente (última opción)**
+
+```bash
+# Desde Git Bash en C:/IA/tools/ollama
+git submodule deinit -f llama/vendor
+rm -rf llama/vendor
+git submodule update --init --recursive llama/vendor
+cd llama/vendor
+git checkout 835e918d8428f5119927d7150bf5a26176dedda0
+cd ../..
+make -f Makefile.sync apply-patches
+```
+
+**IMPORTANTE:** 
+- ⚠️ Usa **Git Bash** para ejecutar `make`, NO PowerShell
+- ⚠️ PowerShell tiene problemas interpretando comandos del Makefile
+- ⚠️ Git Bash viene con Git for Windows y simula entorno Unix
+
 ---
 
 ## 📝 Resumen de Requisitos
