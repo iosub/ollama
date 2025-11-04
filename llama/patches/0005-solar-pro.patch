@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: jmorganca <jmorganca@gmail.com>
+Date: Sun, 20 Apr 2025 16:11:09 -0700
+Subject: [PATCH] solar-pro
+
+adds support for the Solar Pro architecture
+---
+ src/llama-hparams.cpp | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/src/llama-hparams.cpp b/src/llama-hparams.cpp
+index bcd21dbc7..1c9325fa8 100644
+--- a/src/llama-hparams.cpp
++++ b/src/llama-hparams.cpp
+@@ -159,6 +159,14 @@ bool llama_hparams::n_bskcn(uint32_t n, uint32_t il) const {
+     GGML_ABORT("fatal error");
+ }
+ 
++bool llama_hparams::n_bskcn(uint32_t n, uint32_t il) const {
++    if (il < n_layer) {
++        return n_bskcn_arr[n][il] > 0;
++    }
++
++    GGML_ABORT("fatal error");
++}
++
+ bool llama_hparams::is_swa(uint32_t il) const {
+     if (il < n_layer) {
+         return swa_layers[il];

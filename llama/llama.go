@@ -506,12 +506,104 @@ func (c *MtmdContext) Free() {
 	C.mtmd_free(c.c)
 }
 
+type MtmdChunkType int
+
+const (
+	MtmdChunkTypeText MtmdChunkType = iota
+	MtmdChunkTypeImage
+	MtmdChunkTypeAudio
+)
+
 type MtmdChunk struct {
-	Embed  []float32
-	Tokens []int
+	ctx       *MtmdContext
+	chunk     *C.struct_mtmd_input_chunk
+	chunkType MtmdChunkType
+	Tokens    []int
+	id        string
+	numTokens int
+	numPos    int
 }
 
-func (c *MtmdContext) MultimodalTokenize(llamaContext *Context, data []byte) ([]MtmdChunk, error) {
+func (c *MtmdChunk) Type() MtmdChunkType {
+	return c.chunkType
+}
+
+func (c *MtmdChunk) NumTokens() int {
+	return c.numTokens
+}
+
+func (c *MtmdChunk) NumPos() int {
+	return c.numPos
+}
+
+func (c *MtmdChunk) ID() string {
+	return c.id
+}
+
+func (c *MtmdChunk) Free() {
+	if c == nil {
+		return
+	}
+
+	if c.chunk != nil {
+		C.mtmd_input_chunk_free(c.chunk)
+		c.chunk = nil
+	}
+}
+
+func (c *MtmdChunk) Decode(llamaContext *Context, nPast int, seqID int, batchSize int, logitsLast bool) (int, error) {
+	if c == nil || c.chunk == nil || c.ctx == nil {
+		return nPast, errors.New("mtmd chunk not initialized")
+	}
+
+	var newNPast C.llama_pos
+	res := C.mtmd_helper_eval_chunk_single(
+		c.ctx.c,
+		llamaContext.c,
+		c.chunk,
+		C.llama_pos(nPast),
+		C.llama_seq_id(seqID),
+		C.int32_t(batchSize),
+		C.bool(logitsLast),
+		&newNPast,
+	)
+
+	if res != 0 {
+		return int(newNPast), fmt.Errorf("mtmd helper eval chunk failed: %d", res)
+	}
+
+	return int(newNPast), nil
+}
+
+func (c *MtmdChunk) Clone() (*MtmdChunk, error) {
+	if c == nil {
+		return nil, nil
+	}
+
+	clone := &MtmdChunk{
+		ctx:       c.ctx,
+		chunkType: c.chunkType,
+		Tokens:    append([]int(nil), c.Tokens...),
+		id:        c.id,
+		numTokens: c.numTokens,
+		numPos:    c.numPos,
+	}
+
+	if c.chunk != nil {
+		copyChunk := C.mtmd_input_chunk_copy(c.chunk)
+		if copyChunk == nil {
+			return nil, errors.New("unable to clone mtmd chunk")
+		}
+		clone.chunk = copyChunk
+		runtime.SetFinalizer(clone, func(ch *MtmdChunk) {
+			ch.Free()
+		})
+	}
+
+	return clone, nil
+}
+
+func (c *MtmdContext) MultimodalTokenize(llamaContext *Context, data []byte) ([]*MtmdChunk, error) {
 	// Initialize the input chunks pointer
 	ic := C.mtmd_input_chunks_init()
 	defer C.mtmd_input_chunks_free(ic)
@@ -529,8 +621,7 @@ func (c *MtmdContext) MultimodalTokenize(llamaContext *Context, data []byte) ([]
 		return nil, errors.New("unable to tokenize mtmd embedding from image")
 	}
 	nChunks := C.mtmd_input_chunks_size(ic)
-	numEmbed := llamaContext.Model().NEmbd()
-	outChunks := make([]MtmdChunk, 0)
+	outChunks := make([]*MtmdChunk, 0, int(nChunks))
 	for i := range int(nChunks) {
 		chunk := C.mtmd_input_chunks_get(ic, C.size_t(i))
 		numTokens := int(C.mtmd_input_chunk_get_n_tokens(chunk))
@@ -545,32 +636,49 @@ func (c *MtmdContext) MultimodalTokenize(llamaContext *Context, data []byte) ([]
 			for j := range int(cNumTokens) {
 				tokens[j] = int(cTokensArr[j])
 			}
-			outChunks = append(outChunks, MtmdChunk{Tokens: tokens})
+			outChunks = append(outChunks, &MtmdChunk{
+				ctx:       c,
+				chunkType: MtmdChunkTypeText,
+				Tokens:    tokens,
+				numTokens: len(tokens),
+				numPos:    int(C.mtmd_input_chunk_get_n_pos(chunk)),
+			})
 		} else {
-			// Otherwise, encode the image chunk to embeddings
-
-			// Encode the chunk
-			if C.int32_t(0) != C.mtmd_encode_chunk(c.c, chunk) {
-				return nil, errors.New("unable to encode mtmd image chunk")
+			copyChunk := C.mtmd_input_chunk_copy(chunk)
+			if copyChunk == nil {
+				return nil, errors.New("unable to copy mtmd chunk")
 			}
 
-			// Get the embeddings for this chunk
-			chunkEmbed := make([][]float32, numTokens)
-			chunkEmbd := C.mtmd_get_output_embd(c.c)
-			if nil == chunkEmbd {
-				return nil, errors.New("no mtmd image embedding")
+			mtmdType := MtmdChunkTypeImage
+			switch C.mtmd_input_chunk_get_type(chunk) {
+			case C.MTMD_INPUT_CHUNK_TYPE_IMAGE:
+				mtmdType = MtmdChunkTypeImage
+			case C.MTMD_INPUT_CHUNK_TYPE_AUDIO:
+				mtmdType = MtmdChunkTypeAudio
 			}
 
-			// Extend the embedding array for each token
-			s := unsafe.Slice((*float32)(chunkEmbd), numTokens*numEmbed)
-			rows := make([]float32, len(s))
-			copy(rows, s)
-			for i := range numTokens {
-				chunkEmbed[i] = rows[i*numEmbed : (i+1)*numEmbed]
+			id := ""
+			if cid := C.mtmd_input_chunk_get_id(copyChunk); cid != nil {
+				id = C.GoString(cid)
 			}
-			for _, e := range chunkEmbed {
-				outChunks = append(outChunks, MtmdChunk{Embed: e})
+			if id == "" {
+				id = fmt.Sprintf("chunk-%d", i)
 			}
+
+			mc := &MtmdChunk{
+				ctx:       c,
+				chunk:     copyChunk,
+				chunkType: mtmdType,
+				id:        id,
+				numTokens: numTokens,
+				numPos:    int(C.mtmd_input_chunk_get_n_pos(chunk)),
+			}
+
+			runtime.SetFinalizer(mc, func(ch *MtmdChunk) {
+				ch.Free()
+			})
+
+			outChunks = append(outChunks, mc)
 		}
 	}
 	slog.Debug("image tokenization chunks", "totalChunks", len(outChunks))

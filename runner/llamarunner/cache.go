@@ -95,10 +95,38 @@ func (c *InputCache) LoadCacheSlot(prompt []input, cachePrompt bool) (*InputCach
 		numPast--
 	}
 
-	if !c.lc.KvCacheSeqRm(slot.Id, numPast, -1) {
+	// Convert input index to token position for KV cache operations
+	numPastTokens := countInputTokens(prompt[:numPast])
+	
+	// Always clear discarded portions completely
+	if numPastTokens == 0 {
+		// No cache reuse - clear everything
+		c.lc.KvCacheSeqRm(slot.Id, 0, -1)
+		// Free all old image chunks
+		for i := range slot.Inputs {
+			if slot.Inputs[i].imageChunk != nil {
+				slot.Inputs[i].imageChunk.Free()
+			}
+		}
+		slot.Inputs = nil
+	} else if !c.lc.KvCacheSeqRm(slot.Id, numPastTokens, -1) {
 		// Some models don't support partial erasure
 		c.lc.KvCacheSeqRm(slot.Id, 0, -1)
 		numPast = 0
+		numPastTokens = 0
+		// Free discarded chunks
+		for i := numPast; i < len(slot.Inputs); i++ {
+			if slot.Inputs[i].imageChunk != nil {
+				slot.Inputs[i].imageChunk.Free()
+			}
+		}
+	} else {
+		// Partial cache reuse - free only discarded chunks
+		for i := numPast; i < len(slot.Inputs); i++ {
+			if slot.Inputs[i].imageChunk != nil {
+				slot.Inputs[i].imageChunk.Free()
+			}
+		}
 	}
 
 	slog.Debug("loading cache slot", "id", slot.Id, "cache", len(slot.Inputs), "prompt", len(prompt),
@@ -167,6 +195,7 @@ func (c *InputCache) findBestCacheSlot(prompt []input) (*InputCacheSlot, int, er
 	}
 
 	if longest > 0 && longestSlot != oldestSlot {
+		longestTokens := countInputTokens(longestSlot.Inputs[:longest])
 		slog.Debug("forking cache slot", "src", longestSlot.Id, "dst", oldestSlot.Id, "inputs", longest, "total",
 			len(longestSlot.Inputs))
 		oldestSlot.Inputs = make([]input, longest)
@@ -174,7 +203,7 @@ func (c *InputCache) findBestCacheSlot(prompt []input) (*InputCacheSlot, int, er
 		// This is only nil for unit tests
 		if c.lc != nil {
 			c.lc.KvCacheSeqRm(oldestSlot.Id, 0, -1)
-			c.lc.KvCacheSeqCp(longestSlot.Id, oldestSlot.Id, 0, longest)
+			c.lc.KvCacheSeqCp(longestSlot.Id, oldestSlot.Id, 0, longestTokens)
 		}
 	}
 
@@ -199,11 +228,29 @@ func countCommonPrefix(a []input, b []input) int {
 	return count
 }
 
-func (c *InputCache) ShiftDiscard(inputLen int, numKeep int) int {
+func findInputsUpToToken(inputs []input, targetTokens int) int {
+	tokens := 0
+	for i, in := range inputs {
+		if tokens >= targetTokens {
+			return i
+		}
+		switch {
+		case in.imageChunk != nil:
+			tokens += in.imageChunk.NumTokens()
+		case in.imageID != "" && in.token == -1: // tokenImagePlaceholder
+			tokens++
+		default:
+			tokens++
+		}
+	}
+	return len(inputs)
+}
+
+func (c *InputCache) ShiftDiscard(inputTokens int, numKeep int) int {
 	targetFree := (c.numCtx - numKeep) / 2
 	targetFree = max(targetFree, 1)
 
-	currentFree := c.numCtx - inputLen
+	currentFree := c.numCtx - inputTokens
 
 	return max(targetFree-currentFree, 0)
 }
@@ -225,14 +272,14 @@ func (c *InputCache) ShiftCacheSlot(slot *InputCacheSlot, numKeep int) error {
 		return fmt.Errorf("unable to shift context - keep exceeds context (keep: %v context: %v)", numKeep, c.numCtx)
 	}
 
-	inputLen := len(slot.Inputs)
-	discard := c.ShiftDiscard(inputLen, numKeep)
+	inputTokens := countInputTokens(slot.Inputs)
+	discard := c.ShiftDiscard(inputTokens, numKeep)
 
 	if discard <= 0 {
 		return nil
 	}
 
-	slog.Debug("context limit hit - shifting", "id", slot.Id, "limit", c.numCtx, "input", len(slot.Inputs),
+	slog.Debug("context limit hit - shifting", "id", slot.Id, "limit", c.numCtx, "input", inputTokens,
 		"keep", numKeep, "discard", discard)
 
 	var shiftFailed bool
@@ -243,7 +290,7 @@ func (c *InputCache) ShiftCacheSlot(slot *InputCacheSlot, numKeep int) error {
 			shiftFailed = true
 			slog.Debug("kv cache removal not supported, clearing cache and returning inputs for reprocessing", "id", slot.Id)
 		} else {
-			c.lc.KvCacheSeqAdd(slot.Id, numKeep+discard, inputLen, -discard)
+			c.lc.KvCacheSeqAdd(slot.Id, numKeep+discard, inputTokens, -discard)
 		}
 	} else {
 		// For models that don't support shifting
@@ -252,10 +299,13 @@ func (c *InputCache) ShiftCacheSlot(slot *InputCacheSlot, numKeep int) error {
 	}
 
 	if shiftFailed {
-		// Create new input slice with preserved tokens (numKeep + remaining tokens after discard)
-		newInputs := make([]input, numKeep+inputLen-(numKeep+discard))
-		copy(newInputs[:numKeep], slot.Inputs[:numKeep])
-		copy(newInputs[numKeep:], slot.Inputs[numKeep+discard:])
+		// Create new input slice preserving structure
+		// Find input indices corresponding to token positions
+		keptInputs := findInputsUpToToken(slot.Inputs, numKeep)
+		discardInputs := findInputsUpToToken(slot.Inputs[keptInputs:], discard)
+		newInputs := make([]input, keptInputs+len(slot.Inputs)-(keptInputs+discardInputs))
+		copy(newInputs[:keptInputs], slot.Inputs[:keptInputs])
+		copy(newInputs[keptInputs:], slot.Inputs[keptInputs+discardInputs:])
 
 		// Clear the entire KV cache
 		_ = c.lc.KvCacheSeqRm(slot.Id, 0, -1)
@@ -267,10 +317,12 @@ func (c *InputCache) ShiftCacheSlot(slot *InputCacheSlot, numKeep int) error {
 	}
 
 	// Standard shift succeeded - update input array
-	for i := numKeep + discard; i < inputLen; i++ {
-		slot.Inputs[i-discard] = slot.Inputs[i]
+	keptInputs := findInputsUpToToken(slot.Inputs, numKeep)
+	discardInputs := findInputsUpToToken(slot.Inputs[keptInputs:], discard)
+	for i := keptInputs + discardInputs; i < len(slot.Inputs); i++ {
+		slot.Inputs[i-discardInputs] = slot.Inputs[i]
 	}
-	slot.Inputs = slot.Inputs[:inputLen-discard]
+	slot.Inputs = slot.Inputs[:len(slot.Inputs)-discardInputs]
 
 	return nil
 }

@@ -25,21 +25,35 @@ func TestCountCommon(t *testing.T) {
 			expected: 1,
 		},
 		{
-			name:     "Embeddings Prefix",
-			t1:       []input{{embed: []float32{0.1, 0.2, 0.3}}},
-			t2:       []input{{embed: []float32{0.1, 0.2, 0.3}}, {embed: []float32{0.4, 0.5, 0.6}}, {embed: []float32{0.7}}},
+			name: "Placeholder Prefix",
+			t1:   []input{{token: tokenImagePlaceholder, imageID: "image-1", imageIndex: 0}},
+			t2: []input{
+				{token: tokenImagePlaceholder, imageID: "image-1", imageIndex: 0},
+				{token: tokenImagePlaceholder, imageID: "image-1", imageIndex: 1},
+				{token: tokenImagePlaceholder, imageID: "image-1", imageIndex: 2},
+			},
 			expected: 1,
 		},
 		{
-			name:     "Embeddings Prefix Partial",
-			t1:       []input{{embed: []float32{0.1, 0.2, 0.3}}},
-			t2:       []input{{embed: []float32{0.1, 0.2}}, {embed: []float32{0.4, 0.5, 0.6}}, {embed: []float32{0.7}}},
+			name: "Placeholder Prefix Partial",
+			t1:   []input{{token: tokenImagePlaceholder, imageID: "image-1", imageIndex: 0}},
+			t2: []input{
+				{token: tokenImagePlaceholder, imageID: "image-1", imageIndex: 1},
+				{token: tokenImagePlaceholder, imageID: "image-2", imageIndex: 0},
+			},
 			expected: 0,
 		},
 		{
-			name:     "Mixed",
-			t1:       []input{{token: 1}, {embed: []float32{0.2, 0.3, 0.4}}},
-			t2:       []input{{token: 1}, {embed: []float32{0.2, 0.3, 0.4}}, {token: 5}},
+			name: "Mixed",
+			t1: []input{
+				{token: 1},
+				{token: tokenImagePlaceholder, imageID: "image-1", imageIndex: 0},
+			},
+			t2: []input{
+				{token: 1},
+				{token: tokenImagePlaceholder, imageID: "image-1", imageIndex: 0},
+				{token: 5},
+			},
 			expected: 2,
 		},
 		{
