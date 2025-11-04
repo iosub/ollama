@@ -84,7 +84,7 @@ index 8bd5449f1..01e2df61a 100644
  
  /**
 diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
-index bc396b521..aefc6935e 100644
+index 19f72975c..dae805c0a 100644
 --- a/ggml/src/ggml-cuda/ggml-cuda.cu
 +++ b/ggml/src/ggml-cuda/ggml-cuda.cu
 @@ -576,6 +576,7 @@ struct ggml_backend_cuda_buffer_context {

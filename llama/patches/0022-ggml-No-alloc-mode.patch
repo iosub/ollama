@@ -219,7 +219,7 @@ index 41eef3b5f..c81a2e48a 100644
  
  void ggml_backend_sched_set_tensor_backend(ggml_backend_sched_t sched, struct ggml_tensor * node, ggml_backend_t backend) {
 diff --git a/ggml/src/ggml-cuda/common.cuh b/ggml/src/ggml-cuda/common.cuh
-index 41ff89c4d..2931c15ca 100644
+index 1af235883..15c3225af 100644
 --- a/ggml/src/ggml-cuda/common.cuh
 +++ b/ggml/src/ggml-cuda/common.cuh
 @@ -35,6 +35,41 @@
@@ -288,7 +288,7 @@ index 41ff89c4d..2931c15ca 100644
          }
          return *pools[device];
      }
-@@ -1004,4 +1042,20 @@ struct ggml_backend_cuda_context {
+@@ -1004,6 +1042,22 @@ struct ggml_backend_cuda_context {
      ggml_cuda_pool & pool() {
          return pool(device);
      }
@@ -309,8 +309,10 @@ index 41ff89c4d..2931c15ca 100644
 +        return pools[device]->alloc_size();
 +    }
  };
+ 
+ struct ggml_cuda_mm_fusion_args_host {
 diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
-index 02d413467..f79e5d65c 100644
+index c6812008c..877b24601 100644
 --- a/ggml/src/ggml-cuda/ggml-cuda.cu
 +++ b/ggml/src/ggml-cuda/ggml-cuda.cu
 @@ -359,6 +359,8 @@ const ggml_cuda_device_info & ggml_cuda_info() {
@@ -551,7 +553,7 @@ index 02d413467..f79e5d65c 100644
  };
  
  ggml_backend_buffer_type_t ggml_backend_cuda_buffer_type(int device) {
-@@ -2986,6 +3048,7 @@ static bool ggml_cuda_can_fuse(const struct ggml_cgraph * cgraph, int node_idx,
+@@ -3159,6 +3221,7 @@ static bool ggml_cuda_can_fuse(const struct ggml_cgraph * cgraph, int node_idx,
  
  static void evaluate_and_capture_cuda_graph(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph * cgraph,
      bool & graph_evaluated_or_captured, bool & use_cuda_graph, bool & cuda_graph_update_required) {
@@ -559,7 +561,7 @@ index 02d413467..f79e5d65c 100644
      // flag used to determine whether it is an integrated_gpu
      const bool integrated = ggml_cuda_info().devices[cuda_ctx->device].integrated;
  
-@@ -3001,6 +3064,11 @@ static void evaluate_and_capture_cuda_graph(ggml_backend_cuda_context * cuda_ctx
+@@ -3174,6 +3237,11 @@ static void evaluate_and_capture_cuda_graph(ggml_backend_cuda_context * cuda_ctx
                      continue;
                  }
  
@@ -571,7 +573,7 @@ index 02d413467..f79e5d65c 100644
                  static bool disable_fusion = (getenv("GGML_CUDA_DISABLE_FUSION") != nullptr);
                  if (!disable_fusion) {
  
-@@ -3140,6 +3208,7 @@ static void evaluate_and_capture_cuda_graph(ggml_backend_cuda_context * cuda_ctx
+@@ -3491,6 +3559,7 @@ static void evaluate_and_capture_cuda_graph(ggml_backend_cuda_context * cuda_ctx
  
  static enum ggml_status ggml_backend_cuda_graph_compute(ggml_backend_t backend, ggml_cgraph * cgraph, int batch_size) {
      ggml_backend_cuda_context * cuda_ctx = (ggml_backend_cuda_context *)backend->context;
@@ -579,7 +581,7 @@ index 02d413467..f79e5d65c 100644
  
      ggml_cuda_set_device(cuda_ctx->device);
  
-@@ -3215,6 +3284,71 @@ static enum ggml_status ggml_backend_cuda_graph_compute(ggml_backend_t backend,
+@@ -3566,6 +3635,71 @@ static enum ggml_status ggml_backend_cuda_graph_compute(ggml_backend_t backend,
      return GGML_STATUS_SUCCESS;
  }
  
@@ -651,7 +653,7 @@ index 02d413467..f79e5d65c 100644
  static void ggml_backend_cuda_event_record(ggml_backend_t backend, ggml_backend_event_t event) {
      ggml_backend_cuda_context * cuda_ctx = (ggml_backend_cuda_context *)backend->context;
  
-@@ -3255,6 +3389,9 @@ static const ggml_backend_i ggml_backend_cuda_interface = {
+@@ -3606,6 +3740,9 @@ static const ggml_backend_i ggml_backend_cuda_interface = {
      /* .event_record            = */ ggml_backend_cuda_event_record,
      /* .event_wait              = */ ggml_backend_cuda_event_wait,
      /* .graph_optimize          = */ NULL,
