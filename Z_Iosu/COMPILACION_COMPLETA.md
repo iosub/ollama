@@ -205,6 +205,7 @@ git merge main
 ```powershell
 # Antes de cambiar de rama
 git stash push -u -m "Z_Iosu scripts"
+Tash push -u -m "Z_Iosu scripts"
 
 # Cambiar de rama
 git checkout otra-rama
@@ -213,6 +214,20 @@ git checkout otra-rama
 git checkout main
 git stash pop
 ```
+Tash push -u -m "Z_Iosu scripts"
+
+# Cambiar de rama
+git checkout otra-rama
+
+# Volver y recuperar
+git checkout main
+git stash pop
+```
+### Ejecutar patches
+make -f Makefile.sync apply-patches
+make -f Makefile.sync format-patches sync
+git -C llama/vendor add ggml/src/ggml-cuda/argsort.cu
+git -C llama/vendor am --continue
 
 **Recomendación:** Usa **Opción 1** (.git/info/exclude) si Z_Iosu es solo para tu uso local, o **Opción 2** (rama personal) si quieres versionarlo en tu fork.
 
@@ -582,6 +597,52 @@ go env GOCACHE         # Cache Go
 ```powershell
 Get-ChildItem "$env:LOCALAPPDATA\Programs\Ollama\lib\ollama" -Recurse -Filter "*.dll" | Measure-Object
 # Debe mostrar: Count = 28
+```
+
+### 7. Error al aplicar patches con `make -f Makefile.sync apply-patches`
+
+**Síntoma:** Fallo al aplicar un patch con mensaje "No changes - did you forget to use 'git add'?"
+
+```bash
+error: could not build fake ancestor
+Patch failed at 0001 ggml: Add batch size hint
+Applying: ggml: Add batch size hint
+No changes - did you forget to use 'git add'?
+```
+
+**Causa:** El patch ya está aplicado en el código base actual.
+
+**Solución:**
+
+```powershell
+# Opción 1: Saltar el patch (RECOMENDADO si ya está aplicado)
+git -C llama/vendor am --skip
+
+# Continuar con el resto de patches
+make -f Makefile.sync apply-patches
+
+# Opción 2: Abortar y limpiar si hay muchos conflictos
+git -C llama/vendor am --abort
+make -f Makefile.sync clean apply-patches
+
+# Opción 3: Ver el patch que falló
+git -C llama/vendor am --show-current-patch=diff
+```
+
+**Flujo completo cuando falla un patch:**
+
+```powershell
+# 1. Si el error indica que no hay cambios:
+git -C llama/vendor am --skip
+
+# 2. Continuar aplicando patches
+make -f Makefile.sync apply-patches
+
+# 3. Si todo está bien, formatear patches
+make -f Makefile.sync format-patches
+
+# 4. Limpiar y reaplicar todo (si persisten problemas)
+make -f Makefile.sync clean apply-patches
 ```
 
 ---
