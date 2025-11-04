@@ -35,6 +35,31 @@ git remote -v
 # upstream        no_push (push)
 ```
 
+**Para el submódulo llama/vendor:**
+
+```powershell
+cd llama\vendor
+
+# Verificar remotes existentes
+git remote -v
+
+# Si no existe 'upstream', agregarlo primero
+git remote add upstream https://github.com/ggml-org/llama.cpp.git
+
+# Configurar upstream como solo lectura
+git remote set-url --push upstream no_push
+
+# Verificar
+git remote -v
+# Debe mostrar:
+# origin  https://github.com/LETS-BEE/llama.cpp.git (fetch)
+# origin  https://github.com/LETS-BEE/llama.cpp.git (push)
+# upstream        https://github.com/ggml-org/llama.cpp.git (fetch)
+# upstream        no_push (push)
+
+cd ..\..
+```
+
 **Ahora:**
 - ✅ Puedes hacer `git fetch upstream` (sincronizar cambios del original)
 - ✅ Puedes hacer `git push origin` (tu fork)
@@ -46,6 +71,8 @@ git remote -v
 
 ```powershell
 # Navegar al submódulo
+
+make -f Makefile.sync checkout d261223d24e97f2df50220e4a5b7f0adb69bba81
 cd llama\vendor
 
 # Cambiar a commit específico (ejemplo)
