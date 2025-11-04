@@ -35,7 +35,11 @@ index f1b740785..c54ff98bf 100644
      GGML_API void                 ggml_backend_sched_set_tensor_backend(ggml_backend_sched_t sched, struct ggml_tensor * node, ggml_backend_t backend);
      GGML_API ggml_backend_t       ggml_backend_sched_get_tensor_backend(ggml_backend_sched_t sched, struct ggml_tensor * node);
 diff --git a/ggml/src/ggml-alloc.c b/ggml/src/ggml-alloc.c
+<<<<<<< HEAD
 index 929bc4488..eee9d3b11 100644
+=======
+index c830c0965..363853873 100644
+>>>>>>> dhiltgen/ggml_bump
 --- a/ggml/src/ggml-alloc.c
 +++ b/ggml/src/ggml-alloc.c
 @@ -486,6 +486,7 @@ struct node_alloc {
@@ -64,7 +68,7 @@ index 929bc4488..eee9d3b11 100644
      free(galloc->buffers);
      free(galloc->buf_tallocs);
      free(galloc->node_allocs);
-@@ -869,6 +874,8 @@ bool ggml_gallocr_reserve_n(ggml_gallocr_t galloc, struct ggml_cgraph * graph, c
+@@ -891,6 +896,8 @@ bool ggml_gallocr_reserve_n(ggml_gallocr_t galloc, struct ggml_cgraph * graph, c
          }
      }
  
@@ -73,7 +77,7 @@ index 929bc4488..eee9d3b11 100644
      // reallocate buffers if needed
      for (int i = 0; i < galloc->n_buffers; i++) {
          // if the buffer type is used multiple times, we reuse the same buffer
-@@ -898,14 +905,19 @@ bool ggml_gallocr_reserve_n(ggml_gallocr_t galloc, struct ggml_cgraph * graph, c
+@@ -920,14 +927,19 @@ bool ggml_gallocr_reserve_n(ggml_gallocr_t galloc, struct ggml_cgraph * graph, c
  
              ggml_vbuffer_free(galloc->buffers[i]);
              galloc->buffers[i] = ggml_vbuffer_alloc(galloc->bufts[i], galloc->buf_tallocs[i], GGML_BACKEND_BUFFER_USAGE_COMPUTE);
@@ -96,7 +100,7 @@ index 929bc4488..eee9d3b11 100644
  }
  
  bool ggml_gallocr_reserve(ggml_gallocr_t galloc, struct ggml_cgraph *graph) {
-@@ -1060,6 +1072,22 @@ size_t ggml_gallocr_get_buffer_size(ggml_gallocr_t galloc, int buffer_id) {
+@@ -1082,6 +1094,22 @@ size_t ggml_gallocr_get_buffer_size(ggml_gallocr_t galloc, int buffer_id) {
      return ggml_vbuffer_size(galloc->buffers[buffer_id]);
  }
  

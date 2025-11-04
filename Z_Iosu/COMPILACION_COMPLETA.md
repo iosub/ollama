@@ -13,7 +13,7 @@ https://github.com/ggml-org/llama.cpp/pull/16745
 
 ¿Lo estás haciendo mal? Los modelos están ya bien Porque tengo la versión que está funcionando los dos modelos. El problema está Que hemos aplicado. El PR. https://github.com/LETS-BEE/llama.cpp/commits/qwen3vl/ sin creo haber aplicado https://github.com/ggml-org/llama.cpp/pull/16745 o que cuando aplicamos hace 2 dias https://github.com/ollama/ollama/pull/12665 
 
-
+git checkout --theirs llama/patches/*.patch; git add llama/patches/*.patch
 
 
 ⚠️ **IMPORTANTE:** No se puede hacer push al upstream (repositorio original de Ollama). Los cambios solo se mantienen en el fork local.

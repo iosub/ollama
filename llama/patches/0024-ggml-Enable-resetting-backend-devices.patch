@@ -62,7 +62,11 @@ index c81a2e48a..9b0a9b91f 100644
      GGML_ASSERT(device);
      return device->iface.get_buffer_type(device);
 diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+<<<<<<< HEAD
 index eb3db0f19..5787e8cd5 100644
+=======
+index f79e5d65c..c9333689f 100644
+>>>>>>> dhiltgen/ggml_bump
 --- a/ggml/src/ggml-cuda/ggml-cuda.cu
 +++ b/ggml/src/ggml-cuda/ggml-cuda.cu
 @@ -107,6 +107,11 @@ int ggml_cuda_get_device() {
@@ -77,7 +81,11 @@ index eb3db0f19..5787e8cd5 100644
  static cudaError_t ggml_cuda_device_malloc(void ** ptr, size_t size, int device) {
      ggml_cuda_set_device(device);
      cudaError_t err;
+<<<<<<< HEAD
 @@ -3507,7 +3512,10 @@ static void ggml_backend_cuda_device_get_props(ggml_backend_dev_t dev, ggml_back
+=======
+@@ -3499,7 +3504,10 @@ static void ggml_backend_cuda_device_get_props(ggml_backend_dev_t dev, ggml_back
+>>>>>>> dhiltgen/ggml_bump
      props->id          = ggml_backend_cuda_device_get_id(dev);
      props->type        = ggml_backend_cuda_device_get_type(dev);
      props->device_id   = ctx->pci_bus_id.empty() ? nullptr : ctx->pci_bus_id.c_str();
@@ -89,7 +97,11 @@ index eb3db0f19..5787e8cd5 100644
  
      bool host_buffer = getenv("GGML_CUDA_NO_PINNED") == nullptr;
  #ifdef GGML_CUDA_NO_PEER_COPY
+<<<<<<< HEAD
 @@ -3940,6 +3948,11 @@ static void ggml_backend_cuda_device_event_synchronize(ggml_backend_dev_t dev, g
+=======
+@@ -3936,6 +3944,11 @@ static void ggml_backend_cuda_device_event_synchronize(ggml_backend_dev_t dev, g
+>>>>>>> dhiltgen/ggml_bump
      CUDA_CHECK(cudaEventSynchronize((cudaEvent_t)event->context));
  }
  
@@ -101,7 +113,11 @@ index eb3db0f19..5787e8cd5 100644
  static const ggml_backend_device_i ggml_backend_cuda_device_interface = {
      /* .get_name                = */ ggml_backend_cuda_device_get_name,
      /* .get_description         = */ ggml_backend_cuda_device_get_description,
+<<<<<<< HEAD
 @@ -3956,6 +3969,7 @@ static const ggml_backend_device_i ggml_backend_cuda_device_interface = {
+=======
+@@ -3952,6 +3965,7 @@ static const ggml_backend_device_i ggml_backend_cuda_device_interface = {
+>>>>>>> dhiltgen/ggml_bump
      /* .event_new               = */ ggml_backend_cuda_device_event_new,
      /* .event_free              = */ ggml_backend_cuda_device_event_free,
      /* .event_synchronize       = */ ggml_backend_cuda_device_event_synchronize,
@@ -122,10 +138,10 @@ index 890c10364..1f06be80e 100644
  #define cudaError_t hipError_t
  #define cudaErrorPeerAccessAlreadyEnabled hipErrorPeerAccessAlreadyEnabled
 diff --git a/src/llama.cpp b/src/llama.cpp
-index fe5a7a835..d821a96a0 100644
+index ab2e9868a..74c49e651 100644
 --- a/src/llama.cpp
 +++ b/src/llama.cpp
-@@ -267,10 +267,12 @@ static struct llama_model * llama_model_load_from_file_impl(
+@@ -270,10 +270,12 @@ static struct llama_model * llama_model_load_from_file_impl(
      for (auto * dev : model->devices) {
          ggml_backend_dev_props props;
          ggml_backend_dev_get_props(dev, &props);

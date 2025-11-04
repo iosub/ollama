@@ -8,7 +8,11 @@ Subject: [PATCH] maintain ordering for rules for grammar
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/common/json-schema-to-grammar.cpp b/common/json-schema-to-grammar.cpp
+<<<<<<< HEAD
 index db1f0b23d..f4de7e342 100644
+=======
+index dd9b51a9e..d88f43209 100644
+>>>>>>> dhiltgen/ggml_bump
 --- a/common/json-schema-to-grammar.cpp
 +++ b/common/json-schema-to-grammar.cpp
 @@ -308,7 +308,7 @@ private:
