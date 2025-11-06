@@ -164,4 +164,84 @@ These temporary modifications should be **removed or refactored** when:
 
 ---
 
+## 8. Current Implementation Status (Nov 6, 2025)
+
+### Successfully Implemented
+
+**Dual-File Loading** (`model/model.go` lines 43-87):
+- `applyProjectorMetadata()` function maps projector metadata to main model
+- Applies architecture prefix: `clip.vision.*` → `qwen3vl.vision.*`
+- Metadata correctly applied: block_count=27, embedding_length=1152, projection_dim=4096
+
+**Dual-Weight Conv3D Support** (`ml/nn/convolution.go`):
+- Added `Weight1 ml.Tensor` field with `gguf:"weight.1"` tag
+- Automatic loading via GGUF for split models
+- Detection logging but currently no special handling (uses primary weight only)
+
+**Split GGUF Tensor Mapping** (`model/models/qwen3vl/model.go` lines 85-185):
+- Fallback searches for alternative tensor names:
+  - `v.merger.norm.*` → `v.post_ln.*` (PatchMerger Norm)
+  - `v.merger.linear_fc1.*` → `mm.0.*` (PatchMerger FC1)
+  - `v.merger.linear_fc2.*` → `mm.2.*` (PatchMerger FC2)
+- All tensors load successfully with debug logging
+
+**Temporal Patch Size Deduction** (`model/models/qwen3vl/model.go` lines 58-77):
+- Automatically deduces from weight shape: `[16, 16, temporalPatchSize, channels]`
+- Detects dual-weight presence (Weight1) and logs accordingly
+- Correctly identifies temporal_patch_size=3 for split models vs temporal_patch_size=2 for non-split
+
+### Critical Unresolved Issue
+
+**OCR Produces Hallucinations on Split Models**:
+
+Symptom: All split GGUF models generate completely incorrect OCR output (hallucinations) instead of reading actual image content.
+
+**Evidence**:
+- **Non-split model** (`qwen3-vl:4b-instruct-q8_0`): Perfect OCR
+  - Image: Invoice from "Monte" to "Korta, S.A." with invoice number A20095378
+  - Output: *"La imagen muestra una factura de la empresa Monte dirigida a Korta, S.A.... Nº de IFK/IFZ: A20095378"* ✅ CORRECT
+
+- **Split model 1** (`hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M`): Hallucination
+  - Same invoice image
+  - Output: *"pompa de champú de color rosa brillante con cuadros estampados"* (pink shampoo bottle) ❌ WRONG
+
+- **Split model 2** (`hf.co/unsloth/Qwen3-VL-4B-Instruct-GGUF:Q4_K_M`): Hallucination
+  - Same invoice image
+  - Output: *"M M M M... repetido varias veces"* (repeated letter M) ❌ WRONG
+
+- **Split model 3** (`hf.co/ggml-org/Qwen3-VL-2B-Instruct-GGUF:Q8_0`): Hallucination
+  - Same invoice image
+  - Output: *"casa con fachada de ladrillo rojo, puerta, porche, jardín"* (red brick house) ❌ WRONG
+
+**Model Architecture Differences**:
+- Non-split: `v.patch_embed.weight` shape=[16, 16, **2**, 3072], NO weight.1, temporal_patch_size=2
+- Split models: `v.patch_embd.weight` shape=[16, 16, **3**, 1024/1152], HAS weight.1 (same shape), temporal_patch_size=3
+
+**Investigation Attempts**:
+1. ❌ Tried summing weight + weight.1 → Still hallucinating
+2. ❌ Tried ignoring weight.1 completely → Still hallucinating  
+3. ❌ Tried forcing temporal_patch_size=2 → GGML assertion failure
+4. ❌ Tried slicing weight to [16,16,2,...] → Buffer allocation error
+
+**Current Hypothesis**:
+Split models have fundamentally different architecture (temporal_patch_size=3 vs 2) and are NOT equivalent to non-split models. The dual-weight structure may require different usage pattern not yet identified. Models load and run without crashes but vision processing produces incorrect features.
+
+### Next Steps for Investigation
+
+1. **Compare with llama.cpp implementation**: How does llama.cpp handle these split models with weight.1?
+2. **Analyze weight.1 purpose**: Is it temporal convolution, spatial convolution, or something else?
+3. **Test non-split 8B model**: Determine if issue is split-format or model-size related
+4. **Check vision encoder layers**: Verify all 27 vision layers loading correctly from projector
+5. **Examine image preprocessing**: Confirm image normalization using correct mean/std from projector metadata
+
+### Git Commit Reference
+- Commit: `e0cc0908` - "WIP: Split GGUF support - models load, metadata applies, dual-weight detected, but OCR produces hallucinations instead of correct text"
+- Branch: `feature/qwen3vl-spli`
+- Modified files:
+  - `ml/nn/convolution.go` - Conv3D with Weight1
+  - `model/models/qwen3vl/model.go` - Dual-weight detection and split tensor mapping
+  - `model/model.go` - applyProjectorMetadata with architecture prefix
+
+---
+
 _This document tracks progress while we experiment; update sections as we discover new requirements or blockers._
