@@ -1119,6 +1119,7 @@ func (s *Server) reserveWorstCaseGraph(prompt bool) error {
 // based on the given parameters
 func (s *Server) allocModel(
 	mpath string,
+	projectorPath string,
 	params ml.BackendParams,
 	loraPath []string,
 	parallel int,
@@ -1143,7 +1144,11 @@ func (s *Server) allocModel(
 	}()
 
 	var err error
-	s.model, err = model.New(mpath, params)
+	if projectorPath != "" {
+		s.model, err = model.NewWithProjector(mpath, []string{projectorPath}, params)
+	} else {
+		s.model, err = model.New(mpath, params)
+	}
 	if err != nil {
 		return err
 	}
@@ -1246,7 +1251,7 @@ func (s *Server) load(w http.ResponseWriter, r *http.Request) {
 
 		s.batchSize = req.BatchSize
 
-		err := s.allocModel(s.modelPath, params, req.LoraPath, req.Parallel, req.KvCacheType, req.KvSize, req.MultiUserCache)
+		err := s.allocModel(s.modelPath, req.ProjectorPath, params, req.LoraPath, req.Parallel, req.KvCacheType, req.KvSize, req.MultiUserCache)
 		if err != nil {
 			s.closeModel()
 

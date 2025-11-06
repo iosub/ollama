@@ -2,6 +2,7 @@ package qwen3vl
 
 import (
 	"iter"
+	"log/slog"
 	"math"
 	"slices"
 
@@ -14,6 +15,7 @@ type VisionAttention struct {
 	Query  *nn.Linear `gguf:"attn_q"`
 	Key    *nn.Linear `gguf:"attn_k"`
 	Value  *nn.Linear `gguf:"attn_v"`
+	QKV    *nn.Linear `gguf:"attn_qkv"`
 	Output *nn.Linear `gguf:"attn_out"`
 }
 
@@ -28,16 +30,46 @@ func applyRotaryPositionalEmbedding(ctx ml.Context, t, cos, sin ml.Tensor) ml.Te
 }
 
 func (sa *VisionAttention) Forward(ctx ml.Context, hiddenStates, cos, sin ml.Tensor, opts VisionOptions) ml.Tensor {
-	query := sa.Query.Forward(ctx, hiddenStates)
-	query = query.Reshape(ctx, opts.headDim(), opts.numHeads, query.Dim(1))
+	var (
+		query ml.Tensor
+		key   ml.Tensor
+		value ml.Tensor
+	)
+
+	switch {
+	case sa.Query != nil && sa.Key != nil && sa.Value != nil:
+		query = sa.Query.Forward(ctx, hiddenStates)
+		key = sa.Key.Forward(ctx, hiddenStates)
+		value = sa.Value.Forward(ctx, hiddenStates)
+
+		query = query.Reshape(ctx, opts.headDim(), opts.numHeads, query.Dim(1))
+		key = key.Reshape(ctx, opts.headDim(), opts.numHeads, key.Dim(1))
+		value = value.Reshape(ctx, opts.headDim(), opts.numHeads, value.Dim(1))
+
+		query = applyRotaryPositionalEmbedding(ctx, query, cos, sin)
+		key = applyRotaryPositionalEmbedding(ctx, key, cos, sin)
+
+	case sa.QKV != nil:
+		qkv := sa.QKV.Forward(ctx, hiddenStates)
+		qkv = qkv.Reshape(ctx, 3, opts.headDim(), opts.numHeads, qkv.Dim(1))
+
+		stride := qkv.Stride(0)
+
+		// Use slice to split qkv into query, key, value instead of View
+		// This avoids the View parameter count issues
+		query = qkv.View(ctx, 0, opts.headDim()*opts.numHeads*qkv.Dim(3)).
+			Reshape(ctx, opts.headDim(), opts.numHeads, qkv.Dim(3))
+		key = qkv.View(ctx, stride, opts.headDim()*opts.numHeads*qkv.Dim(3)).
+		Reshape(ctx, opts.headDim(), opts.numHeads, qkv.Dim(3))
+	value = qkv.View(ctx, stride*2, opts.headDim()*opts.numHeads*qkv.Dim(3)).
+		Reshape(ctx, opts.headDim(), opts.numHeads, qkv.Dim(3))
+
 	query = applyRotaryPositionalEmbedding(ctx, query, cos, sin)
+		key = applyRotaryPositionalEmbedding(ctx, key, cos, sin)
 
-	key := sa.Key.Forward(ctx, hiddenStates)
-	key = key.Reshape(ctx, opts.headDim(), opts.numHeads, key.Dim(1))
-	key = applyRotaryPositionalEmbedding(ctx, key, cos, sin)
-
-	value := sa.Value.Forward(ctx, hiddenStates)
-	value = value.Reshape(ctx, opts.headDim(), opts.numHeads, value.Dim(1))
+	default:
+		panic("vision attention missing required weights")
+	}
 
 	attention := nn.Attention(ctx, query, key, value, math.Pow(float64(opts.headDim()), -0.5), nil)
 	attention = attention.Reshape(ctx, opts.hiddenSize, attention.Dim(2))
@@ -45,8 +77,8 @@ func (sa *VisionAttention) Forward(ctx ml.Context, hiddenStates, cos, sin ml.Ten
 }
 
 type VisionMLP struct {
-	FC1 *nn.Linear `gguf:"linear_fc1"`
-	FC2 *nn.Linear `gguf:"linear_fc2"`
+	FC1 *nn.Linear `gguf:"linear_fc1,alt:ffn_up"`
+	FC2 *nn.Linear `gguf:"linear_fc2,alt:ffn_down"`
 }
 
 func (mlp *VisionMLP) Forward(ctx ml.Context, hiddenStates ml.Tensor, opts VisionOptions) ml.Tensor {
@@ -54,22 +86,32 @@ func (mlp *VisionMLP) Forward(ctx ml.Context, hiddenStates ml.Tensor, opts Visio
 }
 
 type VisionEncoderLayer struct {
-	Norm1     *nn.LayerNorm `gguf:"norm1"`
+	Norm1     *nn.LayerNorm `gguf:"norm1,alt:ln1"`
 	Attention *VisionAttention
-	Norm2     *nn.LayerNorm `gguf:"norm2"`
+	Norm2     *nn.LayerNorm `gguf:"norm2,alt:ln2"`
 	MLP       *VisionMLP    `gguf:"mlp"`
 }
 
 func (e *VisionEncoderLayer) Forward(ctx ml.Context, hiddenStates, cos, sin ml.Tensor, opts VisionOptions) ml.Tensor {
+	// Skip entire layer if critical components are missing (may be in main model file for split checkpoints)
+	if e.Norm1 == nil || e.Attention == nil {
+		return hiddenStates
+	}
+
 	residual := hiddenStates
 	hiddenStates = e.Norm1.Forward(ctx, hiddenStates, opts.eps)
 	hiddenStates = e.Attention.Forward(ctx, hiddenStates, cos, sin, opts)
 	hiddenStates = hiddenStates.Add(ctx, residual)
 
-	residual = hiddenStates
-	hiddenStates = e.Norm2.Forward(ctx, hiddenStates, opts.eps)
-	hiddenStates = e.MLP.Forward(ctx, hiddenStates, opts)
-	return hiddenStates.Add(ctx, residual)
+	// Skip MLP block if not present (may be in main model file for split checkpoints)
+	if e.MLP != nil && e.Norm2 != nil {
+		residual = hiddenStates
+		hiddenStates = e.Norm2.Forward(ctx, hiddenStates, opts.eps)
+		hiddenStates = e.MLP.Forward(ctx, hiddenStates, opts)
+		hiddenStates = hiddenStates.Add(ctx, residual)
+	}
+	
+	return hiddenStates
 }
 
 type VisionOptions struct {
@@ -93,24 +135,51 @@ func (o VisionOptions) headDim() int {
 }
 
 type VisionPatchMerger struct {
-	Norm *nn.LayerNorm `gguf:"norm"`
+	Norm *nn.LayerNorm `gguf:"norm,alt:post_ln"`
 	FC1  *nn.Linear    `gguf:"linear_fc1"`
 	FC2  *nn.Linear    `gguf:"linear_fc2"`
 }
 
 func (m *VisionPatchMerger) Forward(ctx ml.Context, visionOutputs ml.Tensor, postshuffleNorm bool, opts VisionOptions) ml.Tensor {
 	hiddenSize := opts.hiddenSize * opts.spatialMergeSize * opts.spatialMergeSize
+	
+	slog.Debug("PatchMerger.Forward input", "shape", visionOutputs.Shape(), "hiddenSize", hiddenSize, "spatialMergeSize", opts.spatialMergeSize)
+	
+	// Calculate explicit dimensions instead of using -1 inference
+	totalElements := 1
+	for _, d := range visionOutputs.Shape() {
+		totalElements *= d
+	}
+	seqLen := totalElements / hiddenSize
+	
 	if postshuffleNorm {
-		visionOutputs = visionOutputs.Reshape(ctx, hiddenSize, -1)
+		visionOutputs = visionOutputs.Reshape(ctx, hiddenSize, seqLen)
 	}
 
+	slog.Debug("Before Norm", "shape", visionOutputs.Shape())
 	visionOutputs = m.Norm.Forward(ctx, visionOutputs, opts.eps)
-	visionOutputs = visionOutputs.Reshape(ctx, hiddenSize, -1)
-	return m.FC2.Forward(ctx, m.FC1.Forward(ctx, visionOutputs).GELU(ctx))
+	slog.Debug("After Norm", "shape", visionOutputs.Shape())
+	
+	// Recalculate after norm in case shape changed
+	totalElements = 1
+	for _, d := range visionOutputs.Shape() {
+		totalElements *= d
+	}
+	seqLen = totalElements / hiddenSize
+	
+	visionOutputs = visionOutputs.Reshape(ctx, hiddenSize, seqLen)
+	slog.Debug("Before FC1", "shape", visionOutputs.Shape())
+	fc1Out := m.FC1.Forward(ctx, visionOutputs)
+	slog.Debug("After FC1", "shape", fc1Out.Shape())
+	geluOut := fc1Out.GELU(ctx)
+	slog.Debug("After GELU", "shape", geluOut.Shape())
+	result := m.FC2.Forward(ctx, geluOut)
+	slog.Debug("After FC2 (final)", "shape", result.Shape())
+	return result
 }
 
 type VisionPositionEmbedding struct {
-	PositionEmbedding *nn.Embedding `gguf:"pos_embed"`
+	PositionEmbedding *nn.Embedding `gguf:"pos_embed,alt:position_embd"`
 }
 
 func makeSlice2D[T int32 | float32](n0, n1 int) iter.Seq[[]T] {
@@ -158,20 +227,35 @@ func (m *VisionPositionEmbedding) Forward(ctx ml.Context, hiddenStates ml.Tensor
 	n := hiddenStates.Dim(0)
 	positionEmbeds := m.PositionEmbedding.Forward(ctx, indices)
 	positionEmbeds = positionEmbeds.Mul(ctx, weights)
-	positionEmbeds = positionEmbeds.Reshape(ctx, n, -1, 4)
+	
+	// Calculate middle dimension explicitly instead of using -1
+	totalElements := 1
+	for _, d := range positionEmbeds.Shape() {
+		totalElements *= d
+	}
+	middleDim := totalElements / (n * 4)
+	positionEmbeds = positionEmbeds.Reshape(ctx, n, middleDim, 4)
 
 	positionEmbeds = positionEmbeds.View(ctx, 0, n, positionEmbeds.Stride(1), grid.Height*grid.Width).
 		Add(ctx, positionEmbeds.View(ctx, 1*positionEmbeds.Stride(2), n, positionEmbeds.Stride(1), grid.Height*grid.Width)).
 		Add(ctx, positionEmbeds.View(ctx, 2*positionEmbeds.Stride(2), n, positionEmbeds.Stride(1), grid.Height*grid.Width)).
 		Add(ctx, positionEmbeds.View(ctx, 3*positionEmbeds.Stride(2), n, positionEmbeds.Stride(1), grid.Height*grid.Width))
 
-	positionEmbeds = positionEmbeds.Reshape(ctx, -1, grid.Width/opts.spatialMergeSize, opts.spatialMergeSize, grid.Height/opts.spatialMergeSize)
-	positionEmbeds = positionEmbeds.Permute(ctx, 0, 2, 1, 3).Contiguous(ctx, n, -1)
+	// Calculate dimensions explicitly for reshape
+	dim0 := n
+	dim1 := grid.Width / opts.spatialMergeSize
+	dim2 := opts.spatialMergeSize
+	dim3 := grid.Height / opts.spatialMergeSize
+	positionEmbeds = positionEmbeds.Reshape(ctx, dim0, dim1, dim2, dim3)
+	
+	// Calculate final dimension for Contiguous
+	finalDim := dim1 * dim2 * dim3
+	positionEmbeds = positionEmbeds.Permute(ctx, 0, 2, 1, 3).Contiguous(ctx, n, finalDim)
 	return hiddenStates.Add(ctx, positionEmbeds)
 }
 
 type VisionModel struct {
-	PatchEmbedding    *nn.Conv3D `gguf:"patch_embed"`
+	PatchEmbedding    *nn.Conv3D `gguf:"patch_embed,alt:patch_embd"`
 	PositionEmbedding *VisionPositionEmbedding
 	Layers            []VisionEncoderLayer `gguf:"blk"`
 	PatchMerger       *VisionPatchMerger   `gguf:"merger"`
@@ -233,6 +317,8 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 		}
 	}
 
+	// Apply PatchMerger transformation (required for dimension matching with LLM)
+	// In split GGUF format, merger components may use mm.* prefix instead of v.merger.*
 	hiddenStates = m.PatchMerger.Forward(ctx, hiddenStates, false, m.VisionOptions)
 	return hiddenStates, deepstackStates
 }

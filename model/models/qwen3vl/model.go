@@ -2,12 +2,15 @@ package qwen3vl
 
 import (
 	"bytes"
+	"fmt"
 	"image"
+	"log/slog"
 	"slices"
 
 	"github.com/ollama/ollama/fs"
 	"github.com/ollama/ollama/kvcache"
 	"github.com/ollama/ollama/ml"
+	"github.com/ollama/ollama/ml/nn"
 	"github.com/ollama/ollama/model"
 	"github.com/ollama/ollama/model/input"
 )
@@ -22,11 +25,228 @@ type Model struct {
 	ImageProcessor
 
 	positionCache []int32
+	visionReady   bool
+}
+
+func (m *Model) ensureVisionReady() error {
+	if m.visionReady {
+		return nil
+	}
+
+	if m.VisionModel == nil {
+		return model.ErrNoVisionModel
+	}
+
+	backend := m.Backend()
+	if backend == nil {
+		return model.ErrNoVisionModel
+	}
+
+	vm := m.VisionModel
+
+	if vm.PatchEmbedding == nil {
+		vm.PatchEmbedding = &nn.Conv3D{}
+	}
+
+	if vm.PatchEmbedding.Weight == nil {
+		vm.PatchEmbedding.Weight = backend.Get("v.patch_embed.weight")
+		if vm.PatchEmbedding.Weight == nil {
+			vm.PatchEmbedding.Weight = backend.Get("v.patch_embd.weight")
+		}
+	}
+
+	if vm.PatchEmbedding.Weight == nil {
+		return model.ErrNoVisionModel
+	}
+
+	// Deduce temporal_patch_size from weight shape: [patchSize, patchSize, temporalPatchSize, channels]
+	// Weight.1 presence indicates split GGUF format but doesn't change the deduced value
+	weightShape := vm.PatchEmbedding.Weight.Shape()
+	if len(weightShape) == 4 && weightShape[2] > 0 {
+		deducedTemporalPatchSize := weightShape[2]
+		if vm.PatchEmbedding.Weight1 != nil {
+			slog.Debug("Detected dual-weight PatchEmbedding (split GGUF format)",
+				"weight_shape", vm.PatchEmbedding.Weight.Shape(),
+				"weight1_shape", vm.PatchEmbedding.Weight1.Shape(),
+				"temporal_patch_size", deducedTemporalPatchSize)
+		} else {
+			slog.Debug("Deduced temporal_patch_size from PatchEmbedding.Weight shape",
+				"temporal_patch_size", deducedTemporalPatchSize,
+				"weight_shape", weightShape)
+		}
+		vm.temporalPatchSize = deducedTemporalPatchSize
+	}
+
+	if vm.PatchEmbedding.Bias == nil {
+		vm.PatchEmbedding.Bias = backend.Get("v.patch_embed.bias")
+		if vm.PatchEmbedding.Bias == nil {
+			vm.PatchEmbedding.Bias = backend.Get("v.patch_embd.bias")
+		}
+	}
+
+	if vm.PositionEmbedding == nil {
+		vm.PositionEmbedding = &VisionPositionEmbedding{}
+	}
+	if vm.PositionEmbedding.PositionEmbedding == nil {
+		pos := backend.Get("v.pos_embed.weight")
+		if pos == nil {
+			pos = backend.Get("v.position_embd.weight")
+		}
+		if pos == nil {
+			return model.ErrNoVisionModel
+		}
+		vm.PositionEmbedding.PositionEmbedding = &nn.Embedding{Weight: pos}
+	}
+
+	if vm.PatchMerger == nil {
+		vm.PatchMerger = &VisionPatchMerger{}
+	}
+	ensureMainMerger := func() error {
+		if vm.PatchMerger.Norm == nil {
+			vm.PatchMerger.Norm = &nn.LayerNorm{}
+		}
+		if vm.PatchMerger.Norm.Weight == nil {
+			vm.PatchMerger.Norm.Weight = backend.Get("v.merger.norm.weight")
+			if vm.PatchMerger.Norm.Weight == nil {
+				vm.PatchMerger.Norm.Weight = backend.Get("v.post_ln.weight")
+				if vm.PatchMerger.Norm.Weight != nil {
+					slog.Debug("Found PatchMerger.Norm.Weight in split GGUF format", "tensor", "v.post_ln.weight")
+				}
+			}
+		}
+		if vm.PatchMerger.Norm.Bias == nil {
+			vm.PatchMerger.Norm.Bias = backend.Get("v.merger.norm.bias")
+			if vm.PatchMerger.Norm.Bias == nil {
+				vm.PatchMerger.Norm.Bias = backend.Get("v.post_ln.bias")
+				if vm.PatchMerger.Norm.Bias != nil {
+					slog.Debug("Found PatchMerger.Norm.Bias in split GGUF format", "tensor", "v.post_ln.bias")
+				}
+			}
+		}
+		if vm.PatchMerger.Norm.Weight == nil {
+			// PatchMerger is optional in split GGUF models
+			slog.Debug("PatchMerger.Norm.Weight not found - trying split GGUF format (may be in mm.* tensors)")
+		} else {
+			slog.Debug("PatchMerger.Norm loaded successfully")
+		}
+
+		if vm.PatchMerger.FC1 == nil {
+			vm.PatchMerger.FC1 = &nn.Linear{}
+		}
+		if vm.PatchMerger.FC1.Weight == nil {
+			vm.PatchMerger.FC1.Weight = backend.Get("v.merger.linear_fc1.weight")
+			if vm.PatchMerger.FC1.Weight == nil {
+				vm.PatchMerger.FC1.Weight = backend.Get("mm.0.weight")
+				if vm.PatchMerger.FC1.Weight != nil {
+					slog.Debug("Found PatchMerger.FC1.Weight in split GGUF format", "tensor", "mm.0.weight")
+				}
+			}
+		}
+		if vm.PatchMerger.FC1.Bias == nil {
+			vm.PatchMerger.FC1.Bias = backend.Get("v.merger.linear_fc1.bias")
+			if vm.PatchMerger.FC1.Bias == nil {
+				vm.PatchMerger.FC1.Bias = backend.Get("mm.0.bias")
+				if vm.PatchMerger.FC1.Bias != nil {
+					slog.Debug("Found PatchMerger.FC1.Bias in split GGUF format", "tensor", "mm.0.bias")
+				}
+			}
+		}
+		if vm.PatchMerger.FC1.Weight == nil {
+			slog.Debug("PatchMerger.FC1.Weight not found after trying v.merger.* and mm.0.*")
+		} else {
+			slog.Debug("PatchMerger.FC1 loaded successfully")
+		}
+
+		if vm.PatchMerger.FC2 == nil {
+			vm.PatchMerger.FC2 = &nn.Linear{}
+		}
+		if vm.PatchMerger.FC2.Weight == nil {
+			vm.PatchMerger.FC2.Weight = backend.Get("v.merger.linear_fc2.weight")
+			if vm.PatchMerger.FC2.Weight == nil {
+				vm.PatchMerger.FC2.Weight = backend.Get("mm.2.weight")
+				if vm.PatchMerger.FC2.Weight != nil {
+					slog.Debug("Found PatchMerger.FC2.Weight in split GGUF format", "tensor", "mm.2.weight")
+				}
+			}
+		}
+		if vm.PatchMerger.FC2.Bias == nil {
+			vm.PatchMerger.FC2.Bias = backend.Get("v.merger.linear_fc2.bias")
+			if vm.PatchMerger.FC2.Bias == nil {
+				vm.PatchMerger.FC2.Bias = backend.Get("mm.2.bias")
+				if vm.PatchMerger.FC2.Bias != nil {
+					slog.Debug("Found PatchMerger.FC2.Bias in split GGUF format", "tensor", "mm.2.bias")
+				}
+			}
+		}
+		if vm.PatchMerger.FC2.Weight == nil {
+			slog.Debug("PatchMerger.FC2.Weight not found after trying v.merger.* and mm.2.*")
+		} else {
+			slog.Debug("PatchMerger.FC2 loaded successfully")
+		}
+
+		return nil
+	}
+
+	if err := ensureMainMerger(); err != nil {
+		return err
+	}
+
+	if len(vm.deepstackVisualIndexes) == len(vm.DeepstackMerger) {
+		for i := range vm.DeepstackMerger {
+			if vm.DeepstackMerger[i] == nil {
+				vm.DeepstackMerger[i] = &VisionPatchMerger{}
+			}
+
+			prefix := fmt.Sprintf("v.deepstack.%d", vm.deepstackVisualIndexes[i])
+			merger := vm.DeepstackMerger[i]
+
+			if merger.Norm == nil {
+				merger.Norm = &nn.LayerNorm{}
+			}
+			if merger.Norm.Weight == nil {
+				merger.Norm.Weight = backend.Get(prefix + ".norm.weight")
+			}
+			if merger.Norm.Bias == nil {
+				merger.Norm.Bias = backend.Get(prefix + ".norm.bias")
+			}
+
+			if merger.FC1 == nil {
+				merger.FC1 = &nn.Linear{}
+			}
+			if merger.FC1.Weight == nil {
+				merger.FC1.Weight = backend.Get(prefix + ".fc1.weight")
+			}
+			if merger.FC1.Bias == nil {
+				merger.FC1.Bias = backend.Get(prefix + ".fc1.bias")
+			}
+
+			if merger.FC2 == nil {
+				merger.FC2 = &nn.Linear{}
+			}
+			if merger.FC2.Weight == nil {
+				merger.FC2.Weight = backend.Get(prefix + ".fc2.weight")
+			}
+			if merger.FC2.Bias == nil {
+				merger.FC2.Bias = backend.Get(prefix + ".fc2.bias")
+			}
+
+			if merger.Norm.Weight == nil || merger.FC1.Weight == nil || merger.FC2.Weight == nil {
+				return model.ErrNoVisionModel
+			}
+		}
+	}
+
+	m.visionReady = true
+	return nil
 }
 
 func (m *Model) EncodeMultimodal(ctx ml.Context, multimodalData []byte) ([]input.Multimodal, error) {
 	if len(m.VisionModel.Layers) == 0 {
 		return nil, model.ErrNoVisionModel
+	}
+
+	if err := m.ensureVisionReady(); err != nil {
+		return nil, err
 	}
 
 	img, _, err := image.Decode(bytes.NewReader(multimodalData))

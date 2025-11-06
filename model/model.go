@@ -21,6 +21,7 @@ import (
 	"github.com/ollama/ollama/logutil"
 	"github.com/ollama/ollama/ml"
 	_ "github.com/ollama/ollama/ml/backend"
+	backendggml "github.com/ollama/ollama/ml/backend/ggml"
 	"github.com/ollama/ollama/ml/nn/pooling"
 	"github.com/ollama/ollama/model/input"
 )
@@ -30,6 +31,62 @@ var (
 	ErrUnsupportedModel     = errors.New("model not supported")
 	ErrUnsupportedTokenizer = errors.New("tokenizer not supported")
 )
+
+func cloneKV(kv fsggml.KV) fsggml.KV {
+	cloned := make(fsggml.KV, len(kv))
+	for k, v := range kv {
+		cloned[k] = v
+	}
+	return cloned
+}
+
+func applyProjectorMetadata(dst fsggml.KV, src fsggml.KV) {
+	slog.Debug("applyProjectorMetadata called", "src_keys", len(src), "dst_keys", len(dst))
+	
+	// Log ALL source keys to debug
+	slog.Debug("=== ALL PROJECTOR KEYS ===")
+	for key := range src {
+		slog.Debug("projector key", "key", key)
+	}
+	slog.Debug("=== END PROJECTOR KEYS ===")
+	
+	// Get the architecture from the destination KV (e.g., "qwen3vl")
+	arch := dst.Architecture()
+	slog.Debug("applying metadata for architecture", "arch", arch)
+	
+	clipVisionCount := 0
+	for key := range src {
+		if strings.HasPrefix(key, "clip.vision.") {
+			clipVisionCount++
+			slog.Debug("found clip.vision key", "key", key)
+		}
+	}
+	slog.Debug("clip.vision keys found", "count", clipVisionCount)
+	
+	for key, value := range src {
+		switch {
+		case strings.HasPrefix(key, "clip.vision.is_deepstack_layers"):
+			if flags, ok := value.([]bool); ok {
+				var indexes []int32
+				for idx, flag := range flags {
+					if flag {
+						indexes = append(indexes, int32(idx))
+					}
+				}
+				// Use architecture-prefixed key
+				prefixedKey := arch + ".vision.deepstack_visual_indexes"
+				dst[prefixedKey] = indexes
+				slog.Debug("mapped deepstack_visual_indexes", "key", prefixedKey, "count", len(indexes))
+			}
+		case strings.HasPrefix(key, "clip.vision."):
+			// Map clip.vision.* to {arch}.vision.*
+			suffix := strings.TrimPrefix(key, "clip.vision.")
+			visionKey := arch + ".vision." + suffix
+			dst[visionKey] = value
+			slog.Debug("mapped vision key", "clip_key", key, "vision_key", visionKey)
+		}
+	}
+}
 
 // Model implements a specific model architecture, defining the forward pass and any model-specific configuration
 type Model interface {
@@ -119,8 +176,52 @@ func New(modelPath string, params ml.BackendParams) (Model, error) {
 	return m, nil
 }
 
-func NewTextProcessor(s string) (TextProcessor, error) {
-	r, err := os.Open(s)
+// NewWithProjector loads a model that requires additional projector GGUFs (e.g. split vision weights).
+func NewWithProjector(modelPath string, projectorPaths []string, params ml.BackendParams) (Model, error) {
+	if len(projectorPaths) == 0 {
+		return New(modelPath, params)
+	}
+
+	b, err := ml.NewBackend(modelPath, params)
+	if err != nil {
+		return nil, err
+	}
+
+	ggmlBackend, ok := b.(*backendggml.Backend)
+	if !ok {
+		return nil, fmt.Errorf("projector loading requires ggml backend")
+	}
+
+	var merged fsggml.KV
+	if baseKV, ok := ggmlBackend.Config().(fsggml.KV); ok {
+		merged = cloneKV(baseKV)
+	} else {
+		merged = make(fsggml.KV)
+	}
+
+	for _, projector := range projectorPaths {
+		cfg, err := ggmlBackend.AttachProjector(projector)
+		if err != nil {
+			return nil, err
+		}
+		applyProjectorMetadata(merged, cfg)
+	}
+
+	ggmlBackend.SetConfig(merged)
+
+	m, err := modelForArch(ggmlBackend.Config())
+	if err != nil {
+		return nil, err
+	}
+
+	base := Base{b: ggmlBackend, config: m.Config()}
+	v := reflect.ValueOf(m)
+	v.Elem().Set(populateFields(base, v.Elem()))
+	return m, nil
+}
+
+func newTextProcessor(modelPath string, projectorPaths []string) (TextProcessor, error) {
+	r, err := os.Open(modelPath)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +232,24 @@ func NewTextProcessor(s string) (TextProcessor, error) {
 		return nil, err
 	}
 
-	m, err := modelForArch(meta.KV())
+	merged := meta.KV()
+	if len(projectorPaths) > 0 {
+		merged = cloneKV(merged)
+		for _, projector := range projectorPaths {
+			f, err := os.Open(projector)
+			if err != nil {
+				return nil, err
+			}
+			projMeta, err := fsggml.Decode(f, -1)
+			_ = f.Close()
+			if err != nil {
+				return nil, err
+			}
+			applyProjectorMetadata(merged, projMeta.KV())
+		}
+	}
+
+	m, err := modelForArch(merged)
 	if err != nil {
 		return nil, err
 	}
@@ -141,6 +259,17 @@ func NewTextProcessor(s string) (TextProcessor, error) {
 		return nil, ErrUnsupportedTokenizer
 	}
 	return tp, nil
+}
+
+func NewTextProcessor(modelPath string) (TextProcessor, error) {
+	return newTextProcessor(modelPath, nil)
+}
+
+func NewTextProcessorWithProjector(modelPath string, projectorPaths []string) (TextProcessor, error) {
+	if len(projectorPaths) == 0 {
+		return NewTextProcessor(modelPath)
+	}
+	return newTextProcessor(modelPath, projectorPaths)
 }
 
 func modelForArch(c fs.Config) (Model, error) {

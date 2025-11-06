@@ -1,6 +1,12 @@
 package nn
 
-import "github.com/ollama/ollama/ml"
+import (
+	"github.com/ollama/ollama/logutil"
+	"github.com/ollama/ollama/ml"
+)
+
+// Bias broadcast helpers ensure Conv layers can add channel biases even when
+// ggml exposes tensors in unexpected shapes after convolution.
 
 type Conv2D struct {
 	Weight ml.Tensor `gguf:"weight"`
@@ -17,14 +23,98 @@ func (m *Conv2D) Forward(ctx ml.Context, t ml.Tensor, s0, s1, p0, p1, d0, d1 int
 }
 
 type Conv3D struct {
-	Weight ml.Tensor `gguf:"weight"`
-	Bias   ml.Tensor `gguf:"bias"`
+	Weight  ml.Tensor `gguf:"weight"`
+	Weight1 ml.Tensor `gguf:"weight.1"` // Temporal weight for Qwen3-VL split models
+	Bias    ml.Tensor `gguf:"bias"`
 }
 
 func (m *Conv3D) Forward(ctx ml.Context, t ml.Tensor, c, s0, s1, s2, p0, p1, p2, d0, d1, d2 int) ml.Tensor {
-	t = m.Weight.Conv3D(ctx, t, c, s0, s1, s2, p0, p1, p2, d0, d1, d2)
-	if m.Bias != nil {
-		t = t.Add(ctx, m.Bias)
+	bias := m.Bias
+	biasShape := []int(nil)
+	biasSize := 0
+	if bias != nil {
+		bias = bias.Contiguous(ctx)
+		biasShape = bias.Shape()
+		biasSize = 1
+		for _, d := range biasShape {
+			biasSize *= d
+		}
 	}
+
+	// For Qwen3-VL split models: Weight1 indicates split GGUF format
+	// temporal_patch_size is controlled by caller (forced to 2), just use primary weight
+	if m.Weight1 != nil {
+		logutil.Trace("conv3d detected dual-weight split model", "weight_shape", m.Weight.Shape(), "weight1_shape", m.Weight1.Shape())
+	}
+
+	// Apply convolution with primary weight
+	t = m.Weight.Conv3D(ctx, t, c, s0, s1, s2, p0, p1, p2, d0, d1, d2)
+	
+	if bias != nil {
+		outShape := t.Shape()
+		totalOut := 1
+		for _, d := range outShape {
+			totalOut *= d
+		}
+
+		logutil.Trace("conv3d bias reshape", "bias_shape", biasShape, "output_shape", outShape, "bias_size", biasSize, "total_output", totalOut)
+
+		if biasSize == 0 {
+			logutil.Trace("conv3d bias reshape", "strategy", "skip-zero")
+			return t
+		}
+
+		if len(outShape) < 2 {
+			logutil.Trace("conv3d bias reshape", "strategy", "scalar-or-1d")
+			return t.Add(ctx, bias.Reshape(ctx, outShape...))
+		}
+
+	if len(outShape) == 2 && totalOut%biasSize == 0 {
+		// For split GGUF: Apply bias by broadcasting
+		channels := outShape[0]
+		seqLen := outShape[1]
+		
+		// Check if we can broadcast the bias
+		if totalOut%biasSize == 0 && biasSize > channels {
+			// Bias is larger than output channels - likely needs reshaping
+			// Try to broadcast by repeating along sequence dimension
+			repeats := totalOut / biasSize
+			if repeats * biasSize == totalOut {
+				biasReshaped := bias.Reshape(ctx, biasSize, 1).Repeat(ctx, 1, repeats)
+				biasFlat := biasReshaped.Reshape(ctx, outShape...)
+				logutil.Trace("conv3d bias reshape", "strategy", "broadcast-repeat", "bias_shape", bias.Shape(), "out_shape", outShape, "repeats", repeats)
+				return t.Add(ctx, biasFlat)
+			}
+		}
+		
+		if biasSize == channels {
+			// Standard broadcast: bias [channels] -> [channels, 1] -> [channels, seq_len]
+			biasReshaped := bias.Reshape(ctx, channels, 1)
+			logutil.Trace("conv3d bias reshape", "strategy", "broadcast-2d", "bias_shape", biasReshaped.Shape(), "out_shape", outShape)
+			return t.Add(ctx, biasReshaped)
+		}
+		
+		// Fallback: skip if dimensions don't match
+		logutil.Trace("conv3d bias reshape", "strategy", "skip-bias-temporarily-v2", "reason", "dimension-mismatch", "channels", channels, "bias_size", biasSize, "seq_len", seqLen)
+		return t
+	}
+	
+	// Original logic for Conv3D
+	channels := outShape[0]
+	if biasSize != channels {
+		logutil.Trace("conv3d bias reshape", "strategy", "skip-incompatible", "channels", channels, "bias_size", biasSize)
+		return t
+	}
+
+	remaining := outShape[1:]
+	broadcastShape := append([]int{channels}, make([]int, len(remaining))...)
+	fullShape := append([]int{channels}, remaining...)
+
+	reshaped := t.Contiguous(ctx).Reshape(ctx, fullShape...)
+	biasExpanded := bias.Reshape(ctx, broadcastShape...)
+	logutil.Trace("conv3d bias reshape", "strategy", "axis-first", "full_shape", reshaped.Shape(), "bias_shape", biasExpanded.Shape())
+	withBias := reshaped.Add(ctx, biasExpanded)
+	return withBias.Reshape(ctx, outShape...)
+}
 	return t
 }
