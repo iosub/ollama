@@ -1,0 +1,528 @@
+llama_kv_cache:        CPU KV buffer size =   396.46 MiB
+time=2025-11-05T01:40:12.589-05:00 level=DEBUG source=server.go:1295 msg="model load progress 1.00"
+llama_kv_cache: size =  396.46 MiB ( 10024 cells,  36 layers,  1/1 seqs), K (q4_0):  198.23 MiB, V (q4_0):  198.23 MiB
+llama_context: enumerating backends
+llama_context: backend_ptrs.size() = 1
+llama_context: max_nodes = 3184
+llama_context: reserving full memory module
+llama_context: worst-case: n_tokens = 512, n_seqs = 1, n_outputs = 1
+graph_reserve: reserving a graph for ubatch with n_tokens =  512, n_seqs =  1, n_outputs =  512
+graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+graph_reserve: reserving a graph for ubatch with n_tokens =  512, n_seqs =  1, n_outputs =  512
+llama_context:        CPU compute buffer size =   301.75 MiB
+llama_context: graph nodes  = 1267
+llama_context: graph splits = 1
+clip_model_loader: model name:   Qwen3 VL 4B Instruct
+clip_model_loader: description:
+clip_model_loader: GGUF version: 3
+clip_model_loader: alignment:    32
+clip_model_loader: n_tensors:    412
+clip_model_loader: n_kv:         29
+
+clip_model_loader: has vision encoder
+clip_ctx: CLIP using CPU backend
+load_hparams: projector:          qwen3vl_merger
+load_hparams: n_embd:             1024
+load_hparams: n_head:             16
+load_hparams: n_ff:               4096
+load_hparams: n_layer:            24
+load_hparams: ffn_op:             gelu
+load_hparams: projection_dim:     2560
+
+--- vision hparams ---
+load_hparams: image_size:         1024
+load_hparams: patch_size:         16
+load_hparams: has_llava_proj:     0
+load_hparams: minicpmv_version:   0
+load_hparams: proj_scale_factor:  0
+load_hparams: n_wa_pattern:       0
+load_hparams: spatial_merge_size: 2
+
+load_hparams: model size:         797.43 MiB
+load_hparams: metadata size:      0.14 MiB
+time=2025-11-05T01:40:12.840-05:00 level=DEBUG source=server.go:1298 msg="model load completed, waiting for server to become available" status="llm server loading model"
+Exception 0xc0000005 0x0 0x10 0x7ff750558bf6
+PC=0x7ff750558bf6
+signal arrived during external code execution
+
+runtime.cgocall(0x7ff750520000, 0xc000643c28)
+        runtime/cgocall.go:167 +0x3e fp=0xc000643c00 sp=0xc000643b98 pc=0x7ff74f7f70de
+github.com/ollama/ollama/llama._Cfunc_mtmd_init_from_file(0x2b36c8c9420, 0x2b36c85f650, {0x1, 0x1, 0x4, 0x2, 0x7ff75150ef89, 0x7ff75150ef7d})  
+        _cgo_gotypes.go:1121 +0x51 fp=0xc000643c28 sp=0xc000643c00 pc=0x7ff74fbcea31
+github.com/ollama/ollama/llama.NewMtmdContext.func2(...)
+        github.com/ollama/ollama/llama/llama.go:511
+github.com/ollama/ollama/llama.NewMtmdContext(0xc0003ea180, {0xc000622070, 0x6b})
+        github.com/ollama/ollama/llama/llama.go:511 +0x137 fp=0xc000643d18 sp=0xc000643c28 pc=0x7ff74fbd2c57
+github.com/ollama/ollama/runner/llamarunner.NewImageContext(0xc0003ea180, {0xc000622070, 0x6b})
+        github.com/ollama/ollama/runner/llamarunner/image.go:35 +0x105 fp=0xc000643d98 sp=0xc000643d18 pc=0x7ff74fc8c405
+github.com/ollama/ollama/runner/llamarunner.(*Server).loadModel(0xc00053ee60, {0x0, 0x0, 0x0, {0x7ff751695920, 0x0, 0x0}, 0xc00039e1e0, 0x0}, {0xc000030230, ...}, ...)
+        github.com/ollama/ollama/runner/llamarunner/runner.go:811 +0x268 fp=0xc000643ee0 sp=0xc000643d98 pc=0x7ff74fc915e8
+github.com/ollama/ollama/runner/llamarunner.(*Server).load.gowrap2()
+        github.com/ollama/ollama/runner/llamarunner/runner.go:879 +0x175 fp=0xc000643fe0 sp=0xc000643ee0 pc=0x7ff74fc925b5
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc000643fe8 sp=0xc000643fe0 pc=0x7ff74f802841
+created by github.com/ollama/ollama/runner/llamarunner.(*Server).load in goroutine 51
+        github.com/ollama/ollama/runner/llamarunner/runner.go:879 +0x7ce
+
+goroutine 1 gp=0xc0000021c0 m=nil [IO wait]:
+runtime.gopark(0x0?, 0xc00058f690?, 0x1c?, 0x2?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc00058f608 sp=0xc00058f5e8 pc=0x7ff74f7fa5ee
+runtime.netpollblock(0x7ff74f7e4f8e?, 0x4f804060?, 0xf7?)
+        runtime/netpoll.go:575 +0xf7 fp=0xc00058f640 sp=0xc00058f608 pc=0x7ff74f7bf537
+internal/poll.runtime_pollWait(0x2b371ec8400, 0x72)
+        runtime/netpoll.go:351 +0x85 fp=0xc00058f660 sp=0xc00058f640 pc=0x7ff74f7f9785
+internal/poll.(*pollDesc).wait(0x228?, 0x7ff74f791106?, 0x0)
+        internal/poll/fd_poll_runtime.go:84 +0x27 fp=0xc00058f688 sp=0xc00058f660 pc=0x7ff74f892567
+internal/poll.waitIO(0x0?)
+        internal/poll/fd_windows.go:187 +0x65 fp=0xc00058f6d0 sp=0xc00058f688 pc=0x7ff74f8939a5
+internal/poll.execIO(0xc00052dba0, 0xc00058f770)
+        internal/poll/fd_windows.go:240 +0x13a fp=0xc00058f740 sp=0xc00058f6d0 pc=0x7ff74f893d1a
+internal/poll.(*FD).acceptOne(0xc00052db88, 0x21c, {0xc0000401e0?, 0xc00058f7d0?, 0x7ff74f89bf25?}, 0xc00058f804?)
+        internal/poll/fd_windows.go:1059 +0x65 fp=0xc00058f7a0 sp=0xc00058f740 pc=0x7ff74f898625
+internal/poll.(*FD).Accept(0xc00052db88, 0xc00058f950)
+        internal/poll/fd_windows.go:1093 +0x1b6 fp=0xc00058f858 sp=0xc00058f7a0 pc=0x7ff74f898956
+net.(*netFD).accept(0xc00052db88)
+        net/fd_windows.go:202 +0x4b fp=0xc00058f970 sp=0xc00058f858 pc=0x7ff74f901acb
+net.(*TCPListener).accept(0xc0002da880)
+        net/tcpsock_posix.go:159 +0x1b fp=0xc00058f9c0 sp=0xc00058f970 pc=0x7ff74f91885b
+net.(*TCPListener).Accept(0xc0002da880)
+        net/tcpsock.go:380 +0x30 fp=0xc00058f9f0 sp=0xc00058f9c0 pc=0x7ff74f9175d0
+net/http.(*onceCloseListener).Accept(0xc0005443f0?)
+        <autogenerated>:1 +0x24 fp=0xc00058fa08 sp=0xc00058f9f0 pc=0x7ff74fb3b5c4
+net/http.(*Server).Serve(0xc0001df700, {0x7ff750c91f30, 0xc0002da880})
+        net/http/server.go:3463 +0x30c fp=0xc00058fb38 sp=0xc00058fa08 pc=0x7ff74fb12fac
+github.com/ollama/ollama/runner/llamarunner.Execute({0xc0000be020, 0x4, 0x6})
+        github.com/ollama/ollama/runner/llamarunner/runner.go:947 +0x8f4 fp=0xc00058fd08 sp=0xc00058fb38 pc=0x7ff74fc92f74
+github.com/ollama/ollama/runner.Execute({0xc0000be010?, 0x0?, 0x0?})
+        github.com/ollama/ollama/runner/runner.go:22 +0xd4 fp=0xc00058fd30 sp=0xc00058fd08 pc=0x7ff74fd33df4
+github.com/ollama/ollama/cmd.NewCLI.func2(0xc0001df400?, {0x7ff750aacf1c?, 0x4?, 0x7ff750aacf20?})
+        github.com/ollama/ollama/cmd/cmd.go:1774 +0x45 fp=0xc00058fd58 sp=0xc00058fd30 pc=0x7ff7504b5fc5
+github.com/spf13/cobra.(*Command).execute(0xc000547508, {0xc0002da6c0, 0x4, 0x4})
+        github.com/spf13/cobra@v1.7.0/command.go:940 +0x88a fp=0xc00058fe78 sp=0xc00058fd58 pc=0x7ff74f97d18a
+github.com/spf13/cobra.(*Command).ExecuteC(0xc000524908)
+        github.com/spf13/cobra@v1.7.0/command.go:1068 +0x398 fp=0xc00058ff30 sp=0xc00058fe78 pc=0x7ff74f97d9b8
+github.com/spf13/cobra.(*Command).Execute(...)
+        github.com/spf13/cobra@v1.7.0/command.go:992
+github.com/spf13/cobra.(*Command).ExecuteContext(...)
+        github.com/spf13/cobra@v1.7.0/command.go:985
+main.main()
+        github.com/ollama/ollama/main.go:12 +0x4d fp=0xc00058ff50 sp=0xc00058ff30 pc=0x7ff7504b6a8d
+runtime.main()
+        runtime/proc.go:285 +0x27d fp=0xc00058ffe0 sp=0xc00058ff50 pc=0x7ff74f7c86dd
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc00058ffe8 sp=0xc00058ffe0 pc=0x7ff74f802841
+
+goroutine 2 gp=0xc0000028c0 m=nil [force gc (idle)]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc00008bfa8 sp=0xc00008bf88 pc=0x7ff74f7fa5ee
+runtime.goparkunlock(...)
+        runtime/proc.go:466
+runtime.forcegchelper()
+        runtime/proc.go:373 +0xb8 fp=0xc00008bfe0 sp=0xc00008bfa8 pc=0x7ff74f7c89f8
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc00008bfe8 sp=0xc00008bfe0 pc=0x7ff74f802841
+created by runtime.init.7 in goroutine 1
+        runtime/proc.go:361 +0x1a
+
+goroutine 3 gp=0xc000002c40 m=nil [GC sweep wait]:
+runtime.gopark(0x1?, 0x0?, 0x0?, 0x0?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc00008df80 sp=0xc00008df60 pc=0x7ff74f7fa5ee
+runtime.goparkunlock(...)
+        runtime/proc.go:466
+runtime.bgsweep(0xc000042080)
+        runtime/mgcsweep.go:323 +0xdf fp=0xc00008dfc8 sp=0xc00008df80 pc=0x7ff74f7b0dbf
+runtime.gcenable.gowrap1()
+        runtime/mgc.go:212 +0x25 fp=0xc00008dfe0 sp=0xc00008dfc8 pc=0x7ff74f7a4d05
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc00008dfe8 sp=0xc00008dfe0 pc=0x7ff74f802841
+created by runtime.gcenable in goroutine 1
+        runtime/mgc.go:212 +0x66
+
+goroutine 4 gp=0xc000002e00 m=nil [GC scavenge wait]:
+runtime.gopark(0x10000?, 0x7ff750c7e1b0?, 0x0?, 0x0?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc00009ff78 sp=0xc00009ff58 pc=0x7ff74f7fa5ee
+runtime.goparkunlock(...)
+        runtime/proc.go:466
+runtime.(*scavengerState).park(0x7ff751648b40)
+        runtime/mgcscavenge.go:425 +0x49 fp=0xc00009ffa8 sp=0xc00009ff78 pc=0x7ff74f7ae829
+runtime.bgscavenge(0xc000042080)
+        runtime/mgcscavenge.go:658 +0x59 fp=0xc00009ffc8 sp=0xc00009ffa8 pc=0x7ff74f7aedd9
+runtime.gcenable.gowrap2()
+        runtime/mgc.go:213 +0x25 fp=0xc00009ffe0 sp=0xc00009ffc8 pc=0x7ff74f7a4ca5
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc00009ffe8 sp=0xc00009ffe0 pc=0x7ff74f802841
+created by runtime.gcenable in goroutine 1
+        runtime/mgc.go:213 +0xa5
+
+goroutine 5 gp=0xc000003340 m=nil [finalizer wait]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc0000a1e20 sp=0xc0000a1e00 pc=0x7ff74f7fa5ee
+runtime.runFinalizers()
+        runtime/mfinal.go:210 +0x107 fp=0xc0000a1fe0 sp=0xc0000a1e20 pc=0x7ff74f7a3bc7
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc0000a1fe8 sp=0xc0000a1fe0 pc=0x7ff74f802841
+created by runtime.createfing in goroutine 1
+        runtime/mfinal.go:172 +0x3d
+
+goroutine 6 gp=0xc000003dc0 m=nil [cleanup wait]:
+runtime.gopark(0x0?, 0x101000000000000?, 0xca?, 0x0?, 0x2?)
+        runtime/proc.go:460 +0xce fp=0xc00008ff68 sp=0xc00008ff48 pc=0x7ff74f7fa5ee
+runtime.goparkunlock(...)
+        runtime/proc.go:466
+runtime.(*cleanupQueue).dequeue(0x7ff751649320)
+        runtime/mcleanup.go:439 +0xc5 fp=0xc00008ffa0 sp=0xc00008ff68 pc=0x7ff74f7a0fa5
+runtime.runCleanups()
+        runtime/mcleanup.go:635 +0x45 fp=0xc00008ffe0 sp=0xc00008ffa0 pc=0x7ff74f7a1665
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc00008ffe8 sp=0xc00008ffe0 pc=0x7ff74f802841
+created by runtime.(*cleanupQueue).createGs in goroutine 1
+        runtime/mcleanup.go:589 +0xa5
+
+goroutine 7 gp=0xc0003fc380 m=nil [GC worker (idle)]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc00009bf38 sp=0xc00009bf18 pc=0x7ff74f7fa5ee
+runtime.gcBgMarkWorker(0xc0000318f0)
+        runtime/mgc.go:1463 +0xeb fp=0xc00009bfc8 sp=0xc00009bf38 pc=0x7ff74f7a748b
+runtime.gcBgMarkStartWorkers.gowrap1()
+        runtime/mgc.go:1373 +0x25 fp=0xc00009bfe0 sp=0xc00009bfc8 pc=0x7ff74f7a7365
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc00009bfe8 sp=0xc00009bfe0 pc=0x7ff74f802841
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+        runtime/mgc.go:1373 +0x105
+
+goroutine 18 gp=0xc000484000 m=nil [GC worker (idle)]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc00048bf38 sp=0xc00048bf18 pc=0x7ff74f7fa5ee
+runtime.gcBgMarkWorker(0xc0000318f0)
+        runtime/mgc.go:1463 +0xeb fp=0xc00048bfc8 sp=0xc00048bf38 pc=0x7ff74f7a748b
+runtime.gcBgMarkStartWorkers.gowrap1()
+        runtime/mgc.go:1373 +0x25 fp=0xc00048bfe0 sp=0xc00048bfc8 pc=0x7ff74f7a7365
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc00048bfe8 sp=0xc00048bfe0 pc=0x7ff74f802841
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+        runtime/mgc.go:1373 +0x105
+
+goroutine 34 gp=0xc0001061c0 m=nil [GC worker (idle)]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc000487f38 sp=0xc000487f18 pc=0x7ff74f7fa5ee
+runtime.gcBgMarkWorker(0xc0000318f0)
+        runtime/mgc.go:1463 +0xeb fp=0xc000487fc8 sp=0xc000487f38 pc=0x7ff74f7a748b
+runtime.gcBgMarkStartWorkers.gowrap1()
+        runtime/mgc.go:1373 +0x25 fp=0xc000487fe0 sp=0xc000487fc8 pc=0x7ff74f7a7365
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc000487fe8 sp=0xc000487fe0 pc=0x7ff74f802841
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+        runtime/mgc.go:1373 +0x105
+
+goroutine 8 gp=0xc0003fc540 m=nil [GC worker (idle)]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc00009df38 sp=0xc00009df18 pc=0x7ff74f7fa5ee
+runtime.gcBgMarkWorker(0xc0000318f0)
+        runtime/mgc.go:1463 +0xeb fp=0xc00009dfc8 sp=0xc00009df38 pc=0x7ff74f7a748b
+runtime.gcBgMarkStartWorkers.gowrap1()
+        runtime/mgc.go:1373 +0x25 fp=0xc00009dfe0 sp=0xc00009dfc8 pc=0x7ff74f7a7365
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc00009dfe8 sp=0xc00009dfe0 pc=0x7ff74f802841
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+        runtime/mgc.go:1373 +0x105
+
+goroutine 9 gp=0xc0003fc700 m=nil [GC worker (idle)]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc000475f38 sp=0xc000475f18 pc=0x7ff74f7fa5ee
+runtime.gcBgMarkWorker(0xc0000318f0)
+        runtime/mgc.go:1463 +0xeb fp=0xc000475fc8 sp=0xc000475f38 pc=0x7ff74f7a748b
+runtime.gcBgMarkStartWorkers.gowrap1()
+        runtime/mgc.go:1373 +0x25 fp=0xc000475fe0 sp=0xc000475fc8 pc=0x7ff74f7a7365
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc000475fe8 sp=0xc000475fe0 pc=0x7ff74f802841
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+        runtime/mgc.go:1373 +0x105
+
+goroutine 19 gp=0xc0004841c0 m=nil [GC worker (idle)]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc00048df38 sp=0xc00048df18 pc=0x7ff74f7fa5ee
+runtime.gcBgMarkWorker(0xc0000318f0)
+        runtime/mgc.go:1463 +0xeb fp=0xc00048dfc8 sp=0xc00048df38 pc=0x7ff74f7a748b
+runtime.gcBgMarkStartWorkers.gowrap1()
+        runtime/mgc.go:1373 +0x25 fp=0xc00048dfe0 sp=0xc00048dfc8 pc=0x7ff74f7a7365
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc00048dfe8 sp=0xc00048dfe0 pc=0x7ff74f802841
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+        runtime/mgc.go:1373 +0x105
+
+goroutine 10 gp=0xc0003fc8c0 m=nil [GC worker (idle)]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc000477f38 sp=0xc000477f18 pc=0x7ff74f7fa5ee
+runtime.gcBgMarkWorker(0xc0000318f0)
+        runtime/mgc.go:1463 +0xeb fp=0xc000477fc8 sp=0xc000477f38 pc=0x7ff74f7a748b
+runtime.gcBgMarkStartWorkers.gowrap1()
+        runtime/mgc.go:1373 +0x25 fp=0xc000477fe0 sp=0xc000477fc8 pc=0x7ff74f7a7365
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc000477fe8 sp=0xc000477fe0 pc=0x7ff74f802841
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+        runtime/mgc.go:1373 +0x105
+
+goroutine 20 gp=0xc000484380 m=nil [GC worker (idle)]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc000471f38 sp=0xc000471f18 pc=0x7ff74f7fa5ee
+runtime.gcBgMarkWorker(0xc0000318f0)
+        runtime/mgc.go:1463 +0xeb fp=0xc000471fc8 sp=0xc000471f38 pc=0x7ff74f7a748b
+runtime.gcBgMarkStartWorkers.gowrap1()
+        runtime/mgc.go:1373 +0x25 fp=0xc000471fe0 sp=0xc000471fc8 pc=0x7ff74f7a7365
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc000471fe8 sp=0xc000471fe0 pc=0x7ff74f802841
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+        runtime/mgc.go:1373 +0x105
+
+goroutine 11 gp=0xc0003fca80 m=nil [GC worker (idle)]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc00047df38 sp=0xc00047df18 pc=0x7ff74f7fa5ee
+runtime.gcBgMarkWorker(0xc0000318f0)
+        runtime/mgc.go:1463 +0xeb fp=0xc00047dfc8 sp=0xc00047df38 pc=0x7ff74f7a748b
+runtime.gcBgMarkStartWorkers.gowrap1()
+        runtime/mgc.go:1373 +0x25 fp=0xc00047dfe0 sp=0xc00047dfc8 pc=0x7ff74f7a7365
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc00047dfe8 sp=0xc00047dfe0 pc=0x7ff74f802841
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+        runtime/mgc.go:1373 +0x105
+
+goroutine 12 gp=0xc0003fcc40 m=nil [GC worker (idle)]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc00047ff38 sp=0xc00047ff18 pc=0x7ff74f7fa5ee
+runtime.gcBgMarkWorker(0xc0000318f0)
+        runtime/mgc.go:1463 +0xeb fp=0xc00047ffc8 sp=0xc00047ff38 pc=0x7ff74f7a748b
+runtime.gcBgMarkStartWorkers.gowrap1()
+        runtime/mgc.go:1373 +0x25 fp=0xc00047ffe0 sp=0xc00047ffc8 pc=0x7ff74f7a7365
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc00047ffe8 sp=0xc00047ffe0 pc=0x7ff74f802841
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+        runtime/mgc.go:1373 +0x105
+
+goroutine 13 gp=0xc0003fce00 m=nil [GC worker (idle)]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc000479f38 sp=0xc000479f18 pc=0x7ff74f7fa5ee
+runtime.gcBgMarkWorker(0xc0000318f0)
+        runtime/mgc.go:1463 +0xeb fp=0xc000479fc8 sp=0xc000479f38 pc=0x7ff74f7a748b
+runtime.gcBgMarkStartWorkers.gowrap1()
+        runtime/mgc.go:1373 +0x25 fp=0xc000479fe0 sp=0xc000479fc8 pc=0x7ff74f7a7365
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc000479fe8 sp=0xc000479fe0 pc=0x7ff74f802841
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+        runtime/mgc.go:1373 +0x105
+
+goroutine 21 gp=0xc000484540 m=nil [GC worker (idle)]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc000473f38 sp=0xc000473f18 pc=0x7ff74f7fa5ee
+runtime.gcBgMarkWorker(0xc0000318f0)
+        runtime/mgc.go:1463 +0xeb fp=0xc000473fc8 sp=0xc000473f38 pc=0x7ff74f7a748b
+runtime.gcBgMarkStartWorkers.gowrap1()
+        runtime/mgc.go:1373 +0x25 fp=0xc000473fe0 sp=0xc000473fc8 pc=0x7ff74f7a7365
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc000473fe8 sp=0xc000473fe0 pc=0x7ff74f802841
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+        runtime/mgc.go:1373 +0x105
+
+goroutine 35 gp=0xc000106380 m=nil [GC worker (idle)]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc000489f38 sp=0xc000489f18 pc=0x7ff74f7fa5ee
+runtime.gcBgMarkWorker(0xc0000318f0)
+        runtime/mgc.go:1463 +0xeb fp=0xc000489fc8 sp=0xc000489f38 pc=0x7ff74f7a748b
+runtime.gcBgMarkStartWorkers.gowrap1()
+        runtime/mgc.go:1373 +0x25 fp=0xc000489fe0 sp=0xc000489fc8 pc=0x7ff74f7a7365
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc000489fe8 sp=0xc000489fe0 pc=0x7ff74f802841
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+        runtime/mgc.go:1373 +0x105
+
+goroutine 14 gp=0xc0003fcfc0 m=nil [GC worker (idle)]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc00047bf38 sp=0xc00047bf18 pc=0x7ff74f7fa5ee
+runtime.gcBgMarkWorker(0xc0000318f0)
+        runtime/mgc.go:1463 +0xeb fp=0xc00047bfc8 sp=0xc00047bf38 pc=0x7ff74f7a748b
+runtime.gcBgMarkStartWorkers.gowrap1()
+        runtime/mgc.go:1373 +0x25 fp=0xc00047bfe0 sp=0xc00047bfc8 pc=0x7ff74f7a7365
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc00047bfe8 sp=0xc00047bfe0 pc=0x7ff74f802841
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+        runtime/mgc.go:1373 +0x105
+
+goroutine 22 gp=0xc000484700 m=nil [GC worker (idle)]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x0?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc000495f38 sp=0xc000495f18 pc=0x7ff74f7fa5ee
+runtime.gcBgMarkWorker(0xc0000318f0)
+        runtime/mgc.go:1463 +0xeb fp=0xc000495fc8 sp=0xc000495f38 pc=0x7ff74f7a748b
+runtime.gcBgMarkStartWorkers.gowrap1()
+        runtime/mgc.go:1373 +0x25 fp=0xc000495fe0 sp=0xc000495fc8 pc=0x7ff74f7a7365
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc000495fe8 sp=0xc000495fe0 pc=0x7ff74f802841
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+        runtime/mgc.go:1373 +0x105
+
+goroutine 36 gp=0xc000106540 m=nil [GC worker (idle)]:
+runtime.gopark(0x967d435eff4?, 0x0?, 0x0?, 0x0?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc000491f38 sp=0xc000491f18 pc=0x7ff74f7fa5ee
+runtime.gcBgMarkWorker(0xc0000318f0)
+        runtime/mgc.go:1463 +0xeb fp=0xc000491fc8 sp=0xc000491f38 pc=0x7ff74f7a748b
+runtime.gcBgMarkStartWorkers.gowrap1()
+        runtime/mgc.go:1373 +0x25 fp=0xc000491fe0 sp=0xc000491fc8 pc=0x7ff74f7a7365
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc000491fe8 sp=0xc000491fe0 pc=0x7ff74f802841
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+        runtime/mgc.go:1373 +0x105
+
+goroutine 15 gp=0xc0003fd180 m=nil [GC worker (idle)]:
+runtime.gopark(0x967d435eff4?, 0x0?, 0x0?, 0x0?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc000505f38 sp=0xc000505f18 pc=0x7ff74f7fa5ee
+runtime.gcBgMarkWorker(0xc0000318f0)
+        runtime/mgc.go:1463 +0xeb fp=0xc000505fc8 sp=0xc000505f38 pc=0x7ff74f7a748b
+runtime.gcBgMarkStartWorkers.gowrap1()
+        runtime/mgc.go:1373 +0x25 fp=0xc000505fe0 sp=0xc000505fc8 pc=0x7ff74f7a7365
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc000505fe8 sp=0xc000505fe0 pc=0x7ff74f802841
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+        runtime/mgc.go:1373 +0x105
+
+goroutine 23 gp=0xc0004848c0 m=nil [GC worker (idle)]:
+runtime.gopark(0x7ff751697a60?, 0x1?, 0x74?, 0xac?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc000497f38 sp=0xc000497f18 pc=0x7ff74f7fa5ee
+runtime.gcBgMarkWorker(0xc0000318f0)
+        runtime/mgc.go:1463 +0xeb fp=0xc000497fc8 sp=0xc000497f38 pc=0x7ff74f7a748b
+runtime.gcBgMarkStartWorkers.gowrap1()
+        runtime/mgc.go:1373 +0x25 fp=0xc000497fe0 sp=0xc000497fc8 pc=0x7ff74f7a7365
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc000497fe8 sp=0xc000497fe0 pc=0x7ff74f802841
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+        runtime/mgc.go:1373 +0x105
+
+goroutine 37 gp=0xc000106700 m=nil [GC worker (idle)]:
+runtime.gopark(0x7ff751697a60?, 0x1?, 0x74?, 0xac?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc000493f38 sp=0xc000493f18 pc=0x7ff74f7fa5ee
+runtime.gcBgMarkWorker(0xc0000318f0)
+        runtime/mgc.go:1463 +0xeb fp=0xc000493fc8 sp=0xc000493f38 pc=0x7ff74f7a748b
+runtime.gcBgMarkStartWorkers.gowrap1()
+        runtime/mgc.go:1373 +0x25 fp=0xc000493fe0 sp=0xc000493fc8 pc=0x7ff74f7a7365
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc000493fe8 sp=0xc000493fe0 pc=0x7ff74f802841
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+        runtime/mgc.go:1373 +0x105
+
+goroutine 16 gp=0xc0003fd340 m=nil [GC worker (idle)]:
+runtime.gopark(0x967d435eff4?, 0x1?, 0x74?, 0xac?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc000507f38 sp=0xc000507f18 pc=0x7ff74f7fa5ee
+runtime.gcBgMarkWorker(0xc0000318f0)
+        runtime/mgc.go:1463 +0xeb fp=0xc000507fc8 sp=0xc000507f38 pc=0x7ff74f7a748b
+runtime.gcBgMarkStartWorkers.gowrap1()
+        runtime/mgc.go:1373 +0x25 fp=0xc000507fe0 sp=0xc000507fc8 pc=0x7ff74f7a7365
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc000507fe8 sp=0xc000507fe0 pc=0x7ff74f802841
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+        runtime/mgc.go:1373 +0x105
+
+goroutine 50 gp=0xc000606c40 m=nil [sync.WaitGroup.Wait]:
+runtime.gopark(0x0?, 0x0?, 0x0?, 0x80?, 0x0?)
+        runtime/proc.go:460 +0xce fp=0xc000501e20 sp=0xc000501e00 pc=0x7ff74f7fa5ee
+runtime.goparkunlock(...)
+        runtime/proc.go:466
+runtime.semacquire1(0xc00053ee80, 0x0, 0x1, 0x0, 0x19)
+        runtime/sema.go:192 +0x22f fp=0xc000501e88 sp=0xc000501e20 pc=0x7ff74f7db62f
+sync.runtime_SemacquireWaitGroup(0x0?, 0x0?)
+        runtime/sema.go:114 +0x2e fp=0xc000501ec0 sp=0xc000501e88 pc=0x7ff74f7fbcee
+sync.(*WaitGroup).Wait(0xc00053ee78)
+        sync/waitgroup.go:206 +0x85 fp=0xc000501ee8 sp=0xc000501ec0 pc=0x7ff74f810a25
+github.com/ollama/ollama/runner/llamarunner.(*Server).run(0xc00053ee60, {0x7ff750c94530, 0xc0000f1ae0})
+        github.com/ollama/ollama/runner/llamarunner/runner.go:334 +0x4b fp=0xc000501fb8 sp=0xc000501ee8 pc=0x7ff74fc8e0eb
+github.com/ollama/ollama/runner/llamarunner.Execute.gowrap1()
+        github.com/ollama/ollama/runner/llamarunner/runner.go:926 +0x28 fp=0xc000501fe0 sp=0xc000501fb8 pc=0x7ff74fc931e8
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc000501fe8 sp=0xc000501fe0 pc=0x7ff74f802841
+created by github.com/ollama/ollama/runner/llamarunner.Execute in goroutine 1
+        github.com/ollama/ollama/runner/llamarunner/runner.go:926 +0x4c5
+
+goroutine 51 gp=0xc000606e00 m=nil [IO wait]:
+runtime.gopark(0x0?, 0x0?, 0x90?, 0xa5?, 0x7ff74f7f80a5?)
+        runtime/proc.go:460 +0xce fp=0xc000051878 sp=0xc000051858 pc=0x7ff74f7fa5ee
+runtime.netpollblock(0xc0003ea590?, 0x51621f60?, 0xf7?)
+        runtime/netpoll.go:575 +0xf7 fp=0xc0000518b0 sp=0xc000051878 pc=0x7ff74f7bf537
+internal/poll.runtime_pollWait(0x2b371ec8200, 0x72)
+        runtime/netpoll.go:351 +0x85 fp=0xc0000518d0 sp=0xc0000518b0 pc=0x7ff74f7f9785
+internal/poll.(*pollDesc).wait(0x22c?, 0x7ff74f791106?, 0x0)
+        internal/poll/fd_poll_runtime.go:84 +0x27 fp=0xc0000518f8 sp=0xc0000518d0 pc=0x7ff74f892567
+internal/poll.waitIO(0xc0000519b0?)
+        internal/poll/fd_windows.go:187 +0x65 fp=0xc000051940 sp=0xc0000518f8 pc=0x7ff74f8939a5
+internal/poll.execIO(0xc000560020, 0x7ff750b24a00)
+        internal/poll/fd_windows.go:240 +0x13a fp=0xc0000519b0 sp=0xc000051940 pc=0x7ff74f893d1a
+internal/poll.(*FD).Read(0xc000560008, {0xc000612000, 0x1000, 0x1000})
+        internal/poll/fd_windows.go:533 +0x1ee fp=0xc000051a50 sp=0xc0000519b0 pc=0x7ff74f8947ae
+net.(*netFD).Read(0xc000560008, {0xc000612000?, 0x0?, 0xc000051ac8?})
+        net/fd_posix.go:68 +0x25 fp=0xc000051a98 sp=0xc000051a50 pc=0x7ff74f8ffac5
+net.(*conn).Read(0xc000092848, {0xc000612000?, 0x0?, 0x0?})
+        net/net.go:196 +0x45 fp=0xc000051ae0 sp=0xc000051a98 pc=0x7ff74f90fb25
+net/http.(*connReader).Read(0xc00060e000, {0xc000612000, 0x1000, 0x1000})
+        net/http/server.go:812 +0x154 fp=0xc000051b38 sp=0xc000051ae0 pc=0x7ff74fb08014
+bufio.(*Reader).fill(0xc000608060)
+        bufio/bufio.go:113 +0x103 fp=0xc000051b70 sp=0xc000051b38 pc=0x7ff74f925e23
+bufio.(*Reader).Peek(0xc000608060, 0x4)
+        bufio/bufio.go:152 +0x53 fp=0xc000051b90 sp=0xc000051b70 pc=0x7ff74f925f53
+net/http.(*conn).serve(0xc0005443f0, {0x7ff750c944f8, 0xc0005408a0})
+        net/http/server.go:2145 +0x7c5 fp=0xc000051fb8 sp=0xc000051b90 pc=0x7ff74fb0d845
+net/http.(*Server).Serve.gowrap3()
+        net/http/server.go:3493 +0x28 fp=0xc000051fe0 sp=0xc000051fb8 pc=0x7ff74fb133a8
+runtime.goexit({})
+        runtime/asm_amd64.s:1693 +0x1 fp=0xc000051fe8 sp=0xc000051fe0 pc=0x7ff74f802841
+created by net/http.(*Server).Serve in goroutine 1
+        net/http/server.go:3493 +0x485
+rax     0x2b373b54040
+rbx     0x2b5a3a57c80
+rcx     0x2b37282cc30
+rdx     0x0
+rdi     0x2b373412100
+rsi     0xd58f8ff790
+rbp     0x2b374de24c0
+rsp     0xd58f8ff5f0
+r8      0x2b5a3a57c80
+r9      0x0
+r10     0x0
+r11     0x2b5a3a57c80
+r12     0x0
+r13     0x2b374de2d60
+r14     0xe8
+r15     0x2b5a3a576c0
+rip     0x7ff750558bf6
+rflags  0x10206
+cs      0x33
+fs      0x53
+gs      0x2b
+time=2025-11-05T01:40:13.841-05:00 level=INFO source=server.go:1285 msg="waiting for server to become available" status="llm server error"
+time=2025-11-05T01:40:14.593-05:00 level=INFO source=sched.go:446 msg="Load failed" model=C:\Users\iosuc\.ollama\models\blobs\sha256-b12bb3052b45728cdd59e40e1b88efb5eb2d5ef7a076c49f8f0e6be5c5e66b7f error="llama runner process has terminated: exit status 2"
+time=2025-11-05T01:40:14.622-05:00 level=DEBUG source=server.go:1699 msg="stopping llama server" pid=23364
+time=2025-11-05T01:40:14.622-05:00 level=DEBUG source=sched.go:214 msg="new model fits with existing models, loading"
+[GIN] 2025/11/05 - 01:40:14 | 500 |     7.051922s |       127.0.0.1 | POST     "/api/generate"
+[GIN] 2025/11/05 - 01:40:29 | 200 |            0s |       127.0.0.1 | HEAD     "/"
+time=2025-11-05T01:40:29.229-05:00 level=DEBUG source=ggml.go:276 msg="key with type not found" key=general.alignment default=32
+time=2025-11-05T01:40:29.229-05:00 level=DEBUG source=ggml.go:276 msg="key with type not found" key=general.alignment default=32
+[GIN] 2025/11/05 - 01:40:29 | 200 |     31.7167ms |       127.0.0.1 | POST     "/api/show"
+time=2025-11-05T01:40:29.259-05:00 level=DEBUG source=ggml.go:276 msg="key with type not found" key=general.alignment default=32
+time=2025-11-05T01:40:29.259-05:00 level=DEBUG source=ggml.go:276 msg="key with type not found" key=general.alignment default=32
+[GIN] 2025/11/05 - 01:40:29 | 200 |     29.7291ms |       127.0.0.1 | POST     "/api/show"
+time=2025-11-05T01:40:29.319-05:00 level=DEBUG source=sched.go:602 msg="evaluating already loaded" model=C:\Users\iosuc\.ollama\models\blobs\sha256-0e6ef13c6c41721be6db8ce624111c48a9f26d2592f445ff0e5abf8451d546ff
+[GIN] 2025/11/05 - 01:40:29 | 200 |     60.1405ms |       127.0.0.1 | POST     "/api/generate"
+time=2025-11-05T01:40:29.322-05:00 level=DEBUG source=sched.go:378 msg="context for request finished" runner.name=hf.co/unsloth/Qwen3-VL-2B-Instruct-1M-GGUF:Q4_K_M runner.size="2.1 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=10744 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-0e6ef13c6c41721be6db8ce624111c48a9f26d2592f445ff0e5abf8451d546ff runner.num_ctx=10024
+time=2025-11-05T01:40:29.322-05:00 level=DEBUG source=sched.go:283 msg="runner with non-zero duration has gone idle, adding timer" runner.name=hf.co/unsloth/Qwen3-VL-2B-Instruct-1M-GGUF:Q4_K_M runner.size="2.1 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=10744 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-0e6ef13c6c41721be6db8ce624111c48a9f26d2592f445ff0e5abf8451d546ff runner.num_ctx=10024 duration=5m0s      
+time=2025-11-05T01:40:29.322-05:00 level=DEBUG source=sched.go:301 msg="after processing request finished event" runner.name=hf.co/unsloth/Qwen3-VL-2B-Instruct-1M-GGUF:Q4_K_M runner.size="2.1 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=10744 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-0e6ef13c6c41721be6db8ce624111c48a9f26d2592f445ff0e5abf8451d546ff runner.num_ctx=10024 refCount=0
+time=2025-11-05T01:40:40.212-05:00 level=DEBUG source=sched.go:602 msg="evaluating already loaded" model=C:\Users\iosuc\.ollama\models\blobs\sha256-0e6ef13c6c41721be6db8ce624111c48a9f26d2592f445ff0e5abf8451d546ff
+time=2025-11-05T01:40:40.212-05:00 level=DEBUG source=server.go:1401 msg="completion request" images=0 prompt=54 format=""
+time=2025-11-05T01:40:40.212-05:00 level=TRACE source=server.go:1402 msg="completion request" prompt="<|im_start|>user\nhola<|im_end|>\n<|im_start|>assistant\n"
+time=2025-11-05T01:40:40.213-05:00 level=DEBUG source=cache.go:104 msg="loading cache slot" id=0 cache=756 prompt=10 used=3 remaining=7        
+[GIN] 2025/11/05 - 01:40:40 | 200 |    374.2092ms |       127.0.0.1 | POST     "/api/chat"
+time=2025-11-05T01:40:40.523-05:00 level=DEBUG source=sched.go:378 msg="context for request finished" runner.name=hf.co/unsloth/Qwen3-VL-2B-Instruct-1M-GGUF:Q4_K_M runner.size="2.1 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=10744 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-0e6ef13c6c41721be6db8ce624111c48a9f26d2592f445ff0e5abf8451d546ff runner.num_ctx=10024
+time=2025-11-05T01:40:40.523-05:00 level=DEBUG source=sched.go:283 msg="runner with non-zero duration has gone idle, adding timer" runner.name=hf.co/unsloth/Qwen3-VL-2B-Instruct-1M-GGUF:Q4_K_M runner.size="2.1 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=10744 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-0e6ef13c6c41721be6db8ce624111c48a9f26d2592f445ff0e5abf8451d546ff runner.num_ctx=10024 duration=5m0s      
+time=2025-11-05T01:40:40.523-05:00 level=DEBUG source=sched.go:301 msg="after processing request finished event" runner.name=hf.co/unsloth/Qwen3-VL-2B-Instruct-1M-GGUF:Q4_K_M runner.size="2.1 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=10744 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-0e6ef13c6c41721be6db8ce624111c48a9f26d2592f445ff0e5abf8451d546ff runner.num_ctx=10024 refCount=0
+time=2025-11-05T01:40:44.291-05:00 level=DEBUG source=sched.go:602 msg="evaluating already loaded" model=C:\Users\iosuc\.ollama\models\blobs\sha256-0e6ef13c6c41721be6db8ce624111c48a9f26d2592f445ff0e5abf8451d546ff
+time=2025-11-05T01:40:44.293-05:00 level=DEBUG source=server.go:1401 msg="completion request" images=1 prompt=194 format=""
+time=2025-11-05T01:40:44.293-05:00 level=TRACE source=server.go:1402 msg="completion request" prompt="<|im_start|>user\nhola<|im_end|>\n<|im_start|>assistant\n¡Hola! ¿En qué puedo ayudarte?<|im_end|>\n<|im_start|>user\n[img-0]\"\"  extrae todos los datos de la imagen<|im_end|>\n<|im_start|>assistant\n"
+time=2025-11-05T01:40:44.297-05:00 level=DEBUG source=image.go:120 msg="loading image embeddings from cache" entry=0
+time=2025-11-05T01:40:44.297-05:00 level=DEBUG source=cache.go:104 msg="loading cache slot" id=0 cache=20 prompt=778 used=20 remaining=758     
+time=2025-11-05T01:40:58.016-05:00 level=DEBUG source=sched.go:378 msg="context for request finished" runner.name=hf.co/unsloth/Qwen3-VL-2B-Instruct-1M-GGUF:Q4_K_M runner.size="2.1 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=10744 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-0e6ef13c6c41721be6db8ce624111c48a9f26d2592f445ff0e5abf8451d546ff runner.num_ctx=10024
+time=2025-11-05T01:40:58.017-05:00 level=DEBUG source=sched.go:283 msg="runner with non-zero duration has gone idle, adding timer" runner.name=hf.co/unsloth/Qwen3-VL-2B-Instruct-1M-GGUF:Q4_K_M runner.size="2.1 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=10744 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-0e6ef13c6c41721be6db8ce624111c48a9f26d2592f445ff0e5abf8451d546ff runner.num_ctx=10024 duration=5m0s      
+[GIN] 2025/11/05 - 01:40:58 | 200 |   13.7800015s |       127.0.0.1 | POST     "/api/chat"
+time=2025-11-05T01:40:58.017-05:00 level=DEBUG source=sched.go:301 msg="after processing request finished event" runner.name=hf.co/unsloth/Qwen3-VL-2B-Instruct-1M-GGUF:Q4_K_M runner.size="2.1 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=10744 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-0e6ef13c6c41721be6db8ce624111c48a9f26d2592f445ff0e5abf8451d546ff runner.num_ctx=10024 refCount=0

@@ -13,7 +13,7 @@ https://github.com/ggml-org/llama.cpp/pull/16745
 
 ¿Lo estás haciendo mal? Los modelos están ya bien Porque tengo la versión que está funcionando los dos modelos. El problema está Que hemos aplicado. El PR. https://github.com/LETS-BEE/llama.cpp/commits/qwen3vl/ sin creo haber aplicado https://github.com/ggml-org/llama.cpp/pull/16745 o que cuando aplicamos hace 2 dias https://github.com/ollama/ollama/pull/12665 
 
-
+git checkout --theirs llama/patches/*.patch; git add llama/patches/*.patch
 
 
 ⚠️ **IMPORTANTE:** No se puede hacer push al upstream (repositorio original de Ollama). Los cambios solo se mantienen en el fork local.
@@ -35,6 +35,31 @@ git remote -v
 # upstream        no_push (push)
 ```
 
+**Para el submódulo llama/vendor:**
+
+```powershell
+cd llama\vendor
+
+# Verificar remotes existentes
+git remote -v
+
+# Si no existe 'upstream', agregarlo primero
+git remote add upstream https://github.com/ggml-org/llama.cpp.git
+
+# Configurar upstream como solo lectura
+git remote set-url --push upstream no_push
+
+# Verificar
+git remote -v
+# Debe mostrar:
+# origin  https://github.com/LETS-BEE/llama.cpp.git (fetch)
+# origin  https://github.com/LETS-BEE/llama.cpp.git (push)
+# upstream        https://github.com/ggml-org/llama.cpp.git (fetch)
+# upstream        no_push (push)
+
+cd ..\..
+```
+
 **Ahora:**
 - ✅ Puedes hacer `git fetch upstream` (sincronizar cambios del original)
 - ✅ Puedes hacer `git push origin` (tu fork)
@@ -46,6 +71,8 @@ git remote -v
 
 ```powershell
 # Navegar al submódulo
+
+make -f Makefile.sync checkout d261223d24e97f2df50220e4a5b7f0adb69bba81
 cd llama\vendor
 
 # Cambiar a commit específico (ejemplo)
@@ -178,6 +205,7 @@ git merge main
 ```powershell
 # Antes de cambiar de rama
 git stash push -u -m "Z_Iosu scripts"
+Tash push -u -m "Z_Iosu scripts"
 
 # Cambiar de rama
 git checkout otra-rama
@@ -186,10 +214,24 @@ git checkout otra-rama
 git checkout main
 git stash pop
 ```
+Tash push -u -m "Z_Iosu scripts"
+
+# Cambiar de rama
+git checkout otra-rama
+
+# Volver y recuperar
+git checkout main
+git stash pop
+```
+### Ejecutar patches
+make -f Makefile.sync apply-patches
+make -f Makefile.sync format-patches sync
+git -C llama/vendor add ggml/src/ggml-cuda/argsort.cu
+git -C llama/vendor am --continue
 
 **Recomendación:** Usa **Opción 1** (.git/info/exclude) si Z_Iosu es solo para tu uso local, o **Opción 2** (rama personal) si quieres versionarlo en tu fork.
 
-# GUÍA COMPLETA: Compilación Ollama 0.12.7.99 con Interfaz Gráfica Funcional
+# GUÍA COMPLETA: Compilación Ollama 0.12.9.99 con Interfaz Gráfica Funcional
 
 ## 🚀 CONFIGURACIÓN PREVIA: ccache (RECOMENDADO)
 
@@ -254,14 +296,16 @@ go env GOCACHE
 ### 🎯 COMANDO ÚNICO AUTOMÁTICO (RECOMENDADO) ⭐
 
 **Copia y pega esto en PowerShell desde `C:\IA\tools\ollama`:**
+https://github.com/dhiltgen/ollama/commit/d0d462ca8543198c973e4a07bc254d0847b5433d
+https://github.com/ollama/ollama/pull/12931
 
 ```powershell
-$env:VERSION = "0.12.7.99"
+$env:VERSION = "0.12.9.99"
 powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildCPU buildCUDA13 buildVulkan gatherDependencies buildOllama buildApp buildInstaller
 ```
-$env:VERSION = "0.12.7.99"; powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\smart_build.ps1 -Verbose
+$env:VERSION = "0.12.9.99"; powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\smart_build.ps1 -Verbose
 
-$env:VERSION = "0.12.7.99"; powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\smart_build.ps1 -Verbose
+$env:VERSION = "0.12.9.99"; powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\smart_build.ps1 -Verbose
 **Eso es TODO.** Espera ~10 minutos y tendrás `dist\OllamaSetup.exe` completo y funcional.
 
 ---
@@ -278,7 +322,7 @@ powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\install-vulkan-sdk.ps1
 # ============================================================================
 # PASO 1: Bibliotecas CPU, CUDA y Vulkan con MSVC
 # ============================================================================
-$env:VERSION = "0.12.7.99"
+$env:VERSION = "0.12.9.99"
 powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildCPU buildCUDA13 buildVulkan gatherDependencies
 
 # ============================================================================
@@ -336,7 +380,7 @@ if (Test-Path "$env:LOCALAPPDATA\Programs\Ollama\unins000.exe") {
 
 # 4. Verificar
 ollama --version
-# Output: ollama version is 0.12.7.99
+# Output: ollama version is 0.12.9.99
 ```
 
 ---
@@ -389,7 +433,7 @@ Antes solo copiabas `ollama.exe` y funcionaba, pero ahora:
 ### 🔍 Causa Raíz
 **Las versiones anteriores** de Ollama tenían bibliotecas compiladas **estáticamente** (incluidas dentro del .exe).
 
-**Ollama 0.12.7.99 con CUDA** usa bibliotecas **dinámicas** (.dll) separadas que deben estar presentes en runtime.
+**Ollama 0.12.9.99 con CUDA** usa bibliotecas **dinámicas** (.dll) separadas que deben estar presentes en runtime.
 
 ### ✅ Solución DEFINITIVA
 
@@ -519,7 +563,7 @@ if (Test-Path "ollama.exe") {
 **Síntoma:** Error de VS2022 + llvm-mingw incompatible.
 ```powershell
 # Ejecutar manualmente (siempre funciona)
-$env:VERSION = "0.12.7.99"; $env:CGO_ENABLED="1"
+$env:VERSION = "0.12.9.99"; $env:CGO_ENABLED="1"
 $llvmPath = (Resolve-Path "C:\llvm-mingw-ucrt\llvm-mingw-*").Path
 $env:PATH = "$llvmPath\bin;$env:PATH"
 $env:CC = "$llvmPath\bin\gcc.exe"; $env:CXX = "$llvmPath\bin\g++.exe"
@@ -557,6 +601,170 @@ Get-ChildItem "$env:LOCALAPPDATA\Programs\Ollama\lib\ollama" -Recurse -Filter "*
 # Debe mostrar: Count = 28
 ```
 
+### 7. Error al aplicar patches con `make -f Makefile.sync apply-patches`
+
+**Síntoma:** Fallo al aplicar un patch con mensaje "No changes - did you forget to use 'git add'?"
+
+```bash
+error: could not build fake ancestor
+Patch failed at 0001 ggml: Add batch size hint
+Applying: ggml: Add batch size hint
+No changes - did you forget to use 'git add'?
+```
+
+**Causa:** El patch ya está aplicado en el código base actual.
+
+**Solución:**
+
+```powershell
+# Opción 1: Saltar el patch (RECOMENDADO si ya está aplicado)
+git -C llama/vendor am --skip
+
+# Continuar con el resto de patches
+make -f Makefile.sync apply-patches
+
+# Opción 2: Abortar y limpiar si hay muchos conflictos
+git -C llama/vendor am --abort
+make -f Makefile.sync clean apply-patches
+
+# Opción 3: Ver el patch que falló
+git -C llama/vendor am --show-current-patch=diff
+```
+
+**Flujo completo cuando falla un patch:**
+
+```powershell
+# 1. Si el error indica que no hay cambios:
+git -C llama/vendor am --skip
+
+# 2. Continuar aplicando patches
+make -f Makefile.sync apply-patches
+
+# 3. Si todo está bien, formatear patches
+make -f Makefile.sync format-patches
+
+# 4. Limpiar y reaplicar todo (si persisten problemas)
+make -f Makefile.sync clean apply-patches
+```
+
+### 8. Error "'true' is not recognized" en Windows con Makefile.sync
+
+**Síntoma:** Al ejecutar `make -f Makefile.sync clean apply-patches` aparece:
+```
+'true' is not recognized as an internal or external command
+make: *** [Makefile.sync:71: clean] Error 1
+```
+
+**Causa:** El comando `true` no existe en Windows (es de Unix/Linux).
+
+**Solución - Limpiar manualmente y aplicar patches:**
+
+```powershell
+# 1. Abortar cualquier proceso de patch en curso
+git -C llama/vendor am --abort
+
+# 2. Volver al commit base
+git -C llama/vendor checkout -f 835e918d8428f5119927d7150bf5a26176dedda0
+
+# 3. Limpiar archivos de control de patches
+Remove-Item -Force -ErrorAction SilentlyContinue llama\patches\.*.patched
+
+# 4. Aplicar patches desde cero
+make -f Makefile.sync apply-patches
+```
+
+**Si siguen los errores de patch corrupto:**
+
+```powershell
+# Opción nuclear: Reinicializar submódulo completamente
+git submodule deinit -f llama/vendor
+git submodule update --init --recursive llama/vendor
+cd llama/vendor
+git checkout 835e918d8428f5119927d7150bf5a26176dedda0
+cd ../..
+make -f Makefile.sync apply-patches
+```
+
+### 9. Error "sha1 information is lacking or useless" al aplicar patches
+
+**Síntoma:** Al ejecutar `make -f Makefile.sync apply-patches` aparece:
+```bash
+error: sha1 information is lacking or useless (ggml/src/ggml-cuda/ggml-cuda.cu).
+error: could not build fake ancestor
+Patch failed at 0001 ggml: Add batch size hint
+```
+
+**Causa:** Git no puede calcular el hash SHA1 del archivo. Esto NO es un conflicto de merge. Las causas más comunes son:
+- Line endings mezclados (CRLF vs LF) en Windows
+- Archivo modificado durante el proceso de patch
+- Índice de Git corrupto
+- Espacios en blanco inconsistentes
+
+**Diagnóstico:**
+
+```powershell
+# Ver si el archivo tiene cambios (aunque parezca limpio)
+git -C llama/vendor diff ggml/src/ggml-cuda/ggml-cuda.cu
+
+# Ver el estado del índice
+git -C llama/vendor status
+
+# Ver line endings del archivo
+git -C llama/vendor ls-files --eol ggml/src/ggml-cuda/ggml-cuda.cu
+```
+
+**Solución 1: Restaurar archivo y limpiar índice (RECOMENDADO)**
+
+```bash
+# EJECUTAR EN GIT BASH (no PowerShell)
+cd /c/IA/tools/ollama
+
+# 1. Abortar proceso de patch
+git -C llama/vendor am --abort
+
+# 2. Restaurar archivo al estado limpio
+git -C llama/vendor checkout HEAD -- ggml/src/ggml-cuda/ggml-cuda.cu
+
+# 3. Limpiar índice
+git -C llama/vendor reset --hard HEAD
+
+# 4. Verificar que está limpio
+git -C llama/vendor status
+
+# 5. Aplicar patches desde cero (EN GIT BASH)
+make -f Makefile.sync apply-patches
+```
+
+**Solución 2: Normalizar line endings**
+
+```bash
+# Si el problema persiste, normalizar line endings
+cd llama/vendor
+git config core.autocrlf false
+git rm --cached -r .
+git reset --hard HEAD
+cd ../..
+make -f Makefile.sync apply-patches
+```
+
+**Solución 3: Reiniciar submódulo completamente (última opción)**
+
+```bash
+# Desde Git Bash en C:/IA/tools/ollama
+git submodule deinit -f llama/vendor
+rm -rf llama/vendor
+git submodule update --init --recursive llama/vendor
+cd llama/vendor
+git checkout 835e918d8428f5119927d7150bf5a26176dedda0
+cd ../..
+make -f Makefile.sync apply-patches
+```
+
+**IMPORTANTE:** 
+- ⚠️ Usa **Git Bash** para ejecutar `make`, NO PowerShell
+- ⚠️ PowerShell tiene problemas interpretando comandos del Makefile
+- ⚠️ Git Bash viene con Git for Windows y simula entorno Unix
+
 ---
 
 ## 📝 Resumen de Requisitos
@@ -571,7 +779,7 @@ Get-ChildItem "$env:LOCALAPPDATA\Programs\Ollama\lib\ollama" -Recurse -Filter "*
 
 ### Variables de Entorno
 ```powershell
-$env:VERSION = "0.12.7.99"
+$env:VERSION = "0.12.9.99"
 $env:CUDA_PATH_V13_0 = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.0"
 ```
 
@@ -581,7 +789,7 @@ $env:CUDA_PATH_V13_0 = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.0
 
 ### Compilación Completa Automática (Un Solo Comando)
 ```powershell
-$env:VERSION = "0.12.7.99"
+$env:VERSION = "0.12.9.99"
 powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildCPU buildCUDA13 gatherDependencies buildOllama buildApp buildInstaller
 ```
 
@@ -594,7 +802,7 @@ powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildO
 ### Compilar ollama.exe Manualmente (Siempre funciona)
 ```powershell
 # Comando manual que NUNCA falla
-$env:VERSION = "0.12.7.99"; $env:CGO_ENABLED="1"
+$env:VERSION = "0.12.9.99"; $env:CGO_ENABLED="1"
 $llvmPath = (Resolve-Path "C:\llvm-mingw-ucrt\llvm-mingw-*").Path; $env:PATH = "$llvmPath\bin;$env:PATH"
 $env:CC = "$llvmPath\bin\gcc.exe"; $env:CXX = "$llvmPath\bin\g++.exe"
 go build -v -a -trimpath -ldflags "-s -w -X=github.com/ollama/ollama/version.Version=$env:VERSION -X=github.com/ollama/ollama/server.mode=release" .
@@ -614,7 +822,7 @@ Start-Process "$env:LOCALAPPDATA\Programs\Ollama\unins000.exe" -ArgumentList "/S
 
 ## ✅ Resultado Final
 
-- **Versión:** Ollama 0.12.7.99 (test-llamacpp-bump)
+- **Versión:** Ollama 0.12.9.99 (test-llamacpp-bump)
 - **Soporte:** Granite + Docling (llama.cpp 1deee0f8)
 - **Backend:** CUDA 13.0 + Vulkan 1.4.321.1 (soporte universal GPU)
 - **Interfaz:** App de bandeja 100% funcional con menú contextual

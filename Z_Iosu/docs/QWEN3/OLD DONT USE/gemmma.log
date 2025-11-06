@@ -1,0 +1,1130 @@
+time=2025-11-05T00:49:05.041-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.layer_norm1.weight type=f32 shape=[1152]   
+time=2025-11-05T00:49:05.041-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.layer_norm1.bias type=f32 shape=[1152]     
+time=2025-11-05T00:49:05.041-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.attn_q.weight type=f16 shape="[1152 1152]" 
+time=2025-11-05T00:49:05.041-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.attn_q.bias type=f32 shape=[1152]
+time=2025-11-05T00:49:05.041-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.attn_k.weight type=f16 shape="[1152 1152]" 
+time=2025-11-05T00:49:05.041-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.attn_k.bias type=f32 shape=[1152]
+time=2025-11-05T00:49:05.041-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.attn_v.weight type=f16 shape="[1152 1152]" 
+time=2025-11-05T00:49:05.041-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.attn_v.bias type=f32 shape=[1152]
+time=2025-11-05T00:49:05.041-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.attn_output.weight type=f16 shape="[1152 1152]"
+time=2025-11-05T00:49:05.041-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.attn_output.bias type=f32 shape=[1152]     
+time=2025-11-05T00:49:05.041-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.layer_norm2.weight type=f32 shape=[1152]   
+time=2025-11-05T00:49:05.041-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.layer_norm2.bias type=f32 shape=[1152]     
+time=2025-11-05T00:49:05.041-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.mlp.fc1.weight type=f16 shape="[1152 4304]"
+time=2025-11-05T00:49:05.041-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.mlp.fc1.bias type=f32 shape=[4304]
+time=2025-11-05T00:49:05.041-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.mlp.fc2.weight type=f16 shape="[4304 1152]"
+time=2025-11-05T00:49:05.041-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.21.mlp.fc2.bias type=f32 shape=[1152]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.layer_norm1.weight type=f32 shape=[1152]   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.layer_norm1.bias type=f32 shape=[1152]     
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.attn_q.weight type=f16 shape="[1152 1152]" 
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.attn_q.bias type=f32 shape=[1152]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.attn_k.weight type=f16 shape="[1152 1152]" 
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.attn_k.bias type=f32 shape=[1152]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.attn_v.weight type=f16 shape="[1152 1152]" 
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.attn_v.bias type=f32 shape=[1152]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.attn_output.weight type=f16 shape="[1152 1152]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.attn_output.bias type=f32 shape=[1152]     
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.layer_norm2.weight type=f32 shape=[1152]   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.layer_norm2.bias type=f32 shape=[1152]     
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.mlp.fc1.weight type=f16 shape="[1152 4304]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.mlp.fc1.bias type=f32 shape=[4304]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.mlp.fc2.weight type=f16 shape="[4304 1152]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.22.mlp.fc2.bias type=f32 shape=[1152]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.layer_norm1.weight type=f32 shape=[1152]   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.layer_norm1.bias type=f32 shape=[1152]     
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.attn_q.weight type=f16 shape="[1152 1152]" 
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.attn_q.bias type=f32 shape=[1152]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.attn_k.weight type=f16 shape="[1152 1152]" 
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.attn_k.bias type=f32 shape=[1152]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.attn_v.weight type=f16 shape="[1152 1152]" 
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.attn_v.bias type=f32 shape=[1152]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.attn_output.weight type=f16 shape="[1152 1152]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.attn_output.bias type=f32 shape=[1152]     
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.layer_norm2.weight type=f32 shape=[1152]   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.layer_norm2.bias type=f32 shape=[1152]     
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.mlp.fc1.weight type=f16 shape="[1152 4304]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.mlp.fc1.bias type=f32 shape=[4304]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.mlp.fc2.weight type=f16 shape="[4304 1152]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.23.mlp.fc2.bias type=f32 shape=[1152]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.24.layer_norm1.weight type=f32 shape=[1152]   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.24.layer_norm1.bias type=f32 shape=[1152]     
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.24.attn_q.weight type=f16 shape="[1152 1152]" 
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.24.attn_q.bias type=f32 shape=[1152]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.24.attn_k.weight type=f16 shape="[1152 1152]" 
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.24.attn_k.bias type=f32 shape=[1152]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.24.attn_v.weight type=f16 shape="[1152 1152]" 
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.24.attn_v.bias type=f32 shape=[1152]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.24.attn_output.weight type=f16 shape="[1152 1152]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.24.attn_output.bias type=f32 shape=[1152]     
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.24.layer_norm2.weight type=f32 shape=[1152]   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.24.layer_norm2.bias type=f32 shape=[1152]     
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.24.mlp.fc1.weight type=f16 shape="[1152 4304]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.24.mlp.fc1.bias type=f32 shape=[4304]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.24.mlp.fc2.weight type=f16 shape="[4304 1152]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.24.mlp.fc2.bias type=f32 shape=[1152]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.25.layer_norm1.weight type=f32 shape=[1152]   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.25.layer_norm1.bias type=f32 shape=[1152]     
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.25.attn_q.weight type=f16 shape="[1152 1152]" 
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.25.attn_q.bias type=f32 shape=[1152]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.25.attn_k.weight type=f16 shape="[1152 1152]" 
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.25.attn_k.bias type=f32 shape=[1152]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.25.attn_v.weight type=f16 shape="[1152 1152]" 
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.25.attn_v.bias type=f32 shape=[1152]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.25.attn_output.weight type=f16 shape="[1152 1152]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.25.attn_output.bias type=f32 shape=[1152]     
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.25.layer_norm2.weight type=f32 shape=[1152]   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.25.layer_norm2.bias type=f32 shape=[1152]     
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.25.mlp.fc1.weight type=f16 shape="[1152 4304]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.25.mlp.fc1.bias type=f32 shape=[4304]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.25.mlp.fc2.weight type=f16 shape="[4304 1152]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.25.mlp.fc2.bias type=f32 shape=[1152]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.26.layer_norm1.weight type=f32 shape=[1152]   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.26.layer_norm1.bias type=f32 shape=[1152]     
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.26.attn_q.weight type=f16 shape="[1152 1152]" 
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.26.attn_q.bias type=f32 shape=[1152]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.26.attn_k.weight type=f16 shape="[1152 1152]" 
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.26.attn_k.bias type=f32 shape=[1152]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.26.attn_v.weight type=f16 shape="[1152 1152]" 
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.26.attn_v.bias type=f32 shape=[1152]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.26.attn_output.weight type=f16 shape="[1152 1152]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.26.attn_output.bias type=f32 shape=[1152]     
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.26.layer_norm2.weight type=f32 shape=[1152]   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.26.layer_norm2.bias type=f32 shape=[1152]     
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.26.mlp.fc1.weight type=f16 shape="[1152 4304]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.26.mlp.fc1.bias type=f32 shape=[4304]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.26.mlp.fc2.weight type=f16 shape="[4304 1152]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=v.blk.26.mlp.fc2.bias type=f32 shape=[1152]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=token_embd.weight type=q6_K shape="[3840 262144]"   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.0.attn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.0.attn_q.weight type=q4_K shape="[3840 4096]"   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.0.attn_q_norm.weight type=f32 shape=[256]       
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.0.attn_k.weight type=q4_K shape="[3840 2048]"   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.0.attn_k_norm.weight type=f32 shape=[256]       
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.0.attn_v.weight type=q6_K shape="[3840 2048]"   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.0.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.0.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.0.ffn_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.0.ffn_up.weight type=q4_K shape="[3840 15360]"  
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.0.ffn_down.weight type=q6_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.0.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.0.post_ffw_norm.weight type=f32 shape=[3840]    
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.1.attn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.1.attn_q.weight type=q4_K shape="[3840 4096]"   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.1.attn_q_norm.weight type=f32 shape=[256]       
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.1.attn_k.weight type=q4_K shape="[3840 2048]"   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.1.attn_k_norm.weight type=f32 shape=[256]       
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.1.attn_v.weight type=q6_K shape="[3840 2048]"   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.1.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.1.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.1.ffn_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.1.ffn_up.weight type=q4_K shape="[3840 15360]"  
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.1.ffn_down.weight type=q6_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.1.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.1.post_ffw_norm.weight type=f32 shape=[3840]    
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.2.attn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.2.attn_q.weight type=q4_K shape="[3840 4096]"   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.2.attn_q_norm.weight type=f32 shape=[256]       
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.2.attn_k.weight type=q4_K shape="[3840 2048]"   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.2.attn_k_norm.weight type=f32 shape=[256]       
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.2.attn_v.weight type=q6_K shape="[3840 2048]"   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.2.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.2.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.2.ffn_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.2.ffn_up.weight type=q4_K shape="[3840 15360]"  
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.2.ffn_down.weight type=q6_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.2.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.2.post_ffw_norm.weight type=f32 shape=[3840]    
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.3.attn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.3.attn_q.weight type=q4_K shape="[3840 4096]"   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.3.attn_q_norm.weight type=f32 shape=[256]       
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.3.attn_k.weight type=q4_K shape="[3840 2048]"   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.3.attn_k_norm.weight type=f32 shape=[256]       
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.3.attn_v.weight type=q6_K shape="[3840 2048]"   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.3.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.3.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.3.ffn_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.3.ffn_up.weight type=q4_K shape="[3840 15360]"  
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.3.ffn_down.weight type=q6_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.3.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.3.post_ffw_norm.weight type=f32 shape=[3840]    
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.4.attn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.4.attn_q.weight type=q4_K shape="[3840 4096]"   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.4.attn_q_norm.weight type=f32 shape=[256]       
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.4.attn_k.weight type=q4_K shape="[3840 2048]"   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.4.attn_k_norm.weight type=f32 shape=[256]       
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.4.attn_v.weight type=q6_K shape="[3840 2048]"   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.4.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.4.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.4.ffn_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.4.ffn_up.weight type=q4_K shape="[3840 15360]"  
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.4.ffn_down.weight type=q6_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.4.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.4.post_ffw_norm.weight type=f32 shape=[3840]    
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.5.attn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.5.attn_q.weight type=q4_K shape="[3840 4096]"   
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.5.attn_q_norm.weight type=f32 shape=[256]       
+time=2025-11-05T00:49:05.042-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.5.attn_k.weight type=q4_K shape="[3840 2048]"   
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.5.attn_k_norm.weight type=f32 shape=[256]       
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.5.attn_v.weight type=q6_K shape="[3840 2048]"   
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.5.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.5.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.5.ffn_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.5.ffn_up.weight type=q4_K shape="[3840 15360]"  
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.5.ffn_down.weight type=q6_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.5.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.5.post_ffw_norm.weight type=f32 shape=[3840]    
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.6.attn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.6.attn_q.weight type=q4_K shape="[3840 4096]"   
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.6.attn_q_norm.weight type=f32 shape=[256]       
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.6.attn_k.weight type=q4_K shape="[3840 2048]"   
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.6.attn_k_norm.weight type=f32 shape=[256]       
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.6.attn_v.weight type=q6_K shape="[3840 2048]"   
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.6.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.6.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.6.ffn_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.6.ffn_up.weight type=q4_K shape="[3840 15360]"  
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.6.ffn_down.weight type=q4_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.6.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.6.post_ffw_norm.weight type=f32 shape=[3840]    
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.7.attn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.7.attn_q.weight type=q4_K shape="[3840 4096]"   
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.7.attn_q_norm.weight type=f32 shape=[256]       
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.7.attn_k.weight type=q4_K shape="[3840 2048]"   
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.7.attn_k_norm.weight type=f32 shape=[256]       
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.7.attn_v.weight type=q6_K shape="[3840 2048]"   
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.7.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.7.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.7.ffn_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.7.ffn_up.weight type=q4_K shape="[3840 15360]"  
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.7.ffn_down.weight type=q4_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.7.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.7.post_ffw_norm.weight type=f32 shape=[3840]    
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.8.attn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.8.attn_q.weight type=q4_K shape="[3840 4096]"   
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.8.attn_q_norm.weight type=f32 shape=[256]       
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.8.attn_k.weight type=q4_K shape="[3840 2048]"   
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.8.attn_k_norm.weight type=f32 shape=[256]       
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.8.attn_v.weight type=q6_K shape="[3840 2048]"   
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.8.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.8.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.8.ffn_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.8.ffn_up.weight type=q4_K shape="[3840 15360]"  
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.8.ffn_down.weight type=q6_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.8.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.8.post_ffw_norm.weight type=f32 shape=[3840]    
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.9.attn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.9.attn_q.weight type=q4_K shape="[3840 4096]"   
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.9.attn_q_norm.weight type=f32 shape=[256]       
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.9.attn_k.weight type=q4_K shape="[3840 2048]"   
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.9.attn_k_norm.weight type=f32 shape=[256]       
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.9.attn_v.weight type=q4_K shape="[3840 2048]"   
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.9.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.9.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.9.ffn_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.9.ffn_up.weight type=q4_K shape="[3840 15360]"  
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.9.ffn_down.weight type=q4_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.9.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.9.post_ffw_norm.weight type=f32 shape=[3840]    
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.10.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.10.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.10.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.10.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.10.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.10.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.10.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.10.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.10.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.10.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.10.ffn_down.weight type=q4_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.10.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.10.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.11.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.11.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.11.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.11.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.11.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.11.attn_v.weight type=q6_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.11.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.11.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.11.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.11.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.11.ffn_down.weight type=q6_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.11.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.11.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.12.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.12.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.12.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.12.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.12.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.12.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.12.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.12.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.12.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.12.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.12.ffn_down.weight type=q4_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.12.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.12.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.13.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.13.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.13.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.13.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.13.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.13.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.13.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.13.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.13.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.13.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.13.ffn_down.weight type=q4_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.13.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.13.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.14.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.14.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.14.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.14.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.14.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.14.attn_v.weight type=q6_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.14.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.14.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.14.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.14.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.14.ffn_down.weight type=q6_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.14.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.14.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.15.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.15.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.043-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.15.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.15.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.15.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.15.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.15.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.15.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.15.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.15.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.15.ffn_down.weight type=q4_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.15.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.15.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.16.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.16.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.16.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.16.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.16.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.16.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.16.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.16.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.16.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.16.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.16.ffn_down.weight type=q4_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.16.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.16.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.17.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.17.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.17.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.17.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.17.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.17.attn_v.weight type=q6_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.17.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.17.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.17.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.17.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.17.ffn_down.weight type=q6_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.17.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.17.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.18.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.18.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.18.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.18.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.18.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.18.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.18.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.18.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.18.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.18.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.18.ffn_down.weight type=q4_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.18.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.18.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.19.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.19.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.19.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.19.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.19.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.19.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.19.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.19.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.19.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.19.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.19.ffn_down.weight type=q4_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.19.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.19.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.20.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.20.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.20.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.20.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.20.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.20.attn_v.weight type=q6_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.20.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.20.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.20.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.20.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.20.ffn_down.weight type=q6_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.20.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.20.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.21.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.21.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.21.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.21.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.21.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.21.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.21.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.21.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.21.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.21.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.21.ffn_down.weight type=q4_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.21.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.21.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.22.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.22.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.22.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.22.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.22.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.22.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.22.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.22.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.22.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.22.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.22.ffn_down.weight type=q4_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.22.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.22.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.23.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.23.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.23.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.23.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.23.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.23.attn_v.weight type=q6_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.23.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.23.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.23.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.23.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.23.ffn_down.weight type=q6_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.23.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.23.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.24.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.24.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.24.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.24.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.24.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.24.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.044-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.24.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.24.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.24.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.24.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.24.ffn_down.weight type=q4_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.24.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.24.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.25.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.25.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.25.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.25.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.25.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.25.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.25.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.25.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.25.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.25.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.25.ffn_down.weight type=q4_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.25.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.25.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.26.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.26.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.26.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.26.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.26.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.26.attn_v.weight type=q6_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.26.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.26.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.26.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.26.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.26.ffn_down.weight type=q6_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.26.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.26.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.27.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.27.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.27.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.27.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.27.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.27.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.27.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.27.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.27.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.27.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.27.ffn_down.weight type=q4_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.27.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.27.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.28.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.28.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.28.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.28.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.28.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.28.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.28.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.28.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.28.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.28.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.28.ffn_down.weight type=q4_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.28.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.28.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.29.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.29.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.29.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.29.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.29.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.29.attn_v.weight type=q6_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.29.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.29.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.29.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.29.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.29.ffn_down.weight type=q6_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.29.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.29.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.30.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.30.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.30.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.30.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.30.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.30.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.30.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.30.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.30.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.30.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.30.ffn_down.weight type=q4_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.30.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.30.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.31.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.31.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.31.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.31.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.31.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.31.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.31.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.31.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.31.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.31.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.31.ffn_down.weight type=q4_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.31.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.31.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.32.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.32.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.32.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.32.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.32.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.32.attn_v.weight type=q6_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.32.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.32.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.32.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.32.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.32.ffn_down.weight type=q6_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.32.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.32.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.33.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.33.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.33.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.33.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.045-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.33.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.33.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.33.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.33.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.33.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.33.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.33.ffn_down.weight type=q4_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.33.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.33.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.34.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.34.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.34.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.34.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.34.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.34.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.34.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.34.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.34.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.34.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.34.ffn_down.weight type=q4_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.34.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.34.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.35.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.35.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.35.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.35.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.35.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.35.attn_v.weight type=q6_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.35.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.35.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.35.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.35.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.35.ffn_down.weight type=q6_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.35.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.35.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.36.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.36.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.36.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.36.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.36.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.36.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.36.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.36.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.36.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.36.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.36.ffn_down.weight type=q4_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.36.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.36.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.37.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.37.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.37.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.37.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.37.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.37.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.37.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.37.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.37.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.37.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.37.ffn_down.weight type=q4_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.37.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.37.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.38.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.38.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.38.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.38.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.38.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.38.attn_v.weight type=q6_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.38.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.38.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.38.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.38.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.38.ffn_down.weight type=q6_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.38.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.38.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.39.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.39.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.39.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.39.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.39.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.39.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.39.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.39.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.39.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.39.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.39.ffn_down.weight type=q4_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.39.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.39.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.40.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.40.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.40.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.40.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.40.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.40.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.40.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.40.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.40.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.40.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.40.ffn_down.weight type=q4_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.40.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.40.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.41.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.41.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.41.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.41.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.41.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.41.attn_v.weight type=q6_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.41.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.41.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.41.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.41.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.41.ffn_down.weight type=q6_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.41.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.41.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.42.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.42.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.42.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.42.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.42.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.42.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.42.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.42.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.42.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.42.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.42.ffn_down.weight type=q6_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.42.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.42.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.43.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.43.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.43.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.43.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.43.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.43.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.43.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.43.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.43.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.43.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.43.ffn_down.weight type=q6_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.43.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.43.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.44.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.44.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.44.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.44.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.44.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.44.attn_v.weight type=q6_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.046-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.44.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.44.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.44.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.44.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.44.ffn_down.weight type=q6_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.44.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.44.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.45.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.45.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.45.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.45.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.45.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.45.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.45.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.45.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.45.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.45.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.45.ffn_down.weight type=q6_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.45.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.45.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.46.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.46.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.46.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.46.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.46.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.46.attn_v.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.46.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.46.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.46.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.46.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.46.ffn_down.weight type=q6_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.46.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.46.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.47.attn_norm.weight type=f32 shape=[3840]       
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.47.attn_q.weight type=q4_K shape="[3840 4096]"  
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.47.attn_q_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.47.attn_k.weight type=q4_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.47.attn_k_norm.weight type=f32 shape=[256]      
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.47.attn_v.weight type=q6_K shape="[3840 2048]"  
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.47.attn_output.weight type=q4_K shape="[4096 3840]"
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.47.post_attention_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.47.ffn_norm.weight type=f32 shape=[3840]        
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.47.ffn_up.weight type=q4_K shape="[3840 15360]" 
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.47.ffn_down.weight type=q6_K shape="[15360 3840]"
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.47.ffn_gate.weight type=q4_K shape="[3840 15360]"
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=blk.47.post_ffw_norm.weight type=f32 shape=[3840]   
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=output_norm.weight type=f32 shape=[3840]
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=output.weight type=q6_K shape="[3840 262144]"       
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=mm.mm_soft_emb_norm.weight type=f32 shape=[1152]    
+time=2025-11-05T00:49:05.047-05:00 level=TRACE source=model.go:215 msg="found tensor" name=mm.mm_input_projection.weight type=f16 shape="[3840 1152]"
+time=2025-11-05T00:49:05.139-05:00 level=DEBUG source=ggml.go:857 msg="compute graph" nodes=974 splits=1
+time=2025-11-05T00:49:05.139-05:00 level=TRACE source=ggml.go:868 msg="compute graph" backend=CPU buffer_type=CPU size="1.1 GiB"
+time=2025-11-05T00:49:05.741-05:00 level=DEBUG source=ggml.go:857 msg="compute graph" nodes=1883 splits=1
+time=2025-11-05T00:49:05.741-05:00 level=TRACE source=ggml.go:868 msg="compute graph" backend=CPU buffer_type=CPU size="1.1 GiB"
+time=2025-11-05T00:49:05.766-05:00 level=DEBUG source=ggml.go:857 msg="compute graph" nodes=1881 splits=1
+time=2025-11-05T00:49:05.766-05:00 level=TRACE source=ggml.go:868 msg="compute graph" backend=CPU buffer_type=CPU size="1.1 GiB"
+time=2025-11-05T00:49:05.768-05:00 level=DEBUG source=device.go:217 msg="model weights" device=CPU size="8.3 GiB"
+time=2025-11-05T00:49:05.768-05:00 level=DEBUG source=device.go:228 msg="kv cache" device=CPU size="1.8 GiB"
+time=2025-11-05T00:49:05.768-05:00 level=DEBUG source=device.go:239 msg="compute graph" device=CPU size="1.1 GiB"
+time=2025-11-05T00:49:05.768-05:00 level=DEBUG source=device.go:244 msg="total memory" size="11.2 GiB"
+time=2025-11-05T00:49:05.768-05:00 level=DEBUG source=server.go:695 msg=memory success=true required.InputWeights=825753600 required.CPU.Weights="[143372288 143372288 143372288 143372288 143372288 143372288 128165888 128165888 143372288 126138368 126138368 143372288 126138368 126138368 143372288 126138368 126138368 143372288 126138368 126138368 143372288 126138368 126138368 143372288 126138368 126138368 143372288 126138368 126138368 143372288 126138368 126138368 143372288 126138368 126138368 143372288 126138368 126138368 143372288 126138368 126138368 143372288 141344768 141344768 143372288 141344768 141344768 143372288 1669152192]" required.CPU.Cache="[3538944 3538944 3538944 3538944 3538944 221184000 3538944 3538944 3538944 3538944 3538944 221184000 3538944 3538944 3538944 3538944 3538944 221184000 3538944 3538944 3538944 3538944 3538944 221184000 3538944 3538944 3538944 3538944 3538944 221184000 3538944 3538944 3538944 3538944 3538944 221184000 3538944 3538944 3538944 3538944 3538944 221184000 3538944 3538944 3538944 3538944 3538944 221184000 0]" required.CPU.Graph=1176961024
+time=2025-11-05T00:49:05.768-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=0 size="140.1 MiB"
+time=2025-11-05T00:49:05.768-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=1 size="140.1 MiB"
+time=2025-11-05T00:49:05.768-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=2 size="140.1 MiB"
+time=2025-11-05T00:49:05.768-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=3 size="140.1 MiB"
+time=2025-11-05T00:49:05.768-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=4 size="140.1 MiB"
+time=2025-11-05T00:49:05.768-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=5 size="347.7 MiB"
+time=2025-11-05T00:49:05.768-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=6 size="125.6 MiB"
+time=2025-11-05T00:49:05.768-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=7 size="125.6 MiB"
+time=2025-11-05T00:49:05.768-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=8 size="140.1 MiB"
+time=2025-11-05T00:49:05.768-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=9 size="123.7 MiB"
+time=2025-11-05T00:49:05.768-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=10 size="123.7 MiB"
+time=2025-11-05T00:49:05.768-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=11 size="347.7 MiB"
+time=2025-11-05T00:49:05.768-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=12 size="123.7 MiB"
+time=2025-11-05T00:49:05.768-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=13 size="123.7 MiB"
+time=2025-11-05T00:49:05.768-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=14 size="140.1 MiB"
+time=2025-11-05T00:49:05.768-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=15 size="123.7 MiB"
+time=2025-11-05T00:49:05.768-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=16 size="123.7 MiB"
+time=2025-11-05T00:49:05.768-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=17 size="347.7 MiB"
+time=2025-11-05T00:49:05.768-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=18 size="123.7 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=19 size="123.7 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=20 size="140.1 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=21 size="123.7 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=22 size="123.7 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=23 size="347.7 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=24 size="123.7 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=25 size="123.7 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=26 size="140.1 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=27 size="123.7 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=28 size="123.7 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=29 size="347.7 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=30 size="123.7 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=31 size="123.7 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=32 size="140.1 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=33 size="123.7 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=34 size="123.7 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=35 size="347.7 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=36 size="123.7 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=37 size="123.7 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=38 size="140.1 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=39 size="123.7 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=40 size="123.7 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=41 size="347.7 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=42 size="138.2 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=43 size="138.2 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=44 size="140.1 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=45 size="138.2 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=46 size="138.2 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=47 size="347.7 MiB"
+time=2025-11-05T00:49:05.769-05:00 level=TRACE source=server.go:867 msg="layer to assign" layer=48 size="1.6 GiB"
+time=2025-11-05T00:49:05.769-05:00 level=DEBUG source=server.go:971 msg="insufficient VRAM to load any model layers"
+time=2025-11-05T00:49:05.769-05:00 level=DEBUG source=server.go:706 msg="new layout created" layers=[]
+time=2025-11-05T00:49:05.769-05:00 level=INFO source=runner.go:1222 msg=load request="{Operation:commit LoraPath:[] Parallel:1 BatchSize:512 FlashAttention:true KvSize:96000 KvCacheType:q4_0 NumThreads:8 GPULayers:[] MultiUserCache:false ProjectorPath: MainGPU:0 UseMmap:false}"        
+time=2025-11-05T00:49:05.770-05:00 level=INFO source=ggml.go:482 msg="offloading 0 repeating layers to GPU"
+time=2025-11-05T00:49:05.770-05:00 level=INFO source=device.go:217 msg="model weights" device=CPU size="8.3 GiB"
+time=2025-11-05T00:49:05.770-05:00 level=INFO source=ggml.go:486 msg="offloading output layer to CPU"
+time=2025-11-05T00:49:05.770-05:00 level=INFO source=ggml.go:494 msg="offloaded 0/49 layers to GPU"
+time=2025-11-05T00:49:05.770-05:00 level=INFO source=device.go:228 msg="kv cache" device=CPU size="1.8 GiB"
+time=2025-11-05T00:49:05.770-05:00 level=INFO source=device.go:239 msg="compute graph" device=CPU size="1.1 GiB"
+time=2025-11-05T00:49:05.770-05:00 level=INFO source=device.go:244 msg="total memory" size="11.2 GiB"
+time=2025-11-05T00:49:05.770-05:00 level=INFO source=sched.go:493 msg="loaded runners" count=1
+time=2025-11-05T00:49:05.770-05:00 level=INFO source=server.go:1251 msg="waiting for llama runner to start responding"
+time=2025-11-05T00:49:05.771-05:00 level=INFO source=server.go:1285 msg="waiting for server to become available" status="llm server loading model"
+time=2025-11-05T00:49:05.771-05:00 level=DEBUG source=server.go:1295 msg="model load progress 0.00"
+time=2025-11-05T00:49:06.022-05:00 level=DEBUG source=server.go:1295 msg="model load progress 0.12"
+time=2025-11-05T00:49:06.272-05:00 level=DEBUG source=server.go:1295 msg="model load progress 0.32"
+time=2025-11-05T00:49:06.524-05:00 level=DEBUG source=server.go:1295 msg="model load progress 0.47"
+time=2025-11-05T00:49:06.785-05:00 level=DEBUG source=server.go:1295 msg="model load progress 0.52"
+time=2025-11-05T00:49:07.042-05:00 level=DEBUG source=server.go:1295 msg="model load progress 0.58"
+time=2025-11-05T00:49:07.306-05:00 level=DEBUG source=server.go:1295 msg="model load progress 0.64"
+time=2025-11-05T00:49:07.558-05:00 level=DEBUG source=server.go:1295 msg="model load progress 0.70"
+time=2025-11-05T00:49:07.812-05:00 level=DEBUG source=server.go:1295 msg="model load progress 0.76"
+time=2025-11-05T00:49:08.064-05:00 level=DEBUG source=server.go:1295 msg="model load progress 0.81"
+time=2025-11-05T00:49:08.316-05:00 level=DEBUG source=server.go:1295 msg="model load progress 0.87"
+time=2025-11-05T00:49:08.567-05:00 level=DEBUG source=server.go:1295 msg="model load progress 0.93"
+time=2025-11-05T00:49:08.818-05:00 level=DEBUG source=server.go:1295 msg="model load progress 0.98"
+time=2025-11-05T00:49:08.918-05:00 level=DEBUG source=ggml.go:276 msg="key with type not found" key=gemma3.pooling_type default=0
+time=2025-11-05T00:49:08.918-05:00 level=TRACE source=runner.go:451 msg="forwardBatch no pending batch detected" batchID=0
+time=2025-11-05T00:49:09.068-05:00 level=INFO source=server.go:1289 msg="llama runner started in 4.46 seconds"
+time=2025-11-05T00:49:09.068-05:00 level=DEBUG source=sched.go:505 msg="finished setting up" runner.name=registry.ollama.ai/oscar_while/gemma-3-12b-tools:Q4_K_M runner.size="11.2 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=35752 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-e8ad13eff07a78d89926e9e8b882317d082ef5bf9768ad7b50fcdbbcd63748de runner.num_ctx=96000
+[GIN] 2025/11/05 - 00:49:09 | 200 |    4.6797496s |       127.0.0.1 | POST     "/api/generate"
+time=2025-11-05T00:49:09.069-05:00 level=DEBUG source=sched.go:513 msg="context for request finished"
+time=2025-11-05T00:49:09.069-05:00 level=DEBUG source=sched.go:283 msg="runner with non-zero duration has gone idle, adding timer" runner.name=registry.ollama.ai/oscar_while/gemma-3-12b-tools:Q4_K_M runner.size="11.2 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=35752 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-e8ad13eff07a78d89926e9e8b882317d082ef5bf9768ad7b50fcdbbcd63748de runner.num_ctx=96000 duration=5m0s
+time=2025-11-05T00:49:09.069-05:00 level=DEBUG source=sched.go:301 msg="after processing request finished event" runner.name=registry.ollama.ai/oscar_while/gemma-3-12b-tools:Q4_K_M runner.size="11.2 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=35752 runner.model=C:\U
+
+
+puts)=397
+time=2025-11-05T00:50:46.783-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=101 len(seq.inputs)=397
+time=2025-11-05T00:50:46.783-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=102 len(seq.inputs)=397
+time=2025-11-05T00:50:46.783-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=103 len(seq.inputs)=397
+time=2025-11-05T00:50:46.783-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=104 len(seq.inputs)=397
+time=2025-11-05T00:50:46.783-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=105 len(seq.inputs)=397
+time=2025-11-05T00:50:46.783-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=106 len(seq.inputs)=397
+time=2025-11-05T00:50:46.783-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=107 len(seq.inputs)=397
+time=2025-11-05T00:50:46.783-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=108 len(seq.inputs)=397
+time=2025-11-05T00:50:46.783-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=109 len(seq.inputs)=397
+time=2025-11-05T00:50:46.783-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=110 len(seq.inputs)=397
+time=2025-11-05T00:50:46.783-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=111 len(seq.inputs)=397
+time=2025-11-05T00:50:46.783-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=112 len(seq.inputs)=397
+time=2025-11-05T00:50:46.783-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=113 len(seq.inputs)=397
+time=2025-11-05T00:50:46.783-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=114 len(seq.inputs)=397
+time=2025-11-05T00:50:46.783-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=115 len(seq.inputs)=397
+time=2025-11-05T00:50:46.783-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=116 len(seq.inputs)=397
+time=2025-11-05T00:50:46.783-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=117 len(seq.inputs)=397
+time=2025-11-05T00:50:46.785-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=118 len(seq.inputs)=397
+time=2025-11-05T00:50:46.785-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=119 len(seq.inputs)=397
+time=2025-11-05T00:50:46.785-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=120 len(seq.inputs)=397
+time=2025-11-05T00:50:46.785-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=121 len(seq.inputs)=397
+time=2025-11-05T00:50:46.785-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=122 len(seq.inputs)=397
+time=2025-11-05T00:50:46.785-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=123 len(seq.inputs)=397
+time=2025-11-05T00:50:46.785-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=124 len(seq.inputs)=397
+time=2025-11-05T00:50:46.785-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=125 len(seq.inputs)=397
+time=2025-11-05T00:50:46.785-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=126 len(seq.inputs)=397
+time=2025-11-05T00:50:46.785-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=127 len(seq.inputs)=397
+time=2025-11-05T00:50:46.785-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=128 len(seq.inputs)=397
+time=2025-11-05T00:51:05.857-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=0
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=129 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=130 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=131 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=132 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=133 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=134 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=135 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=136 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=137 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=138 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=139 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=140 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=141 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=142 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=143 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=144 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=145 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=146 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=147 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=148 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=149 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=150 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=151 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=152 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=153 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=154 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=155 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=156 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=157 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=158 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=159 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=160 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=161 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=162 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=163 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=164 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=165 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=166 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=167 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=168 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=169 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=170 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=171 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=172 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=173 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=174 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=175 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=176 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=177 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=178 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=179 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=180 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=181 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=182 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=183 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=184 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=185 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=186 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=187 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=188 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=189 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=190 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=191 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=192 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=193 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=194 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=195 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=196 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=197 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=198 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=199 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=200 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=201 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=202 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=203 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=204 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=205 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=206 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=207 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=208 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=209 len(seq.inputs)=397
+time=2025-11-05T00:51:33.330-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=210 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=211 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=212 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=213 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=214 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=215 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=216 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=217 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=218 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=219 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=220 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=221 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=222 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=223 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=224 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=225 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=226 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=227 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=228 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=229 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=230 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=231 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=232 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=233 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=234 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=235 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=236 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=237 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=238 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=239 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=240 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=241 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=242 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=243 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=244 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=245 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=246 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=247 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=248 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=249 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=250 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=251 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=252 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=253 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=254 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=255 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=256 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=257 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=258 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=259 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=260 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=261 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=262 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=263 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=264 len(seq.inputs)=397
+time=2025-11-05T00:51:33.331-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=265 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=266 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=267 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=268 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=269 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=270 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=271 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=272 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=273 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=274 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=275 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=276 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=277 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=278 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=279 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=280 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=281 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=282 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=283 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=284 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=285 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=286 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=287 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=288 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=289 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=290 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=291 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=292 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=293 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=294 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=295 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=296 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=297 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=298 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=299 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=300 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=301 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=302 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=303 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=304 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=305 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=306 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=307 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=308 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=309 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=310 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=311 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=312 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=313 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=314 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=315 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=316 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=317 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=318 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=319 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=320 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=321 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=322 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=323 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=324 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=325 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=326 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=327 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=328 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=329 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=330 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=331 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=332 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=333 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=334 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=335 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=336 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=337 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=338 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=339 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=340 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=341 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=342 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=343 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=344 len(seq.inputs)=397
+time=2025-11-05T00:51:33.332-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=345 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=346 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=347 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=348 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=349 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=350 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=351 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=352 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=353 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=354 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=355 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=356 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=357 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=358 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=359 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=360 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=361 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=362 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=363 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=364 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=365 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=366 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=367 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=368 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=369 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=370 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=371 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=372 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=373 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=374 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=375 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=376 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=377 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=378 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=379 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=380 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=381 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=382 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=383 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=384 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=385 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=386 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=387 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=388 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=389 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=390 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=391 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=392 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=393 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=394 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=395 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=396 len(seq.inputs)=397
+time=2025-11-05T00:51:33.333-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=1 seqIdx=0 seq.iBatch=0 i+1=397 len(seq.inputs)=397
+time=2025-11-05T00:51:33.341-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=1
+time=2025-11-05T00:51:33.341-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=1
+time=2025-11-05T00:51:33.341-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=0
+time=2025-11-05T00:51:33.341-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=0
+time=2025-11-05T00:51:33.341-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=1
+time=2025-11-05T00:51:33.341-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=1
+time=2025-11-05T00:51:33.341-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=1 id=2
+time=2025-11-05T00:51:33.341-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=2 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-05T00:51:33.342-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=2
+time=2025-11-05T00:51:33.342-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=2
