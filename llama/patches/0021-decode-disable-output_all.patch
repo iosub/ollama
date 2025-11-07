@@ -8,10 +8,10 @@ Subject: [PATCH] decode: disable output_all
  1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/src/llama-context.cpp b/src/llama-context.cpp
-index bd348bcad..8b4a89d38 100644
+index 866514038..090ee0aff 100644
 --- a/src/llama-context.cpp
 +++ b/src/llama-context.cpp
-@@ -974,8 +974,7 @@ int llama_context::decode(const llama_batch & batch_inp) {
+@@ -994,8 +994,7 @@ int llama_context::decode(const llama_batch & batch_inp) {
      const int64_t n_vocab = vocab.n_tokens();
      const int64_t n_embd  = hparams.n_embd;
  
