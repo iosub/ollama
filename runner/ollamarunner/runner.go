@@ -305,6 +305,9 @@ type Server struct {
 	// modelPath is the location of the model to be loaded
 	modelPath string
 
+	// projectorPath is the location of the projector GGUF for split models
+	projectorPath string
+
 	// loadMu prevents more than one load attempt from occurring at a time
 	loadMu sync.Mutex
 
@@ -1121,6 +1124,7 @@ func (s *Server) allocModel(
 	mpath string,
 	params ml.BackendParams,
 	loraPath []string,
+	projectorPath string,
 	parallel int,
 	kvCacheType string,
 	kvSize int,
@@ -1143,9 +1147,16 @@ func (s *Server) allocModel(
 	}()
 
 	var err error
-	s.model, err = model.New(mpath, params)
-	if err != nil {
-		return err
+	if projectorPath != "" {
+		s.model, err = model.NewWithProjector(mpath, []string{projectorPath}, params)
+		if err != nil {
+			return err
+		}
+	} else {
+		s.model, err = model.New(mpath, params)
+		if err != nil {
+			return err
+		}
 	}
 
 	// TODO(jessegross): LoRA loading
@@ -1221,6 +1232,9 @@ func (s *Server) load(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("load", "request", req)
 
+	// Store projector path for split GGUF models
+	s.projectorPath = req.ProjectorPath
+
 	if req.Operation == llm.LoadOperationClose {
 		s.closeModel()
 		if err := json.NewEncoder(w).Encode(&llm.LoadResponse{}); err != nil {
@@ -1246,7 +1260,7 @@ func (s *Server) load(w http.ResponseWriter, r *http.Request) {
 
 		s.batchSize = req.BatchSize
 
-		err := s.allocModel(s.modelPath, params, req.LoraPath, req.Parallel, req.KvCacheType, req.KvSize, req.MultiUserCache)
+		err := s.allocModel(s.modelPath, params, req.LoraPath, s.projectorPath, req.Parallel, req.KvCacheType, req.KvSize, req.MultiUserCache)
 		if err != nil {
 			s.closeModel()
 
