@@ -54,7 +54,7 @@ func (m *Model) ensureVisionReady() error {
 		// Scan for deepstack tensors in layers 0-31
 		for i := int32(0); i < 32; i++ {
 			prefix := fmt.Sprintf("v.deepstack.%d.norm.weight", i)
-			if tensor := backend.Get(prefix); tensor != nil {
+			if tensor := m.GetTensor(prefix); tensor != nil {
 				detectedIndexes = append(detectedIndexes, i)
 			}
 		}
@@ -106,9 +106,9 @@ func (m *Model) ensureVisionReady() error {
 	}
 
 	if vm.PatchEmbedding.Bias == nil {
-		vm.PatchEmbedding.Bias = backend.Get("v.patch_embed.bias")
+		vm.PatchEmbedding.Bias = m.GetTensor("v.patch_embed.bias")
 		if vm.PatchEmbedding.Bias == nil {
-			vm.PatchEmbedding.Bias = backend.Get("v.patch_embd.bias")
+			vm.PatchEmbedding.Bias = m.GetTensor("v.patch_embd.bias")
 		}
 	}
 
@@ -116,9 +116,9 @@ func (m *Model) ensureVisionReady() error {
 		vm.PositionEmbedding = &VisionPositionEmbedding{}
 	}
 	if vm.PositionEmbedding.PositionEmbedding == nil {
-		pos := backend.Get("v.pos_embed.weight")
+		pos := m.GetTensor("v.pos_embed.weight")
 		if pos == nil {
-			pos = backend.Get("v.position_embd.weight")
+			pos = m.GetTensor("v.position_embd.weight")
 		}
 		if pos == nil {
 			slog.Debug("ensureVisionReady missing position embedding")
@@ -135,18 +135,18 @@ func (m *Model) ensureVisionReady() error {
 			vm.PatchMerger.Norm = &nn.LayerNorm{}
 		}
 		if vm.PatchMerger.Norm.Weight == nil {
-			vm.PatchMerger.Norm.Weight = backend.Get("v.merger.norm.weight")
+			vm.PatchMerger.Norm.Weight = m.GetTensor("v.merger.norm.weight")
 			if vm.PatchMerger.Norm.Weight == nil {
-				vm.PatchMerger.Norm.Weight = backend.Get("v.post_ln.weight")
+				vm.PatchMerger.Norm.Weight = m.GetTensor("v.post_ln.weight")
 				if vm.PatchMerger.Norm.Weight != nil {
 					slog.Debug("Found PatchMerger.Norm.Weight in split GGUF format", "tensor", "v.post_ln.weight")
 				}
 			}
 		}
 		if vm.PatchMerger.Norm.Bias == nil {
-			vm.PatchMerger.Norm.Bias = backend.Get("v.merger.norm.bias")
+			vm.PatchMerger.Norm.Bias = m.GetTensor("v.merger.norm.bias")
 			if vm.PatchMerger.Norm.Bias == nil {
-				vm.PatchMerger.Norm.Bias = backend.Get("v.post_ln.bias")
+				vm.PatchMerger.Norm.Bias = m.GetTensor("v.post_ln.bias")
 				if vm.PatchMerger.Norm.Bias != nil {
 					slog.Debug("Found PatchMerger.Norm.Bias in split GGUF format", "tensor", "v.post_ln.bias")
 				}
@@ -163,18 +163,18 @@ func (m *Model) ensureVisionReady() error {
 			vm.PatchMerger.FC1 = &nn.Linear{}
 		}
 		if vm.PatchMerger.FC1.Weight == nil {
-			vm.PatchMerger.FC1.Weight = backend.Get("v.merger.linear_fc1.weight")
+			vm.PatchMerger.FC1.Weight = m.GetTensor("v.merger.linear_fc1.weight")
 			if vm.PatchMerger.FC1.Weight == nil {
-				vm.PatchMerger.FC1.Weight = backend.Get("mm.0.weight")
+				vm.PatchMerger.FC1.Weight = m.GetTensor("mm.0.weight")
 				if vm.PatchMerger.FC1.Weight != nil {
 					slog.Debug("Found PatchMerger.FC1.Weight in split GGUF format", "tensor", "mm.0.weight")
 				}
 			}
 		}
 		if vm.PatchMerger.FC1.Bias == nil {
-			vm.PatchMerger.FC1.Bias = backend.Get("v.merger.linear_fc1.bias")
+			vm.PatchMerger.FC1.Bias = m.GetTensor("v.merger.linear_fc1.bias")
 			if vm.PatchMerger.FC1.Bias == nil {
-				vm.PatchMerger.FC1.Bias = backend.Get("mm.0.bias")
+				vm.PatchMerger.FC1.Bias = m.GetTensor("mm.0.bias")
 				if vm.PatchMerger.FC1.Bias != nil {
 					slog.Debug("Found PatchMerger.FC1.Bias in split GGUF format", "tensor", "mm.0.bias")
 				}
@@ -190,18 +190,18 @@ func (m *Model) ensureVisionReady() error {
 			vm.PatchMerger.FC2 = &nn.Linear{}
 		}
 		if vm.PatchMerger.FC2.Weight == nil {
-			vm.PatchMerger.FC2.Weight = backend.Get("v.merger.linear_fc2.weight")
+			vm.PatchMerger.FC2.Weight = m.GetTensor("v.merger.linear_fc2.weight")
 			if vm.PatchMerger.FC2.Weight == nil {
-				vm.PatchMerger.FC2.Weight = backend.Get("mm.2.weight")
+				vm.PatchMerger.FC2.Weight = m.GetTensor("mm.2.weight")
 				if vm.PatchMerger.FC2.Weight != nil {
 					slog.Debug("Found PatchMerger.FC2.Weight in split GGUF format", "tensor", "mm.2.weight")
 				}
 			}
 		}
 		if vm.PatchMerger.FC2.Bias == nil {
-			vm.PatchMerger.FC2.Bias = backend.Get("v.merger.linear_fc2.bias")
+			vm.PatchMerger.FC2.Bias = m.GetTensor("v.merger.linear_fc2.bias")
 			if vm.PatchMerger.FC2.Bias == nil {
-				vm.PatchMerger.FC2.Bias = backend.Get("mm.2.bias")
+				vm.PatchMerger.FC2.Bias = m.GetTensor("mm.2.bias")
 				if vm.PatchMerger.FC2.Bias != nil {
 					slog.Debug("Found PatchMerger.FC2.Bias in split GGUF format", "tensor", "mm.2.bias")
 				}
@@ -234,30 +234,30 @@ func (m *Model) ensureVisionReady() error {
 				merger.Norm = &nn.LayerNorm{}
 			}
 			if merger.Norm.Weight == nil {
-				merger.Norm.Weight = backend.Get(prefix + ".norm.weight")
+				merger.Norm.Weight = m.GetTensor(prefix + ".norm.weight")
 			}
 			if merger.Norm.Bias == nil {
-				merger.Norm.Bias = backend.Get(prefix + ".norm.bias")
+				merger.Norm.Bias = m.GetTensor(prefix + ".norm.bias")
 			}
 
 			if merger.FC1 == nil {
 				merger.FC1 = &nn.Linear{}
 			}
 			if merger.FC1.Weight == nil {
-				merger.FC1.Weight = backend.Get(prefix + ".fc1.weight")
+				merger.FC1.Weight = m.GetTensor(prefix + ".fc1.weight")
 			}
 			if merger.FC1.Bias == nil {
-				merger.FC1.Bias = backend.Get(prefix + ".fc1.bias")
+				merger.FC1.Bias = m.GetTensor(prefix + ".fc1.bias")
 			}
 
 			if merger.FC2 == nil {
 				merger.FC2 = &nn.Linear{}
 			}
 			if merger.FC2.Weight == nil {
-				merger.FC2.Weight = backend.Get(prefix + ".fc2.weight")
+				merger.FC2.Weight = m.GetTensor(prefix + ".fc2.weight")
 			}
 			if merger.FC2.Bias == nil {
-				merger.FC2.Bias = backend.Get(prefix + ".fc2.bias")
+				merger.FC2.Bias = m.GetTensor(prefix + ".fc2.bias")
 			}
 
 			if merger.Norm.Weight == nil || merger.FC1.Weight == nil || merger.FC2.Weight == nil {
