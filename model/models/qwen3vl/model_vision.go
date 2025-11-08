@@ -156,9 +156,9 @@ func (m *VisionPatchMerger) Forward(ctx ml.Context, visionOutputs ml.Tensor, pos
 		return visionOutputs
 	}
 	
-	// For split GGUF: merger uses ACTUAL hiddenSize (768) not config (1152)
+	// Merger uses hiddenSize from opts (1152 for split GGUF after padding)
 	// llama.cpp: embeddings = ggml_reshape_3d(ctx0, embeddings, n_embd * 4, ...)
-	// where n_embd is the actual layer dimension
+	// where n_embd=1152 (config dimension used throughout)
 	hiddenSize := opts.hiddenSize * opts.spatialMergeSize * opts.spatialMergeSize
 	if postshuffleNorm {
 		visionOutputs = visionOutputs.Reshape(ctx, hiddenSize, -1)
@@ -301,11 +301,15 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 	if actualHiddenSize != opts.hiddenSize {
 		logutil.Trace("split GGUF: dimension mismatch", "config", opts.hiddenSize, "actual", actualHiddenSize)
 		
-		// For split GGUF: vision layers AND merger use actual size (768)
-		// llama.cpp: n_embd is actual layer dimension, used for all operations
-		opts.hiddenSize = actualHiddenSize
+		// For split GGUF: PAD to config size (1152) because QKV weights expect it
+		// llama.cpp: spatial merge produces n_embd=1152, layers use n_embd=1152
+		// QKV weight shape [1152, 3456] requires input [1152, spatial]
+		spatialDim := hiddenStates.Dim(1)
+		paddingSize := opts.hiddenSize - actualHiddenSize
+		padding := ctx.Input().Zeros(hiddenStates.DType(), paddingSize, spatialDim)
+		hiddenStates = hiddenStates.Concat(ctx, padding, 0)
 		
-		logutil.Trace("split GGUF: skip pos_embd, use actual hiddenSize", "actual", actualHiddenSize)
+		logutil.Trace("split GGUF: padded for QKV weights", "from", actualHiddenSize, "to", opts.hiddenSize, "shape", hiddenStates.Shape())
 	} else {
 		hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, opts)
 	}
