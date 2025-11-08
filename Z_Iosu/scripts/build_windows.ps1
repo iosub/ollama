@@ -127,14 +127,6 @@ function checkEnv() {
 function buildCPU() {
     mkdir -Force -path "${script:DIST_DIR}\"
     if ($script:ARCH -ne "arm64") {
-        # Apply temporary patch to CMakeLists.txt
-        Write-Host "Applying temporary patch to CMakeLists.txt..." -ForegroundColor Cyan
-        & "$PSScriptRoot\patch-cmake-cpu.ps1"
-        if ($LASTEXITCODE -ne 0) { 
-            Write-Host "Error applying patch" -ForegroundColor Red
-            throw "Failed to apply CMakeLists.txt patch"
-        }
-        
         Remove-Item -ea 0 -recurse -force -path "${script:SRC_DIR}\dist\windows-${script:ARCH}"
         New-Item "${script:SRC_DIR}\dist\windows-${script:ARCH}\lib\ollama\" -ItemType Directory -ea 0
 
@@ -142,75 +134,12 @@ function buildCPU() {
         $env:CMAKE_C_COMPILER_LAUNCHER="ccache"
         $env:CMAKE_CXX_COMPILER_LAUNCHER="ccache"
         
-        # Temporarily hide Vulkan SDK and CUDA to prevent auto-detection
-        $vulkanBackup = $env:VULKAN_SDK
-        $cudaBackup = $env:CUDA_PATH
-        $env:VULKAN_SDK = ""
-        $env:CUDA_PATH = ""
-        
-        # Create/recreate CMakeUserPresets.json for CPU-only build (git-ignored)
-        $userPresetsFile = "${script:SRC_DIR}\CMakeUserPresets.json"
-        Write-Host "Creating CMakeUserPresets.json for CPU-only build..." -ForegroundColor Yellow
-        $userPresets = @{
-            version = 3
-            configurePresets = @(
-                @{
-                    name = "CPU-Native"
-                    inherits = "Default"
-                    description = "CPU-only build optimized for Alder Lake (AVX2+AVX-VNNI)"
-                    cacheVariables = @{
-                        CMAKE_CUDA_COMPILER = "OFF"
-                        GGML_BACKEND_DL = "OFF"
-                        GGML_VULKAN = "OFF"
-                        GGML_METAL = "OFF"
-                        GGML_HIP = "OFF"
-                        GGML_BLAS = "OFF"
-                        GGML_AVX2 = "ON"
-                        GGML_FMA = "ON"
-                        GGML_F16C = "ON"
-                        GGML_AVX_VNNI = "ON"
-                        GGML_BMI2 = "ON"
-                    }
-                }
-            )
-        } | ConvertTo-Json -Depth 5
-        Set-Content -Path $userPresetsFile -Value $userPresets -Force
-        
-        # Configure with CPU-Native preset
-        Write-Host "Configuring CPU-only build (NO Vulkan, NO CUDA)..." -ForegroundColor Cyan
-        & cmake --fresh --preset CPU-Native --install-prefix $script:DIST_DIR
-        if ($LASTEXITCODE -ne 0) { 
-            & "$PSScriptRoot\patch-cmake-cpu.ps1" -Revert
-            if ($vulkanBackup) { $env:VULKAN_SDK = $vulkanBackup }
-            if ($cudaBackup) { $env:CUDA_PATH = $cudaBackup }
-            Write-Host "CMake configure failed with code $LASTEXITCODE" -ForegroundColor Red
-            throw "CMake configure failed"
-        }
-        
-        # Build all configured targets (patch still applied to avoid CMake re-configure)
-        Write-Host "Building CPU backend..." -ForegroundColor Cyan
-        & cmake --build build --config Release --parallel $script:JOBS
-        $buildResult = $LASTEXITCODE
-        
-        # Revert patch after build completes
-        Write-Host "Reverting temporary patch..." -ForegroundColor Cyan
-        & "$PSScriptRoot\patch-cmake-cpu.ps1" -Revert
-        
-        # Restore environment variables
-        if ($vulkanBackup) { $env:VULKAN_SDK = $vulkanBackup }
-        if ($cudaBackup) { $env:CUDA_PATH = $cudaBackup }
-        
-        if ($buildResult -ne 0) { 
-            Write-Host "CPU build failed with code $buildResult" -ForegroundColor Red
-            throw "CPU build failed"
-        }
-        
-        # Install CPU component
+        & cmake --fresh --preset CPU --install-prefix $script:DIST_DIR
+        if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
+        & cmake --build --preset CPU  --config Release --parallel $script:JOBS
+        if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
         & cmake --install build --component CPU --strip
-        if ($LASTEXITCODE -ne 0) { 
-            Write-Host "CPU install failed with code $LASTEXITCODE" -ForegroundColor Red
-            throw "CPU install failed"
-        }
+        if ($LASTEXITCODE -ne 0) { exit($LASTEXITCODE)}
     }
 }
 
@@ -560,31 +489,6 @@ function distZip() {
     }
 }
 
-function clean() {
-    write-host "Cleaning build and dist directories..." -ForegroundColor Yellow
-    Remove-Item -ea 0 -recurse -force -path "${script:SRC_DIR}\dist\"
-    Remove-Item -ea 0 -recurse -force -path "${script:SRC_DIR}\build\"
-    Remove-Item -ea 0 -force -path "${script:SRC_DIR}\CMakeUserPresets.json"
-    write-host "Clean completed" -ForegroundColor Green
-}
-
-# ============================================================================
-# ALIASES - Compatibilidad con nombres del script original de Ollama
-# ============================================================================
-# Mantiene funcionalidad personalizada (VS2022, ccache, llvm-mingw, patches)
-# pero permite usar nombres cortos del script original
-function cpu { buildCPU }
-function cuda11 { buildCUDA11 }
-function cuda12 { buildCUDA12 }
-function cuda13 { buildCUDA13 }
-function rocm { buildROCm }
-function vulkan { buildVulkan }
-function ollama { buildOllama }
-function app { buildApp }
-function deps { gatherDependencies }
-function installer { buildInstaller }
-function zip { distZip }
-
 initVS2022Env
 checkEnv
 try {
@@ -607,10 +511,8 @@ try {
         } 
     }
 } catch {
-    write-host "`n[ERROR] Build step failed: $_" -ForegroundColor Red
-    write-host "Stack trace:" -ForegroundColor Yellow
-    write-host $_.ScriptStackTrace -ForegroundColor Yellow
-    exit 1
+    write-host "Build Failed"
+    write-host $_
 } finally {
     set-location $script:SRC_DIR
     $env:PKG_VERSION=""
