@@ -6,7 +6,6 @@ import (
 	"slices"
 
 	"github.com/ollama/ollama/fs"
-	"github.com/ollama/ollama/logutil"
 	"github.com/ollama/ollama/ml"
 	"github.com/ollama/ollama/ml/nn"
 )
@@ -15,7 +14,6 @@ type VisionAttention struct {
 	Query  *nn.Linear `gguf:"attn_q"`
 	Key    *nn.Linear `gguf:"attn_k"`
 	Value  *nn.Linear `gguf:"attn_v"`
-	QKV    *nn.Linear `gguf:"attn_qkv"` // For split GGUF format
 	Output *nn.Linear `gguf:"attn_out"`
 }
 
@@ -26,83 +24,23 @@ func rotateHalf(ctx ml.Context, t ml.Tensor) ml.Tensor {
 }
 
 func applyRotaryPositionalEmbedding(ctx ml.Context, t, cos, sin ml.Tensor) ml.Tensor {
-	logutil.Trace("SPLIT GGUF rope: applying", "t_shape", t.Shape(), "cos_shape", cos.Shape(), "sin_shape", sin.Shape())
 	return t.Mul(ctx, cos).Add(ctx, rotateHalf(ctx, t).Mul(ctx, sin))
 }
 
 func (sa *VisionAttention) Forward(ctx ml.Context, hiddenStates, cos, sin ml.Tensor, opts VisionOptions) ml.Tensor {
-	// For split GGUF: if Attention is nil, return input unchanged
-	if sa == nil {
-		return hiddenStates
-	}
-	
-	inputShape := hiddenStates.Shape()
-	logutil.Trace("SPLIT GGUF Attention: input", "shape", inputShape, "headDim", opts.headDim(), "numHeads", opts.numHeads)
-	
-	var (
-		query ml.Tensor
-		key   ml.Tensor
-		value ml.Tensor
-	)
+	query := sa.Query.Forward(ctx, hiddenStates)
+	query = query.Reshape(ctx, opts.headDim(), opts.numHeads, query.Dim(1))
+	query = applyRotaryPositionalEmbedding(ctx, query, cos, sin)
 
-	// Support both separate and fused QKV weights
-	if sa.QKV != nil {
-		// Split GGUF format: fused QKV linear layer
-		if sa.QKV.Weight != nil {
-			qkvWeightShape := sa.QKV.Weight.Shape()
-			logutil.Trace("SPLIT GGUF Attention: QKV weight", "shape", qkvWeightShape, "input_hidden", inputShape[0])
-			
-			// Verify dimension compatibility BEFORE matmul
-			if len(qkvWeightShape) >= 2 && len(inputShape) >= 1 {
-				expectedInput := qkvWeightShape[0]
-				actualInput := inputShape[0]
-				if expectedInput != actualInput {
-					logutil.Trace("SPLIT GGUF Attention: DIMENSION MISMATCH", "qkv_expects", expectedInput, "hidden_has", actualInput, "ERROR", true)
-				}
-			}
-		}
-		
-		qkv := sa.QKV.Forward(ctx, hiddenStates)
-		qkvShape := qkv.Shape()
-		logutil.Trace("SPLIT GGUF Attention: QKV output", "shape", qkvShape)
-		qkv = qkv.Reshape(ctx, 3, opts.headDim(), opts.numHeads, qkv.Dim(1))
+	key := sa.Key.Forward(ctx, hiddenStates)
+	key = key.Reshape(ctx, opts.headDim(), opts.numHeads, key.Dim(1))
+	key = applyRotaryPositionalEmbedding(ctx, key, cos, sin)
 
-		stride := qkv.Stride(0)
-
-		// Split QKV tensor into separate query, key, value
-		query = qkv.View(ctx, 0, opts.headDim()*opts.numHeads*qkv.Dim(3)).
-			Reshape(ctx, opts.headDim(), opts.numHeads, qkv.Dim(3))
-		key = qkv.View(ctx, stride, opts.headDim()*opts.numHeads*qkv.Dim(3)).
-			Reshape(ctx, opts.headDim(), opts.numHeads, qkv.Dim(3))
-		value = qkv.View(ctx, stride*2, opts.headDim()*opts.numHeads*qkv.Dim(3)).
-			Reshape(ctx, opts.headDim(), opts.numHeads, qkv.Dim(3))
-
-		query = applyRotaryPositionalEmbedding(ctx, query, cos, sin)
-		key = applyRotaryPositionalEmbedding(ctx, key, cos, sin)
-	} else if sa.Query != nil && sa.Key != nil && sa.Value != nil {
-		// Standard format: separate Q, K, V linear layers
-		query = sa.Query.Forward(ctx, hiddenStates)
-		query = query.Reshape(ctx, opts.headDim(), opts.numHeads, query.Dim(1))
-		query = applyRotaryPositionalEmbedding(ctx, query, cos, sin)
-
-		key = sa.Key.Forward(ctx, hiddenStates)
-		key = key.Reshape(ctx, opts.headDim(), opts.numHeads, key.Dim(1))
-		key = applyRotaryPositionalEmbedding(ctx, key, cos, sin)
-
-		value = sa.Value.Forward(ctx, hiddenStates)
-		value = value.Reshape(ctx, opts.headDim(), opts.numHeads, value.Dim(1))
-	} else {
-		// For split GGUF: if no attention weights, return input unchanged
-		return hiddenStates
-	}
+	value := sa.Value.Forward(ctx, hiddenStates)
+	value = value.Reshape(ctx, opts.headDim(), opts.numHeads, value.Dim(1))
 
 	attention := nn.Attention(ctx, query, key, value, math.Pow(float64(opts.headDim()), -0.5), nil)
 	attention = attention.Reshape(ctx, opts.hiddenSize, attention.Dim(2))
-	
-	// For split GGUF: if Output is nil, return attention without projection
-	if sa.Output == nil || sa.Output.Weight == nil {
-		return attention
-	}
 	return sa.Output.Forward(ctx, attention)
 }
 
@@ -112,10 +50,6 @@ type VisionMLP struct {
 }
 
 func (mlp *VisionMLP) Forward(ctx ml.Context, hiddenStates ml.Tensor, opts VisionOptions) ml.Tensor {
-	// For split GGUF: if MLP is nil or FC1/FC2 are nil, return input unchanged (llama.cpp behavior)
-	if mlp == nil || mlp.FC1 == nil || mlp.FC1.Weight == nil || mlp.FC2 == nil || mlp.FC2.Weight == nil {
-		return hiddenStates
-	}
 	return mlp.FC2.Forward(ctx, mlp.FC1.Forward(ctx, hiddenStates).GELU(ctx))
 }
 
@@ -129,17 +63,11 @@ type VisionEncoderLayer struct {
 func (e *VisionEncoderLayer) Forward(ctx ml.Context, hiddenStates, cos, sin ml.Tensor, opts VisionOptions) ml.Tensor {
 	residual := hiddenStates
 	hiddenStates = e.Norm1.Forward(ctx, hiddenStates, opts.eps)
-	
-	// For split GGUF: if Attention is nil, skip attention block
-	if e.Attention != nil {
-		hiddenStates = e.Attention.Forward(ctx, hiddenStates, cos, sin, opts)
-	}
+	hiddenStates = e.Attention.Forward(ctx, hiddenStates, cos, sin, opts)
 	hiddenStates = hiddenStates.Add(ctx, residual)
 
 	residual = hiddenStates
 	hiddenStates = e.Norm2.Forward(ctx, hiddenStates, opts.eps)
-	
-	// For split GGUF: MLP.Forward already has nil check
 	hiddenStates = e.MLP.Forward(ctx, hiddenStates, opts)
 	return hiddenStates.Add(ctx, residual)
 }
@@ -171,43 +99,14 @@ type VisionPatchMerger struct {
 }
 
 func (m *VisionPatchMerger) Forward(ctx ml.Context, visionOutputs ml.Tensor, postshuffleNorm bool, opts VisionOptions) ml.Tensor {
-	// For split GGUF: if merger is nil, return input unchanged
-	if m == nil {
-		return visionOutputs
-	}
-	
-	inputShape := visionOutputs.Shape()
-	logutil.Trace("SPLIT GGUF Merger: input", "shape", inputShape, "opts.hiddenSize", opts.hiddenSize, "spatialMergeSize", opts.spatialMergeSize)
-	
-	// Merger uses hiddenSize from opts (1152 for split GGUF after padding)
-	// llama.cpp: embeddings = ggml_reshape_3d(ctx0, embeddings, n_embd * 4, ...)
-	// where n_embd=1152 (config dimension used throughout)
 	hiddenSize := opts.hiddenSize * opts.spatialMergeSize * opts.spatialMergeSize
-	logutil.Trace("SPLIT GGUF Merger: calculated hiddenSize", "hiddenSize", hiddenSize, "formula", "opts.hiddenSize * spatialMergeSize^2")
-	
 	if postshuffleNorm {
 		visionOutputs = visionOutputs.Reshape(ctx, hiddenSize, -1)
-		logutil.Trace("SPLIT GGUF Merger: reshaped for postshuffle", "shape", visionOutputs.Shape())
 	}
 
 	visionOutputs = m.Norm.Forward(ctx, visionOutputs, opts.eps)
-	afterNormShape := visionOutputs.Shape()
-	logutil.Trace("SPLIT GGUF Merger: after norm", "shape", afterNormShape)
-	
 	visionOutputs = visionOutputs.Reshape(ctx, hiddenSize, -1)
-	afterReshapeShape := visionOutputs.Shape()
-	logutil.Trace("SPLIT GGUF Merger: after reshape", "shape", afterReshapeShape)
-	
-	// For split GGUF: if FC1/FC2 are nil, return after norm
-	if m.FC1 == nil || m.FC1.Weight == nil || m.FC2 == nil || m.FC2.Weight == nil {
-		logutil.Trace("SPLIT GGUF Merger: FC1/FC2 nil, returning after norm")
-		return visionOutputs
-	}
-	
-	result := m.FC2.Forward(ctx, m.FC1.Forward(ctx, visionOutputs).GELU(ctx))
-	resultShape := result.Shape()
-	logutil.Trace("SPLIT GGUF Merger: final output", "shape", resultShape)
-	return result
+	return m.FC2.Forward(ctx, m.FC1.Forward(ctx, visionOutputs).GELU(ctx))
 }
 
 type VisionPositionEmbedding struct {
@@ -225,12 +124,6 @@ func makeSlice2D[T int32 | float32](n0, n1 int) iter.Seq[[]T] {
 }
 
 func (m *VisionPositionEmbedding) Forward(ctx ml.Context, hiddenStates ml.Tensor, grid *Grid, opts VisionOptions) ml.Tensor {
-	// Guard: if position embedding is nil (split GGUF), return hiddenStates unchanged
-	if m.PositionEmbedding == nil {
-		logutil.Trace("split GGUF: skipping position embedding (nil weight)")
-		return hiddenStates
-	}
-	
 	indexSlice := slices.Collect(makeSlice2D[int32](4, grid.Height*grid.Width))
 	weightSlice := slices.Collect(makeSlice2D[float32](4, grid.Height*grid.Width))
 
@@ -288,10 +181,6 @@ type VisionModel struct {
 }
 
 func (m *VisionModel) positions(ctx ml.Context, grid *Grid) (_, _ ml.Tensor) {
-	return m.positionsWithOpts(ctx, grid, m.VisionOptions)
-}
-
-func (m *VisionModel) positionsWithOpts(ctx ml.Context, grid *Grid, opts VisionOptions) (_, _ ml.Tensor) {
 	indices := ctx.Input().FromInts(slices.Collect(func(yield func(int32) bool) {
 		for y := range grid.Height {
 			for x := range grid.Width {
@@ -309,13 +198,10 @@ func (m *VisionModel) positionsWithOpts(ctx ml.Context, grid *Grid, opts VisionO
 	indices = indices.Permute(ctx, 0, 2, 1, 3).Contiguous(ctx)
 	indices = indices.Reshape(ctx, -1)
 
-	// Use opts.headDim() instead of m.headDim() to match actual tensor dimensions
-	halfDim := opts.headDim() / 2
-	logutil.Trace("SPLIT GGUF positions: calculating cos/sin", "opts_hiddenSize", opts.hiddenSize, "opts_headDim", opts.headDim(), "halfDim", halfDim)
-	
+	halfDim := m.headDim() / 2
 	maxGrid := max(grid.Height, grid.Width)
 	frequencies := ctx.Input().FromFloats(slices.Collect(func(yield func(float32) bool) {
-		ropeTheta := float64(opts.ropeTheta)
+		ropeTheta := float64(m.ropeTheta)
 		for i := range maxGrid {
 			for j := range halfDim / 2 {
 				if !yield(float32(i) / float32(math.Pow(ropeTheta, float64(j*2)/float64(halfDim)))) {
@@ -326,98 +212,28 @@ func (m *VisionModel) positionsWithOpts(ctx ml.Context, grid *Grid, opts VisionO
 	}), halfDim/2, maxGrid)
 
 	embeds := frequencies.Rows(ctx, indices)
-	embeds = embeds.View(ctx, -1, halfDim/2)
-	embeds = embeds.Concat(ctx, embeds, 1)
-
-	cos := embeds.Cos(ctx)
-	sin := embeds.Sin(ctx)
-	logutil.Trace("SPLIT GGUF positions: cos/sin computed", "cos_shape", cos.Shape(), "sin_shape", sin.Shape())
-	
-	return cos, sin
+	embeds = embeds.Reshape(ctx, halfDim, 1, -1)
+	embeds = embeds.Concat(ctx, embeds, 0)
+	return embeds.Cos(ctx), embeds.Sin(ctx)
 }
 
 // Forward computes the vision model for an input tensor
 func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid) (ml.Tensor, []ml.Tensor) {
-	inputShape := pixelValues.Shape()
-	logutil.Trace("SPLIT GGUF Vision: input", "shape", inputShape)
-	
 	pixelValues = pixelValues.Reshape(ctx, m.patchSize, m.patchSize, m.temporalPatchSize, -1)
-	reshapedShape := pixelValues.Shape()
-	logutil.Trace("SPLIT GGUF Vision: reshaped for patch embedding", "shape", reshapedShape)
-	
 	hiddenStates := m.PatchEmbedding.Forward(ctx, pixelValues, m.numChannels, m.patchSize, m.patchSize, m.temporalPatchSize, 0, 0, 0, 1, 1, 1)
-	patchOutputShape := hiddenStates.Shape()
-	logutil.Trace("SPLIT GGUF Vision: after PatchEmbedding", "shape", patchOutputShape)
-	
-	// Detect split GGUF: Conv3D CONCAT produces 768, non-split produces 1152
-	actualHiddenSize := hiddenStates.Dim(0)
-	configHiddenSize := m.VisionOptions.hiddenSize
-	isSplitGGUF := actualHiddenSize != configHiddenSize
-	
-	logutil.Trace("SPLIT GGUF Vision: dimension check", "actual", actualHiddenSize, "config", configHiddenSize, "is_split", isSplitGGUF)
-	
-	// For split GGUF: use actual size (768) during vision processing to avoid zero-padding corruption
-	// For non-split: use config size (1152)
-	opts := m.VisionOptions
-	if isSplitGGUF {
-		// CRITICAL: Process vision layers with actual hiddenSize (768) to avoid corrupting 33% with zeros
-		// Padding will be applied AFTER vision processing, before mergers
-		logutil.Trace("SPLIT GGUF Vision: using actual hiddenSize for processing", "size", actualHiddenSize)
-		opts.hiddenSize = actualHiddenSize
-		
-		// Skip position embedding for split GGUF (dimension incompatibility with padding)
-		logutil.Trace("SPLIT GGUF Vision: skipping position embedding")
-	} else {
-		logutil.Trace("SPLIT GGUF Vision: dimensions match, applying position embedding")
-		hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, opts)
-	}
+	hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, m.VisionOptions)
 
-	cos, sin := m.positionsWithOpts(ctx, grid, opts)
+	cos, sin := m.positions(ctx, grid)
 
 	deepstackStates := make([]ml.Tensor, len(m.deepstackVisualIndexes))
 	for i, layer := range m.Layers {
-		hiddenStates = layer.Forward(ctx, hiddenStates, cos, sin, opts)
-		if idx := slices.Index(m.deepstackVisualIndexes, int32(i)); idx >= 0 {
-			// For split GGUF: only process deepstack if merger exists (llama.cpp has_deepstack check)
-			if idx < len(m.DeepstackMerger) && m.DeepstackMerger[idx] != nil {
-				deepstackStates[idx] = m.DeepstackMerger[idx].Forward(ctx, hiddenStates, true, opts)
-			}
+		hiddenStates = layer.Forward(ctx, hiddenStates, cos, sin, m.VisionOptions)
+		if i := slices.Index(m.deepstackVisualIndexes, int32(i)); i >= 0 {
+			deepstackStates[i] = m.DeepstackMerger[i].Forward(ctx, hiddenStates, true, m.VisionOptions)
 		}
 	}
 
-	// Apply padding AFTER vision layers for split GGUF to avoid corrupting visual information
-	if isSplitGGUF {
-		logutil.Trace("SPLIT GGUF Vision: applying padding after layers", "from", actualHiddenSize, "to", configHiddenSize)
-		spatialDim := hiddenStates.Dim(1)
-		paddingSize := configHiddenSize - actualHiddenSize
-		padding := ctx.Input().Zeros(hiddenStates.DType(), paddingSize, spatialDim)
-		hiddenStates = hiddenStates.Concat(ctx, padding, 0)
-		logutil.Trace("SPLIT GGUF Vision: padded main output", "shape", hiddenStates.Shape())
-		
-		// Pad deepstack features too
-		for i, ds := range deepstackStates {
-			if ds != nil {
-				dsSpatialDim := ds.Dim(1)
-				dsPadding := ctx.Input().Zeros(ds.DType(), paddingSize, dsSpatialDim)
-				deepstackStates[i] = ds.Concat(ctx, dsPadding, 0)
-				logutil.Trace("SPLIT GGUF Vision: padded deepstack", "index", i, "shape", deepstackStates[i].Shape())
-			}
-		}
-		
-		// Restore opts.hiddenSize for mergers
-		opts.hiddenSize = configHiddenSize
-	}
-
-	hiddenStates = m.PatchMerger.Forward(ctx, hiddenStates, false, opts)
-	
-	// NOTE: Both SPLIT and NON-SPLIT return deepstack features separately
-	// Ollama's model.go handles them downstream by:
-	// 1. Copying each deepstack into its own buffer
-	// 2. Adding (not concatenating) them at specific text layers (8, 16, 24)
-	// This is different from llama.cpp which concatenates at line 1077
-	// but Ollama's architecture requires separate tensors for the Add operation
-	
-	logutil.Trace("SPLIT GGUF Vision: returning features", "main_shape", hiddenStates.Shape(), "deepstack_count", len(deepstackStates))
+	hiddenStates = m.PatchMerger.Forward(ctx, hiddenStates, false, m.VisionOptions)
 	return hiddenStates, deepstackStates
 }
 
