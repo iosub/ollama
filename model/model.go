@@ -645,7 +645,21 @@ func populateFields(base Base, v reflect.Value, tags ...Tag) reflect.Value {
 
 				names := fn(tagsCopy, "", "")
 				for _, name := range names {
-					if tensor := base.Backend().Get(strings.Join(name, ".")); tensor != nil {
+					tensorName := strings.Join(name, ".")
+					// Use GetTensor to search both main and projector backends for split GGUF
+					var tensor ml.Tensor
+					if base.projectorBackend != nil {
+						tensor = base.Backend().Get(tensorName)
+						if tensor == nil {
+							tensor = base.projectorBackend.Get(tensorName)
+							if tensor != nil {
+								slog.Debug("populateFields: loaded tensor from projector", "name", tensorName)
+							}
+						}
+					} else {
+						tensor = base.Backend().Get(tensorName)
+					}
+					if tensor != nil {
 						logutil.Trace("found tensor", "", tensor)
 						vv.Set(reflect.ValueOf(tensor))
 						break
