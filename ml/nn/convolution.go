@@ -58,23 +58,27 @@ func (m *Conv3D) Forward(ctx ml.Context, t ml.Tensor, c, s0, s1, s2, p0, p1, p2,
 		if bias != nil && biasSize > 0 {
 			t1Shape := t1.Shape()
 			t1Channels := t1Shape[0]
+			concatChannels := t1Channels * 2 // Total after concat
 			
-			// Split bias: [1152] -> [576+576] or [768] -> [384+384] for each weight output
-			// biasSize should be t1Channels * 2 for proper split
-			if biasSize == t1Channels * 2 {
-				// Use View to get first half and second half of bias
-				// bias is 1D [biasSize], we want [t1Channels] for each half
+			// For split GGUF: bias [1152] needs to map to concat output [768]
+			// Strategy: Use first concatChannels elements from bias
+			if biasSize >= concatChannels {
+				// Bias is larger than or equal to output
+				// Use first concatChannels elements [0:768] and split [0:384] + [384:768]
 				bias1 := bias.View(ctx, 0, t1Channels)
-				bias2 := bias.View(ctx, t1Channels * 4, t1Channels) // offset in bytes (float32 = 4 bytes)
+				bias2 := bias.View(ctx, t1Channels * 4, t1Channels)
 				
-				// Reshape and add to each output
 				t1 = t1.Add(ctx, bias1.Reshape(ctx, t1Channels, 1))
 				t2 = t2.Add(ctx, bias2.Reshape(ctx, t1Channels, 1))
 				
-				logutil.Trace("conv3d applied split bias BEFORE concat", "bias_shape", biasShape, "t1_channels", t1Channels, "bias_size", biasSize, "split", true)
-				bias = nil // Mark bias as already applied
+				if biasSize == concatChannels {
+					logutil.Trace("conv3d applied exact bias split", "bias_size", biasSize, "t1_channels", t1Channels, "split", true)
+				} else {
+					logutil.Trace("conv3d applied partial bias split", "bias_size", biasSize, "used", concatChannels, "t1_channels", t1Channels, "unused", biasSize-concatChannels)
+				}
+				bias = nil
 			} else {
-				logutil.Trace("conv3d bias size mismatch for split", "bias_size", biasSize, "t1_channels", t1Channels, "expected", t1Channels*2)
+				logutil.Trace("conv3d cannot split bias", "bias_size", biasSize, "t1_channels", t1Channels, "concat_channels", concatChannels)
 			}
 		}
 		
