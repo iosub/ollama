@@ -1,0 +1,23 @@
+{
+    "version":  3,
+    "configurePresets":  [
+                             {
+                                 "cacheVariables":  {
+                                                        "CMAKE_CUDA_COMPILER":  "OFF",
+                                                        "GGML_BACKEND_DL":  "OFF",
+                                                        "GGML_METAL":  "OFF",
+                                                        "GGML_VULKAN":  "OFF",
+                                                        "GGML_BMI2":  "ON",
+                                                        "GGML_AVX_VNNI":  "ON",
+                                                        "GGML_FMA":  "ON",
+                                                        "GGML_F16C":  "ON",
+                                                        "GGML_HIP":  "OFF",
+                                                        "GGML_BLAS":  "OFF",
+                                                        "GGML_AVX2":  "ON"
+                                                    },
+                                 "inherits":  "Default",
+                                 "name":  "CPU-Native",
+                                 "description":  "CPU-only build optimized for Alder Lake (AVX2+AVX-VNNI)"
+                             }
+                         ]
+}

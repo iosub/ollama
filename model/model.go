@@ -448,6 +448,9 @@ func NewWithProjector(modelPath string, projectorPaths []string, params ml.Backe
 		return New(modelPath, params)
 	}
 
+	// Pass projector paths to backend for split GGUF support
+	params.ProjectorPaths = projectorPaths
+	
 	b, err := ml.NewBackend(modelPath, params)
 	if err != nil {
 		return nil, err
