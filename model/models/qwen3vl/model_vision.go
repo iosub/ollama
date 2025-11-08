@@ -26,6 +26,7 @@ func rotateHalf(ctx ml.Context, t ml.Tensor) ml.Tensor {
 }
 
 func applyRotaryPositionalEmbedding(ctx ml.Context, t, cos, sin ml.Tensor) ml.Tensor {
+	logutil.Trace("SPLIT GGUF rope: applying", "t_shape", t.Shape(), "cos_shape", cos.Shape(), "sin_shape", sin.Shape())
 	return t.Mul(ctx, cos).Add(ctx, rotateHalf(ctx, t).Mul(ctx, sin))
 }
 
@@ -310,6 +311,8 @@ func (m *VisionModel) positionsWithOpts(ctx ml.Context, grid *Grid, opts VisionO
 
 	// Use opts.headDim() instead of m.headDim() to match actual tensor dimensions
 	halfDim := opts.headDim() / 2
+	logutil.Trace("SPLIT GGUF positions: calculating cos/sin", "opts_hiddenSize", opts.hiddenSize, "opts_headDim", opts.headDim(), "halfDim", halfDim)
+	
 	maxGrid := max(grid.Height, grid.Width)
 	frequencies := ctx.Input().FromFloats(slices.Collect(func(yield func(float32) bool) {
 		ropeTheta := float64(opts.ropeTheta)
@@ -323,9 +326,14 @@ func (m *VisionModel) positionsWithOpts(ctx ml.Context, grid *Grid, opts VisionO
 	}), halfDim/2, maxGrid)
 
 	embeds := frequencies.Rows(ctx, indices)
-	embeds = embeds.Reshape(ctx, halfDim, 1, -1)
-	embeds = embeds.Concat(ctx, embeds, 0)
-	return embeds.Cos(ctx), embeds.Sin(ctx)
+	embeds = embeds.View(ctx, -1, halfDim/2)
+	embeds = embeds.Concat(ctx, embeds, 1)
+
+	cos := embeds.Cos(ctx)
+	sin := embeds.Sin(ctx)
+	logutil.Trace("SPLIT GGUF positions: cos/sin computed", "cos_shape", cos.Shape(), "sin_shape", sin.Shape())
+	
+	return cos, sin
 }
 
 // Forward computes the vision model for an input tensor
