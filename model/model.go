@@ -426,7 +426,7 @@ func (m *Base) GetTensor(name string) ml.Tensor {
 	// For split GGUF models, try projector backend
 	if m.projectorBackend != nil {
 		if t := m.projectorBackend.Get(name); t != nil {
-			slog.Info("SPLIT GGUF: ✓ Tensor loaded from PROJECTOR", "name", name, "shape", t.Shape())
+			slog.Info("SPLIT GGUF: Tensor loaded from PROJECTOR", "name", name, "shape", t.Shape())
 			return t
 		} else {
 			slog.Debug("SPLIT GGUF: Tensor not found in projector", "name", name)
