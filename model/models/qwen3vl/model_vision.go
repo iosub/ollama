@@ -30,6 +30,11 @@ func applyRotaryPositionalEmbedding(ctx ml.Context, t, cos, sin ml.Tensor) ml.Te
 }
 
 func (sa *VisionAttention) Forward(ctx ml.Context, hiddenStates, cos, sin ml.Tensor, opts VisionOptions) ml.Tensor {
+	// For split GGUF: if Attention is nil, return input unchanged
+	if sa == nil {
+		return hiddenStates
+	}
+	
 	var (
 		query ml.Tensor
 		key   ml.Tensor
@@ -72,6 +77,11 @@ func (sa *VisionAttention) Forward(ctx ml.Context, hiddenStates, cos, sin ml.Ten
 
 	attention := nn.Attention(ctx, query, key, value, math.Pow(float64(opts.headDim()), -0.5), nil)
 	attention = attention.Reshape(ctx, opts.hiddenSize, attention.Dim(2))
+	
+	// For split GGUF: if Output is nil, return attention without projection
+	if sa.Output == nil || sa.Output.Weight == nil {
+		return attention
+	}
 	return sa.Output.Forward(ctx, attention)
 }
 
@@ -98,11 +108,17 @@ type VisionEncoderLayer struct {
 func (e *VisionEncoderLayer) Forward(ctx ml.Context, hiddenStates, cos, sin ml.Tensor, opts VisionOptions) ml.Tensor {
 	residual := hiddenStates
 	hiddenStates = e.Norm1.Forward(ctx, hiddenStates, opts.eps)
-	hiddenStates = e.Attention.Forward(ctx, hiddenStates, cos, sin, opts)
+	
+	// For split GGUF: if Attention is nil, skip attention block
+	if e.Attention != nil {
+		hiddenStates = e.Attention.Forward(ctx, hiddenStates, cos, sin, opts)
+	}
 	hiddenStates = hiddenStates.Add(ctx, residual)
 
 	residual = hiddenStates
 	hiddenStates = e.Norm2.Forward(ctx, hiddenStates, opts.eps)
+	
+	// For split GGUF: MLP.Forward already has nil check
 	hiddenStates = e.MLP.Forward(ctx, hiddenStates, opts)
 	return hiddenStates.Add(ctx, residual)
 }
@@ -137,6 +153,11 @@ type VisionPatchMerger struct {
 }
 
 func (m *VisionPatchMerger) Forward(ctx ml.Context, visionOutputs ml.Tensor, postshuffleNorm bool, opts VisionOptions) ml.Tensor {
+	// For split GGUF: if merger is nil, return input unchanged
+	if m == nil {
+		return visionOutputs
+	}
+	
 	// Use configHiddenSize for split GGUF merger calculations (weights expect original dimensions)
 	mergerHiddenSize := opts.hiddenSize
 	if opts.configHiddenSize > 0 {
@@ -149,6 +170,11 @@ func (m *VisionPatchMerger) Forward(ctx ml.Context, visionOutputs ml.Tensor, pos
 
 	visionOutputs = m.Norm.Forward(ctx, visionOutputs, opts.eps)
 	visionOutputs = visionOutputs.Reshape(ctx, hiddenSize, -1)
+	
+	// For split GGUF: if FC1/FC2 are nil, return after norm
+	if m.FC1 == nil || m.FC1.Weight == nil || m.FC2 == nil || m.FC2.Weight == nil {
+		return visionOutputs
+	}
 	return m.FC2.Forward(ctx, m.FC1.Forward(ctx, visionOutputs).GELU(ctx))
 }
 
