@@ -10,7 +10,7 @@
 - Preserve full multimodal capabilities (vision tokenizer, deepstack embeddings, MoE routers) and structured-output constraints.
 - Maintain Windows + Vulkan compatibility and avoid regressions for existing Qwen3-VL builds.
 
-### Implementation Strategy (Updated Nov 8, 2025)
+### Implementation Strategy (Updated Nov 8, 2025 - 5:30am)
 
 **Objective:** Create a separate code path for split GGUF models that uses the Ollama runner, while leaving the non-split model process completely untouched.
 
@@ -27,6 +27,91 @@ The current `ml.NewBackend(modelPath)` API only loads tensors from a single GGUF
 - Vision tensors from projector file (`sha256-d406d03e...`)
 
 Both sets of tensors must be available in the same backend for `ensureVisionReady()` to find `v.patch_embed.weight` and other vision weights.
+
+### Solution: Dual-Backend Approach (Implemented Nov 8, 2025)
+
+**Strategy:** Instead of merging GGUFs or modifying the backend, create TWO separate backends and search both when loading tensors.
+
+**Architecture:**
+```
+┌─────────────────────┐
+│   Model (Qwen3VL)   │
+│  ┌───────────────┐  │
+│  │ projectorBknd │──┼──> Projector GGUF (vision tensors)
+│  ├───────────────┤  │    - v.patch_embed.weight
+│  │  mainBackend  │──┼──> Main GGUF (text/language)
+│  └───────────────┘  │    - token_embd.weight
+│                     │    - blk.*.weight
+│   GetTensor(name)   │
+│   ├─> try main      │
+│   └─> try projector │
+└─────────────────────┘
+```
+
+**Implementation Details:**
+
+1. **model/model.go - Base struct** (~5 lines)
+   ```go
+   type Base struct {
+       b ml.Backend                // Main model backend
+       projectorBackend ml.Backend // Split GGUF projector (nil for non-split)
+       config
+   }
+   ```
+
+2. **model/model.go - GetTensor() helper** (~15 lines)
+   ```go
+   func (m *Base) GetTensor(name string) ml.Tensor {
+       // Try main backend first
+       if t := m.b.Get(name); t != nil {
+           return t
+       }
+       // For split GGUF, try projector backend
+       if m.projectorBackend != nil {
+           if t := m.projectorBackend.Get(name); t != nil {
+               return t
+           }
+       }
+       return nil
+   }
+   ```
+
+3. **model/model.go - NewWithProjector()** (~10 lines)
+   ```go
+   // Create main backend
+   b := ml.NewBackend(modelPath, params)
+   
+   // Create projector backend (split GGUF only)
+   projectorBackend := ml.NewBackend(projectorPaths[0], params)
+   
+   base := Base{b: b, projectorBackend: projectorBackend, ...}
+   ```
+
+4. **model/models/qwen3vl/model.go - ensureVisionReady()** (~8 lines)
+   ```go
+   // Before: vm.PatchEmbedding.Weight = backend.Get("v.patch_embed.weight")
+   // After:  vm.PatchEmbedding.Weight = m.GetTensor("v.patch_embed.weight")
+   
+   // Automatically searches main backend, then projector backend
+   ```
+
+**Benefits:**
+- ✅ **Non-split unchanged** - `projectorBackend` is always `nil`, zero performance impact
+- ✅ **Clean separation** - Split-specific code only executes when projector exists
+- ✅ **No C code changes** - All modifications in Go model layer
+- ✅ **Easy debugging** - Can inspect each backend separately
+- ✅ **Minimal code** - Only ~40 lines added across 2 files
+
+**Files Modified:**
+- `ml/backend.go` - Removed ProjectorPaths field (not needed)
+- `model/model.go` - Added projectorBackend field and GetTensor() method
+- `model/models/qwen3vl/model.go` - Changed backend.Get() to m.GetTensor()
+
+**Testing Plan:**
+1. Compile with dual-backend implementation
+2. Test non-split model (`qwen3-vl:8b-instruct-q4_K_M`) - should work identically
+3. Test split model (`hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M`) - should load vision tensors
+4. Verify logs show "split GGUF: loaded tensor from projector" for vision weights
 
 ---
 
