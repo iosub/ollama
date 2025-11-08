@@ -1,9 +1,9 @@
 # Qwen3-VL Split GGUF Implementation Plan
 
 **Date:** 2025-11-08  
-**Status:** IMPLEMENTED - TESTING PHASE  
+**Status:** Phase 4 - RoPE Embedding Dimension Fix (ggml_can_repeat error)  
 
-## Latest Updates (Phase 3 - 2025-11-08)
+## Latest Updates (Phase 4 - 2025-11-08 08:47 UTC-5)
 
 ### Critical Fixes Applied:
 
@@ -16,15 +16,21 @@
 
 ### Implementation Status:
 
-| Component | Status | Notes |
-|-----------|--------|-------|
-| Dual-Backend Loading | DONE | Main model + projector GGUF |
-| Conv3D Dual Weights | DONE | ADD with stride_temporal=1 |
-| Nil-Safe Components | DONE | LayerNorm, Linear, Embedding, MLP, Attention |
-| Spatial Merge Reshape | PARTIAL | Basic structure, full sequence if needed |
-| Deepstack Concatenation | DONE | Matches llama.cpp line 1077 |
-| Position Embedding | SKIPPED | Optional, works without it |
-| Logging | DONE | Comprehensive TRACE logging |
+| Component | **Status** | **Description** |
+|------------|-----------------|
+| Dual-backend loading (main + projector) | ✅ |
+| Vision tensor lookup from projector file | ✅ |
+| Nil-safe forward passes (LayerNorm, MLP, Attention, Mergers) | ✅ |
+| Conv3D dual-weight detection and loading | ✅ |
+| Conv3D CONCAT strategy (384+384=768 channels) | ✅ |
+| Padding with zeros (768→1152 channels) | ✅ |
+| Position embedding skip for split GGUF | ✅ |
+| Deepstack features concatenation (matching llama.cpp) | ✅ |
+| Runner type distinction in logs (ollama vs llama) | ✅ |
+| Comprehensive logging for debugging | ✅ |
+| **RoPE embedding dimension fix** (Phase 4) | 🔄 |
+| Testing model loading and inference | 🔄 |
+| Documentation updates | ⏳ |
 
 ---
 
