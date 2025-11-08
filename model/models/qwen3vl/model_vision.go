@@ -359,7 +359,10 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 	actualHiddenSize := hiddenStates.Dim(0)
 	logutil.Trace("SPLIT GGUF Vision: dimension check", "actual", actualHiddenSize, "config", opts.hiddenSize, "match", actualHiddenSize == opts.hiddenSize)
 	
-	if actualHiddenSize != opts.hiddenSize {
+	// Track if padding was applied (indicates split GGUF model)
+	wasPadded := actualHiddenSize != opts.hiddenSize
+	
+	if wasPadded {
 		// For split GGUF: CONCAT produces 768, pad to 1152
 		logutil.Trace("SPLIT GGUF Vision: padding required", "from", actualHiddenSize, "to", opts.hiddenSize)
 		
@@ -395,10 +398,11 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 	
 	// SPLIT GGUF: Concatenate deepstack features with main output (llama.cpp line 1077)
 	// NON-SPLIT: Return deepstack separately (Ollama handles downstream)
-	// Detection: Split GGUF uses padding (actualHiddenSize != opts.hiddenSize)
-	isSplitGGUF := opts.hiddenSize == 1152 && len(deepstackStates) > 0
+	// Detection: Split GGUF required padding (Conv3D CONCAT produces 768, non-split produces 1152)
+	isSplitGGUF := wasPadded && len(deepstackStates) > 0
 	
 	if isSplitGGUF {
+		logutil.Trace("SPLIT GGUF Vision: SPLIT detected via padding", "concatenating_deepstack", true)
 		logutil.Trace("SPLIT GGUF Vision: concatenating deepstack features", "main_shape", hiddenStates.Shape(), "deepstack_count", len(deepstackStates))
 		
 		for i, deepstack := range deepstackStates {
