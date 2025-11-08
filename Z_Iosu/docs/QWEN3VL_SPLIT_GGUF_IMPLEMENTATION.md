@@ -1,5 +1,33 @@
 # Qwen3-VL Split GGUF Implementation Plan
 
+**Date:** 2025-11-08  
+**Status:** IMPLEMENTED - TESTING PHASE  
+
+## Latest Updates (Phase 3 - 2025-11-08)
+
+### Critical Fixes Applied:
+
+1. **Conv3D stride_temporal=1** - Changed from stride=3 to stride=1 to preserve full channels
+2. **ADD instead of CONCAT** - Dual Conv3D outputs use element-wise ADD, not concatenation
+3. **Nil-safe forward methods** - All vision components handle missing weights gracefully
+4. **Spatial merge reshape** - Basic structure with square patch layout detection
+5. **Deepstack concatenation** - All deepstack features concatenated (matching llama.cpp line 1077)
+6. **Comprehensive logging** - Full TRACE logging with "SPLIT GGUF" prefix throughout pipeline
+
+### Implementation Status:
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Dual-Backend Loading | DONE | Main model + projector GGUF |
+| Conv3D Dual Weights | DONE | ADD with stride_temporal=1 |
+| Nil-Safe Components | DONE | LayerNorm, Linear, Embedding, MLP, Attention |
+| Spatial Merge Reshape | PARTIAL | Basic structure, full sequence if needed |
+| Deepstack Concatenation | DONE | Matches llama.cpp line 1077 |
+| Position Embedding | SKIPPED | Optional, works without it |
+| Logging | DONE | Comprehensive TRACE logging |
+
+---
+
 ## Objective
 
 Implement minimal changes to Ollama's upstream Qwen3-VL support to enable loading and running split GGUF format models while maintaining full compatibility with standard non-split models.
