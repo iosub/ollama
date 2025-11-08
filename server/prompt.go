@@ -127,6 +127,15 @@ func chatPrompt(ctx context.Context, m *Model, tokenize tokenizeFunc, opts *api.
 		return "", nil, err
 	}
 
+	// For qwen3-vl models, convert [img] and [img-N] tags to vision tokens
+	if slices.Contains(m.Config.ModelFamilies, "qwen3vl") {
+		for i := range len(images) {
+			tag := fmt.Sprintf("[img-%d]", i)
+			p = strings.ReplaceAll(p, tag, "<|vision_start|><|image_pad|><|vision_end|>")
+		}
+		p = strings.ReplaceAll(p, "[img]", "<|vision_start|><|image_pad|><|vision_end|>")
+	}
+
 	return p, images, nil
 }
 
