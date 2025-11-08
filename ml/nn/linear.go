@@ -8,6 +8,10 @@ type Linear struct {
 }
 
 func (m *Linear) Forward(ctx ml.Context, t ml.Tensor) ml.Tensor {
+	// For split GGUF: if Linear is nil or Weight is nil, return input unchanged
+	if m == nil || m.Weight == nil {
+		return t
+	}
 	t = m.Weight.Mulmat(ctx, t)
 	if m.Bias != nil {
 		t = t.Add(ctx, m.Bias)

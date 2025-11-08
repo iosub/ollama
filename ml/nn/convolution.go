@@ -29,6 +29,11 @@ type Conv3D struct {
 }
 
 func (m *Conv3D) Forward(ctx ml.Context, t ml.Tensor, c, s0, s1, s2, p0, p1, p2, d0, d1, d2 int) ml.Tensor {
+	// For split GGUF: if Conv3D or Weight is nil, return input unchanged
+	if m == nil || m.Weight == nil {
+		return t
+	}
+	
 	bias := m.Bias
 	biasShape := []int(nil)
 	biasSize := 0
