@@ -153,7 +153,7 @@ func NewLlamaServer(systemInfo ml.SystemInfo, gpus []ml.DeviceInfo, modelPath st
 		if len(projectors) == 0 {
 			textProcessor, err = model.NewTextProcessor(modelPath)
 		} else {
-			err = errors.New("split vision models aren't supported")
+			textProcessor, err = model.NewTextProcessorWithProjector(modelPath, projectors)
 		}
 		if err != nil {
 			// To prepare for opt-out mode, instead of treating this as an error, we fallback to the old runner
@@ -191,7 +191,7 @@ func NewLlamaServer(systemInfo ml.SystemInfo, gpus []ml.DeviceInfo, modelPath st
 		loadRequest.MainGPU = opts.MainGPU
 	}
 
-	if len(projectors) > 0 && llamaModel != nil {
+	if len(projectors) > 0 {
 		loadRequest.ProjectorPath = projectors[0]
 	}
 

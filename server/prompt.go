@@ -69,6 +69,12 @@ func chatPrompt(ctx context.Context, m *Model, tokenize tokenizeFunc, opts *api.
 
 	currMsgIdx := n
 
+	// DISABLED: This logic breaks split GGUF models by replacing image tags before renderer processes them
+	// isSplitQwen := slices.Contains(m.Config.ModelFamilies, "qwen3vl") && len(m.ProjectorPaths) > 0
+	isSplitQwen := false
+
+	useRendererPrefix := m.Config.Renderer != "qwen3-vl-instruct" && m.Config.Renderer != "qwen3-vl-thinking"
+
 	for cnt, msg := range msgs[currMsgIdx:] {
 		if slices.Contains(m.Config.ModelFamilies, "mllama") && len(msg.Images) > 1 {
 			return "", nil, errors.New("this model only supports one image while more than one image requested")
@@ -77,22 +83,41 @@ func chatPrompt(ctx context.Context, m *Model, tokenize tokenizeFunc, opts *api.
 		var prefix string
 		prompt := msg.Content
 
+		startImgID := len(images)
+
 		for _, i := range msg.Images {
 			imgData := llm.ImageData{
 				ID:   len(images),
 				Data: i,
 			}
 
-			imgTag := fmt.Sprintf("[img-%d]", imgData.ID)
-			if !strings.Contains(prompt, "[img]") {
-				prefix += imgTag
-			} else {
-				prompt = strings.Replace(prompt, "[img]", imgTag, 1)
-			}
-
 			images = append(images, imgData)
+
+			if useRendererPrefix {
+				imgTag := fmt.Sprintf("[img-%d]", imgData.ID)
+				if !strings.Contains(prompt, "[img]") {
+					prefix += imgTag
+				} else {
+					prompt = strings.Replace(prompt, "[img]", imgTag, 1)
+				}
+			}
 		}
-		msgs[currMsgIdx+cnt].Content = prefix + prompt
+
+		content := prefix + prompt
+		if isSplitQwen {
+			for j := range msg.Images {
+				tag := fmt.Sprintf("[img-%d]", startImgID+j)
+				content = strings.ReplaceAll(content, tag, "<|vision_start|><|image_pad|><|vision_end|>")
+			}
+			content = strings.ReplaceAll(content, "[img]", "<|vision_start|><|image_pad|><|vision_end|>")
+		} else if !useRendererPrefix && strings.Contains(content, "[img]") {
+			for j := range msg.Images {
+				tag := fmt.Sprintf("[img-%d]", startImgID+j)
+				content = strings.Replace(content, "[img]", tag, 1)
+			}
+		}
+
+		msgs[currMsgIdx+cnt].Content = content
 	}
 
 	// truncate any messages that do not fit into the context window
