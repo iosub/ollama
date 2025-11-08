@@ -122,10 +122,12 @@ func (m *Model) ensureVisionReady() error {
 			pos = m.GetTensor("v.position_embd.weight")
 		}
 		if pos == nil {
-			slog.Debug("ensureVisionReady missing position embedding")
-			return model.ErrNoVisionModel
+			// Position embedding is OPTIONAL for split GGUF models
+			// We skip it during forward pass when dimensions don't match
+			slog.Info("SPLIT GGUF: Position embedding not found (optional for split models)")
+		} else {
+			vm.PositionEmbedding.PositionEmbedding = &nn.Embedding{Weight: pos}
 		}
-		vm.PositionEmbedding.PositionEmbedding = &nn.Embedding{Weight: pos}
 	}
 
 	if vm.PatchMerger == nil {

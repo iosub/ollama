@@ -163,6 +163,12 @@ func makeSlice2D[T int32 | float32](n0, n1 int) iter.Seq[[]T] {
 }
 
 func (m *VisionPositionEmbedding) Forward(ctx ml.Context, hiddenStates ml.Tensor, grid *Grid, opts VisionOptions) ml.Tensor {
+	// Guard: if position embedding is nil (split GGUF), return hiddenStates unchanged
+	if m.PositionEmbedding == nil {
+		logutil.Trace("split GGUF: skipping position embedding (nil weight)")
+		return hiddenStates
+	}
+	
 	indexSlice := slices.Collect(makeSlice2D[int32](4, grid.Height*grid.Width))
 	weightSlice := slices.Collect(makeSlice2D[float32](4, grid.Height*grid.Width))
 
