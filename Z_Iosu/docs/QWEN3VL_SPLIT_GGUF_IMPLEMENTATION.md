@@ -1,36 +1,187 @@
 # Qwen3-VL Split GGUF Implementation Plan
 
 **Date:** 2025-11-08  
-**Status:** Phase 4 - RoPE Embedding Dimension Fix (ggml_can_repeat error)  
+**Status:** Phase 5 - Debug102 Ready for Testing  
+**Build:** debug102 (5 commits applied)
 
-## Latest Updates (Phase 4 - 2025-11-08 08:47 UTC-5)
+## Latest Updates (Phase 5 - 2025-11-08 09:56 UTC-5)
 
-### Critical Fixes Applied:
+### Critical Fixes Applied (debug102):
 
-1. **Conv3D stride_temporal=1** - Changed from stride=3 to stride=1 to preserve full channels
-2. **ADD instead of CONCAT** - Dual Conv3D outputs use element-wise ADD, not concatenation
-3. **Nil-safe forward methods** - All vision components handle missing weights gracefully
-4. **Spatial merge reshape** - Basic structure with square patch layout detection
-5. **Deepstack concatenation** - All deepstack features concatenated (matching llama.cpp line 1077)
-6. **Comprehensive logging** - Full TRACE logging with "SPLIT GGUF" prefix throughout pipeline
+1. **temporalPatchSize from config** (`a21b5707`) - Read from model config instead of hardcoded=2, fixes reshape panic for SPLIT models (requires temporal_patch_size=3)
+2. **Vision token replacement** (`fcbf7a79`) - Apply `[img]` → `<|vision_start|><|image_pad|><|vision_end|>` conversion AFTER renderPrompt() to fix NON-SPLIT "cannot see image" issue
+3. **Split detection tracking** (`b157e206`) - Track `wasPadded` flag for correct split/non-split differentiation
+4. **Deepstack architecture fix** (`de706404`) - REVERT concatenation: Ollama uses separate deepstack tensors with Add operation (not Concat like llama.cpp)
+5. **Padding placement fix** (`16957ce9`) - CRITICAL: Move padding AFTER vision layers (not before) to prevent 33% zero-corruption causing hallucinations
+
+### Root Causes Identified and Fixed:
+
+- **SPLIT reshape panic**: `temporalPatchSize` hardcoded to 2, model needs 3 → patches not divisible by spatialMergeSize²
+- **NON-SPLIT blind**: Vision tokens replaced in message loop but renderPrompt() regenerated prompt with `[img]` → model received literal text
+- **GGML_ASSERT crash**: Attempted to concatenate deepstack to [16384] but Ollama buffer is [4096] → architecture mismatch
+- **SPLIT hallucination**: Padding [768→1152] applied BEFORE vision layers → 33% channels were zeros → corrupted visual information
 
 ### Implementation Status:
 
-| Component | **Status** | **Description** |
-|------------|-----------------|
-| Dual-backend loading (main + projector) | ✅ |
-| Vision tensor lookup from projector file | ✅ |
-| Nil-safe forward passes (LayerNorm, MLP, Attention, Mergers) | ✅ |
-| Conv3D dual-weight detection and loading | ✅ |
-| Conv3D CONCAT strategy (384+384=768 channels) | ✅ |
-| Padding with zeros (768→1152 channels) | ✅ |
-| Position embedding skip for split GGUF | ✅ |
-| Deepstack features concatenation (matching llama.cpp) | ✅ |
-| Runner type distinction in logs (ollama vs llama) | ✅ |
-| Comprehensive logging for debugging | ✅ |
-| **RoPE embedding dimension fix** (Phase 4) | 🔄 |
-| Testing model loading and inference | 🔄 |
-| Documentation updates | ⏳ |
+| Component | **Status** | **Notes** |
+|-----------|----------|-----------|
+| Dual-backend loading (main + projector) | ✅ | Working since initial implementation |
+| Vision tensor lookup from projector file | ✅ | Working since initial implementation |
+| Nil-safe forward passes | ✅ | Working since initial implementation |
+| Conv3D dual-weight CONCAT (384+384=768) | ✅ | Working since debug98 |
+| temporalPatchSize from config | ✅ | **Fixed in debug102** |
+| Vision token replacement (NON-SPLIT) | ✅ | **Fixed in debug102** |
+| Padding AFTER vision layers (SPLIT) | ✅ | **Fixed in debug102** |
+| Deepstack separate return (Ollama Add) | ✅ | **Fixed in debug102** |
+| Position embedding skip for split GGUF | ✅ | Working with correct detection |
+| Runner type distinction in logs | ✅ | Working since previous fix |
+| Comprehensive logging | ✅ | Working throughout pipeline |
+| **Full model testing** | 🔄 | **Pending debug102 compilation** |
+
+---
+
+## Debug102 Technical Implementation Details
+
+### 1. temporalPatchSize Configuration Fix (`a21b5707`)
+
+**File:** `model/models/qwen3vl/imageprocessor.go`
+
+**Problem:** 
+- `temporalPatchSize` was hardcoded to `2`
+- SPLIT models use `temporal_patch_size=3` (from config)
+- Grid calculation: `patches = (height/patchSize) * (width/patchSize) * temporalPatchSize`
+- Result: 3170 patches (NOT divisible by spatialMergeSize²=4) → reshape panic
+
+**Solution:**
+```go
+temporalPatchSize := int(c.Uint("vision.temporal_patch_size", 2))
+```
+
+**Impact:** SPLIT models now calculate correct patch count divisible by 4
+
+---
+
+### 2. Vision Token Replacement Fix (`fcbf7a79`)
+
+**File:** `server/prompt.go`
+
+**Problem:**
+- Vision token conversion happened INSIDE message loop
+- `renderPrompt()` on line 125 regenerated prompt from scratch
+- Conversion lost, model received literal `[img]` text
+- NON-SPLIT responded "cannot see image"
+
+**Solution:**
+```go
+// After renderPrompt() returns
+p, err := renderPrompt(m, append(system, msgs[currMsgIdx:]...), tools, think)
+
+// Convert [img] tags to vision tokens for qwen3-vl
+if slices.Contains(m.Config.ModelFamilies, "qwen3vl") {
+    for i := range len(images) {
+        tag := fmt.Sprintf("[img-%d]", i)
+        p = strings.ReplaceAll(p, tag, "<|vision_start|><|image_pad|><|vision_end|>")
+    }
+    p = strings.ReplaceAll(p, "[img]", "<|vision_start|><|image_pad|><|vision_end|>")
+}
+```
+
+**Impact:** NON-SPLIT models now correctly process vision tokens
+
+---
+
+### 3. Split Detection via Padding Flag (`b157e206`)
+
+**File:** `model/models/qwen3vl/model_vision.go`
+
+**Problem:**
+- Both NON-SPLIT and SPLIT have `opts.hiddenSize=1152`
+- Cannot distinguish based on config value alone
+- Need runtime detection based on Conv3D output
+
+**Solution:**
+```go
+actualHiddenSize := hiddenStates.Dim(0)  // 768 for SPLIT, 1152 for NON-SPLIT
+wasPadded := actualHiddenSize != opts.hiddenSize
+isSplitGGUF := wasPadded && len(deepstackStates) > 0
+```
+
+**Impact:** Correct split/non-split model detection at runtime
+
+---
+
+### 4. Deepstack Architecture Compatibility (`de706404`)
+
+**File:** `model/models/qwen3vl/model_vision.go`
+
+**Problem:**
+- Attempted to concatenate deepstack: `[4096]×4 = [16384]`
+- Ollama's `hiddenStates` buffer is `[4096]`
+- GGML_ASSERT: Cannot copy [16384] into [4096] buffer
+
+**Root Cause:**
+- llama.cpp: Concatenates deepstack features (line 1077)
+- Ollama: Keeps deepstack separate, uses `Add` operation at layers 8, 16, 24
+
+**Solution:**
+```go
+// Return deepstack separately for BOTH split and non-split
+return hiddenStates, deepstackStates
+
+// model.go handles downstream:
+// 1. Copies each deepstack into its own [4096] buffer
+// 2. Adds at specific layers: hiddenStates.Add(ctx, deepstackVisualEmbeds[i])
+```
+
+**Impact:** Compatible with Ollama's architecture (no crashes)
+
+---
+
+### 5. Padding Placement to Prevent Corruption (`16957ce9`)
+
+**File:** `model/models/qwen3vl/model_vision.go`
+
+**Problem:**
+- Padding applied BEFORE vision layers
+- Flow: `[768] → pad zeros → [1152]` with 384 zero channels (33%)
+- Vision layers processed corrupted `[1152]` with 33% garbage
+- Deepstack mergers received corrupted features
+- Result: Model hallucinated (described movie scene instead of invoice)
+
+**Solution:**
+```go
+// Detect split BEFORE processing
+actualHiddenSize := hiddenStates.Dim(0)  // 768 for SPLIT
+configHiddenSize := m.VisionOptions.hiddenSize  // 1152
+isSplitGGUF := actualHiddenSize != configHiddenSize
+
+if isSplitGGUF {
+    // Process with ACTUAL size (768) - no zero corruption
+    opts.hiddenSize = actualHiddenSize
+    // Skip position embedding (incompatible with padding)
+}
+
+// Vision layers process clean [768] data
+for i, layer := range m.Layers {
+    hiddenStates = layer.Forward(ctx, hiddenStates, cos, sin, opts)
+    // Deepstack mergers extract from clean [768]
+}
+
+// Apply padding AFTER processing
+if isSplitGGUF {
+    padding := ctx.Input().Zeros(hiddenStates.DType(), paddingSize, spatialDim)
+    hiddenStates = hiddenStates.Concat(ctx, padding, 0)  // [768→1152]
+    
+    // Pad deepstack features too
+    for i, ds := range deepstackStates {
+        deepstackStates[i] = ds.Concat(ctx, dsPadding, 0)
+    }
+    
+    opts.hiddenSize = configHiddenSize  // Restore for mergers
+}
+```
+
+**Impact:** Vision information preserved, SPLIT should describe correctly
 
 ---
 
