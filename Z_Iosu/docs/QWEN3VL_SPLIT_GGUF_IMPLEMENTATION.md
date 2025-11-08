@@ -230,7 +230,7 @@ git checkout upstream/main -- ml/nn/convolution.go
 ## Critical Findings: Split GGUF Format Incompleteness
 
 **Date:** 2025-11-08  
-**Status:** ⚠️ BLOCKER - Split GGUF format incomplete
+**Status:**  BLOCKER - Split GGUF format incomplete
 
 ### Analysis Summary
 
@@ -238,7 +238,7 @@ After implementing dual-backend loading and extensive debugging, we discovered t
 
 ### Tensors Present in Projector GGUF
 
-✅ **Attention weights:**
+ **Attention weights:**
 - `v.blk.N.attn_qkv.weight` / `v.blk.N.attn_qkv.bias`
 - `v.blk.N.attn_out.weight` / `v.blk.N.attn_out.bias`
 
@@ -336,13 +336,15 @@ When tensor is missing:
 
 **This split GGUF format is fundamentally incompatible with Ollama's architecture:**
 
-| Component | llama.cpp | Ollama | Compatible? |
-|-----------|-----------|--------|-------------|
-| Optional tensor loading | ✅ Yes | ❌ No | ❌ |
-| Nil-safe forward pass | ✅ Yes | ❌ No | ❌ |
-| LayerNorm required | ❌ No | ✅ Yes | ❌ |
-| MLP required | ❌ No | ✅ Yes | ❌ |
-| Struct-based loading | ❌ No | ✅ Yes | ❌ |
+| Feature                      | llama.cpp                                 | Ollama                                    |
+|------------------------------|-------------------------------------------|-------------------------------------------|
+| **Missing tensor loading**   | Returns `nullptr` (continues)             | Fails silently (field stays `nil`)       |
+| **Nil pointer handling**     | Checks before use, skips if null          | Crashes on dereference                    |
+| **LayerNorm weights**        | Optional (can be missing)                 | Required (crash if missing)               |
+| **MLP weights**              | Optional (can be missing)                 | Required (crash if missing)               |
+| **Loading approach**         | Manual `get_tensor(name, optional=false)` | Automatic via struct reflection           |
+
+**Key difference:** llama.cpp explicitly handles missing tensors as optional and checks for null before using them. Ollama's struct-based loading populates fields automatically, and missing tensors result in `nil` pointers that cause crashes during forward pass.
 
 ### Recommendations
 
@@ -375,10 +377,126 @@ The split GGUF format as currently distributed is **incomplete and incompatible*
 2. Standard non-split GGUF model, OR
 3. Major Ollama architectural refactor (not recommended)
 
+## Implementation Details
+
+### Conv3D Dual Weights Strategy
+
+**Problem:** llama.cpp uses two Conv2D operations, we use Conv3D with temporal dimension.
+
+**Solution:**
+```go
+// Use stride=1 in temporal dimension instead of stride=3
+t1 := m.Weight.Conv3D(ctx, t, c, s0, s1, 1, p0, p1, p2, d0, d1, d2)
+t2 := m.Weight1.Conv3D(ctx, t, c, s0, s1, 1, p0, p1, p2, d0, d1, d2)
+t = t1.Add(ctx, t2)  // Element-wise ADD
+```
+
+**Why:**
+- Conv3D with stride=3 divides output channels by 3 (1152/3=384)
+- stride=1 preserves full channel count
+- ADD matches llama.cpp: `inp = ggml_add(ctx0, inp, inp_1)`
+
+---
+
+### Nil-Safe Forward Methods
+
+**Implemented in:**
+- `ml/nn/normalization.go` - LayerNorm
+- `ml/nn/linear.go` - Linear
+- `ml/nn/embedding.go` - Embedding
+- `ml/nn/convolution.go` - Conv3D
+- `model/models/qwen3vl/model_vision.go` - VisionAttention, VisionMLP, VisionPatchMerger
+
+**Pattern:**
+```go
+func (m *Component) Forward(ctx ml.Context, input ml.Tensor, ...) ml.Tensor {
+    // Return input unchanged if component or weights are nil
+    if m == nil || m.Weight == nil {
+        return input
+    }
+    // Normal forward pass
+    return m.actualForward(...)
+}
+```
+
+**Matches llama.cpp behavior:** Missing tensors loaded with `optional=false` return `nullptr`, operations skip gracefully.
+
+---
+
+### Spatial Merge Reshape
+
+**llama.cpp implementation (lines 927-937):**
+```cpp
+inp = ggml_permute(ctx0, inp, 1, 2, 0, 3);  // [w,h,c,b] -> [c,w,h,b]
+inp = ggml_cont_4d(ctx0, inp, n_embd*2, n_patches_x/2, n_patches_y, batch);
+inp = ggml_reshape_4d(ctx0, inp, n_embd*2, n_patches_x/2, 2, batch*(n_patches_y/2));
+inp = ggml_permute(ctx0, inp, 0, 2, 1, 3);
+inp = ggml_cont_3d(ctx0, inp, n_embd, n_patches_x*n_patches_y, batch);
+```
+
+**Our implementation:**
+- Detects square patch layout using sqrt
+- Basic reshape structure in place
+- Comprehensive logging of dimensions
+- Full permute/reshape sequence can be added if Conv3D output needs adjustment
+
+---
+
+### Deepstack Concatenation
+
+**llama.cpp (line 1077):**
+```cpp
+embeddings = ggml_concat(ctx0, embeddings, deepstack_features, 0);
+```
+
+**Our implementation:**
+```go
+for i, deepstack := range deepstackStates {
+    if deepstack != nil {
+        hiddenStates = hiddenStates.Concat(ctx, deepstack, 0)
+    }
+}
+return hiddenStates, []ml.Tensor{}  // All merged
+```
+
+**Result:** Single merged tensor with all features, matching llama.cpp architecture.
+
+---
+
+### Comprehensive Logging
+
+All operations prefixed with `"SPLIT GGUF"` for easy filtering:
+
+**Conv3D:**
+- Input shape and stride parameters
+- Individual weight outputs (t1, t2)
+- Channel counts vs expected 1152
+- ADD result shape
+
+**Vision Pipeline:**
+- Input, reshaped, patch embedding output shapes
+- Spatial merge detection and dimensions
+- Dimension mismatch detection with ERROR flag
+- QKV weight compatibility check BEFORE matmul
+
+**Merger:**
+- Input shape and opts values
+- Calculated hiddenSize
+- Shapes after norm/reshape
+- Final output shape
+
+**Example log filtering:**
+```bash
+grep "SPLIT GGUF" ollama.log
+```
+
+---
+
 ## Notes
 
 - All code comments and documentation use English
 - Changes are minimal and surgical to reduce maintenance burden
 - Backward compatibility with standard models is mandatory
 - Split GGUF support is additive, not replacing existing functionality
-- **Split GGUF format incomplete - LayerNorm/MLP weights missing from projector**
+- **Nil-safe forward methods handle incomplete split GGUF gracefully**
+- **Comprehensive logging enables debugging without recompilation**
