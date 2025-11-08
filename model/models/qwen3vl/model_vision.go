@@ -393,26 +393,12 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 
 	hiddenStates = m.PatchMerger.Forward(ctx, hiddenStates, false, opts)
 	
-	// CRITICAL: Concatenate deepstack features (matching llama.cpp line 1077)
-	// llama.cpp: embeddings = ggml_concat(ctx0, embeddings, deepstack_features, 0);
-	// This merges all deepstack outputs with main vision output along feature dimension
-	if len(deepstackStates) > 0 {
-		logutil.Trace("SPLIT GGUF Vision: concatenating deepstack features", "main_shape", hiddenStates.Shape(), "deepstack_count", len(deepstackStates))
-		
-		for i, deepstack := range deepstackStates {
-			if deepstack != nil {
-				deepstackShape := deepstack.Shape()
-				logutil.Trace("SPLIT GGUF Vision: deepstack feature", "index", i, "shape", deepstackShape)
-				
-				// Concat along dimension 0 (feature/channel dimension)
-				hiddenStates = hiddenStates.Concat(ctx, deepstack, 0)
-				logutil.Trace("SPLIT GGUF Vision: after concat", "new_shape", hiddenStates.Shape())
-			}
-		}
-		
-		// Return concatenated features and empty deepstack (all merged into hiddenStates)
-		return hiddenStates, []ml.Tensor{}
-	}
+	// NOTE: Deepstack concatenation behavior differs between split and non-split models:
+	// - NON-SPLIT: Return deepstack features separately (Ollama handles them downstream)
+	// - SPLIT GGUF: Concatenate all features (matching llama.cpp line 1077 behavior)
+	// 
+	// For now, always return deepstack separately to avoid breaking non-split models.
+	// Split GGUF concatenation will be handled when we implement proper split detection.
 	
 	return hiddenStates, deepstackStates
 }
