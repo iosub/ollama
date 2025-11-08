@@ -396,31 +396,14 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 
 	hiddenStates = m.PatchMerger.Forward(ctx, hiddenStates, false, opts)
 	
-	// SPLIT GGUF: Concatenate deepstack features with main output (llama.cpp line 1077)
-	// NON-SPLIT: Return deepstack separately (Ollama handles downstream)
-	// Detection: Split GGUF required padding (Conv3D CONCAT produces 768, non-split produces 1152)
-	isSplitGGUF := wasPadded && len(deepstackStates) > 0
+	// NOTE: Both SPLIT and NON-SPLIT return deepstack features separately
+	// Ollama's model.go handles them downstream by:
+	// 1. Copying each deepstack into its own buffer
+	// 2. Adding (not concatenating) them at specific text layers (8, 16, 24)
+	// This is different from llama.cpp which concatenates at line 1077
+	// but Ollama's architecture requires separate tensors for the Add operation
 	
-	if isSplitGGUF {
-		logutil.Trace("SPLIT GGUF Vision: SPLIT detected via padding", "concatenating_deepstack", true)
-		logutil.Trace("SPLIT GGUF Vision: concatenating deepstack features", "main_shape", hiddenStates.Shape(), "deepstack_count", len(deepstackStates))
-		
-		for i, deepstack := range deepstackStates {
-			if deepstack != nil {
-				deepstackShape := deepstack.Shape()
-				logutil.Trace("SPLIT GGUF Vision: deepstack feature", "index", i, "shape", deepstackShape)
-				
-				// Concat along dimension 0 (feature/channel dimension)
-				hiddenStates = hiddenStates.Concat(ctx, deepstack, 0)
-				logutil.Trace("SPLIT GGUF Vision: after concat", "new_shape", hiddenStates.Shape())
-			}
-		}
-		
-		logutil.Trace("SPLIT GGUF Vision: final concatenated", "shape", hiddenStates.Shape())
-		// Return concatenated features and empty deepstack (all merged into hiddenStates)
-		return hiddenStates, []ml.Tensor{}
-	}
-	
+	logutil.Trace("SPLIT GGUF Vision: returning features", "main_shape", hiddenStates.Shape(), "deepstack_count", len(deepstackStates))
 	return hiddenStates, deepstackStates
 }
 
