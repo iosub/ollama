@@ -70,9 +70,9 @@ func (m *Model) ensureVisionReady() error {
 	}
 
 	if vm.PatchEmbedding.Weight == nil {
-		vm.PatchEmbedding.Weight = backend.Get("v.patch_embed.weight")
+		vm.PatchEmbedding.Weight = m.GetTensor("v.patch_embed.weight")
 		if vm.PatchEmbedding.Weight == nil {
-			vm.PatchEmbedding.Weight = backend.Get("v.patch_embd.weight")
+			vm.PatchEmbedding.Weight = m.GetTensor("v.patch_embd.weight")
 		}
 	}
 
@@ -81,9 +81,9 @@ func (m *Model) ensureVisionReady() error {
 		return model.ErrNoVisionModel
 	}
 	if vm.PatchEmbedding.Weight1 == nil {
-		vm.PatchEmbedding.Weight1 = backend.Get("v.patch_embed.weight.1")
+		vm.PatchEmbedding.Weight1 = m.GetTensor("v.patch_embed.weight.1")
 		if vm.PatchEmbedding.Weight1 == nil {
-			vm.PatchEmbedding.Weight1 = backend.Get("v.patch_embd.weight.1")
+			vm.PatchEmbedding.Weight1 = m.GetTensor("v.patch_embd.weight.1")
 		}
 	}
 

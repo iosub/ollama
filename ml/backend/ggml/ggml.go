@@ -132,27 +132,6 @@ func New(modelPath string, params ml.BackendParams) (ml.Backend, error) {
 		return nil, err
 	}
 
-	// For split GGUF models, load and merge projector tensors
-	if len(params.ProjectorPaths) > 0 {
-		for _, projPath := range params.ProjectorPaths {
-			projR, err := os.Open(projPath)
-			if err != nil {
-				return nil, fmt.Errorf("failed to open projector %s: %w", projPath, err)
-			}
-			defer projR.Close()
-
-			projMeta, err := fsggml.Decode(projR, -1)
-			if err != nil {
-				return nil, fmt.Errorf("failed to decode projector %s: %w", projPath, err)
-			}
-
-			// Merge projector tensors into main metadata
-			// TODO: Implement tensor merging
-			// For now, log that we detected the projector
-			slog.Debug("projector detected", "path", projPath, "tensors", len(projMeta.Tensors().Items()))
-		}
-	}
-
 	once.Do(func() {
 		slog.Info(
 			"",

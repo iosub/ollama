@@ -397,6 +397,8 @@ type MultimodalProcessor interface {
 // Base implements the common fields and methods for all models
 type Base struct {
 	b ml.Backend
+	// projectorBackend is a separate backend for split GGUF models containing vision tensors
+	projectorBackend ml.Backend
 	config
 }
 
@@ -407,6 +409,24 @@ type config struct {
 // Backend returns the underlying backend that will run the model
 func (m *Base) Backend() ml.Backend {
 	return m.b
+}
+
+// GetTensor retrieves a tensor from the model backend, falling back to projector backend for split GGUF models
+func (m *Base) GetTensor(name string) ml.Tensor {
+	// Try main backend first
+	if t := m.b.Get(name); t != nil {
+		return t
+	}
+	
+	// For split GGUF models, try projector backend
+	if m.projectorBackend != nil {
+		if t := m.projectorBackend.Get(name); t != nil {
+			slog.Debug("split GGUF: loaded tensor from projector", "name", name)
+			return t
+		}
+	}
+	
+	return nil
 }
 
 func (m *Base) Config() config {
@@ -448,9 +468,7 @@ func NewWithProjector(modelPath string, projectorPaths []string, params ml.Backe
 		return New(modelPath, params)
 	}
 
-	// Pass projector paths to backend for split GGUF support
-	params.ProjectorPaths = projectorPaths
-	
+	// Create main model backend
 	b, err := ml.NewBackend(modelPath, params)
 	if err != nil {
 		return nil, err
@@ -460,6 +478,14 @@ func NewWithProjector(modelPath string, projectorPaths []string, params ml.Backe
 	if !ok {
 		return nil, fmt.Errorf("projector loading requires ggml backend")
 	}
+
+	// Create separate backend for projector tensors (split GGUF approach)
+	projectorBackend, err := ml.NewBackend(projectorPaths[0], params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load projector: %w", err)
+	}
+
+	slog.Debug("split GGUF: loaded projector backend", "path", projectorPaths[0])
 
 	var merged fsggml.KV
 	if baseKV, ok := ggmlBackend.Config().(fsggml.KV); ok {
@@ -493,7 +519,7 @@ func NewWithProjector(modelPath string, projectorPaths []string, params ml.Backe
 		return nil, err
 	}
 
-	base := Base{b: ggmlBackend, config: m.Config()}
+	base := Base{b: ggmlBackend, projectorBackend: projectorBackend, config: m.Config()}
 	v := reflect.ValueOf(m)
 	v.Elem().Set(populateFields(base, v.Elem()))
 	return m, nil

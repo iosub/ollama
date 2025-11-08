@@ -75,10 +75,6 @@ type BackendParams struct {
 
 	// FlashAttention indicates that we should use a fused flash attention kernel
 	FlashAttention bool
-
-	// ProjectorPaths are additional GGUF files containing vision/projector tensors
-	// Used by split GGUF models (e.g., Qwen3-VL with separate projector file)
-	ProjectorPaths []string
 }
 
 var backends = make(map[string]func(string, BackendParams) (Backend, error))
