@@ -338,60 +338,26 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 	
 	opts := m.VisionOptions
 	
-	// CRITICAL: Spatial merge reshape (matching llama.cpp lines 927-937)
-	// llama.cpp performs complex permute/reshape sequence after ADD of conv2d operations
-	// This reduces spatial dimensions and produces [n_embd, n_patches_x * n_patches_y, batch]
-	actualHiddenSize := hiddenStates.Dim(0)
-	if actualHiddenSize != opts.hiddenSize {
-		logutil.Trace("SPLIT GGUF Vision: applying spatial merge reshape", "input_shape", hiddenStates.Shape())
-		
-		// Expected Conv3D output: [?, spatial_x, spatial_y]
-		// Need to determine spatial dimensions
-		spatialDim := hiddenStates.Dim(1)
-		
-		// Estimate spatial_x and spatial_y assuming square patches
-		// For Qwen3VL: typically n_patches_x = n_patches_y
-		estimatedPatches := int(math.Sqrt(float64(spatialDim)))
-		if estimatedPatches * estimatedPatches == spatialDim {
-			// Square layout detected
-			patchesX := estimatedPatches
-			patchesY := estimatedPatches
-			
-			logutil.Trace("SPLIT GGUF Vision: detected square patch layout", "patches_x", patchesX, "patches_y", patchesY)
-			
-			// Spatial merge: Reduce spatial dimensions by factor 2
-			// This matches llama.cpp spatial merge behavior
-			mergedPatchesX := patchesX / 2
-			mergedPatchesY := patchesY / 2
-			
-			if mergedPatchesX > 0 && mergedPatchesY > 0 {
-				// Reshape from [channels, spatial] to [channels, patches_x, patches_y]
-				hiddenStates = hiddenStates.Reshape(ctx, actualHiddenSize, patchesX, patchesY)
-				logutil.Trace("SPLIT GGUF Vision: reshaped to 3D", "shape", hiddenStates.Shape())
-				
-				// NOTE: Full spatial merge would require complex permute/reshape sequence
-				// For now, we reshape back to [channels, spatial] and adjust hiddenSize
-				hiddenStates = hiddenStates.Reshape(ctx, actualHiddenSize, spatialDim)
-				logutil.Trace("SPLIT GGUF Vision: reshaped back to 2D", "shape", hiddenStates.Shape())
-			}
-		}
-	}
+	// For split GGUF: Conv3D CONCAT produces 768, need to pad to 1152
+	// Conv3D with temporal_patch_size=3 divides channels: 384+384=768 via CONCAT
+	// llama.cpp Conv2D produces 1152 per weight, uses ADD
+	// We need padding to match QKV weight expectations
 	
-	actualHiddenSize = hiddenStates.Dim(0)
+	actualHiddenSize := hiddenStates.Dim(0)
 	logutil.Trace("SPLIT GGUF Vision: dimension check", "actual", actualHiddenSize, "config", opts.hiddenSize, "match", actualHiddenSize == opts.hiddenSize)
 	
 	if actualHiddenSize != opts.hiddenSize {
-		// For split GGUF: Conv3D with dual weights uses ADD (not concat)
-		// This should produce [1152, spatial] directly matching llama.cpp
-		// If dimensions don't match, adjust opts to use actual dimensions
-		logutil.Trace("SPLIT GGUF Vision: dimension mismatch after dual-weight ADD", "expected", opts.hiddenSize, "actual", actualHiddenSize)
+		// For split GGUF: CONCAT produces 768, pad to 1152
+		logutil.Trace("SPLIT GGUF Vision: padding required", "from", actualHiddenSize, "to", opts.hiddenSize)
 		
-		// Use actual hidden size for subsequent operations (headDim, merger, etc.)
-		opts.hiddenSize = actualHiddenSize
-		logutil.Trace("SPLIT GGUF Vision: adjusted hiddenSize", "new_hiddenSize", opts.hiddenSize, "headDim", opts.headDim())
+		spatialDim := hiddenStates.Dim(1)
+		paddingSize := opts.hiddenSize - actualHiddenSize
+		padding := ctx.Input().Zeros(hiddenStates.DType(), paddingSize, spatialDim)
+		hiddenStates = hiddenStates.Concat(ctx, padding, 0)
 		
-		// Skip position embedding for split GGUF
-		// Position embeddings are resized in llama.cpp which we don't support yet
+		logutil.Trace("SPLIT GGUF Vision: padded hiddenStates", "shape", hiddenStates.Shape())
+		
+		// Skip position embedding for split GGUF (dimension incompatibility)
 		logutil.Trace("SPLIT GGUF Vision: skipping position embedding")
 	} else {
 		logutil.Trace("SPLIT GGUF Vision: dimensions match, applying position embedding")
