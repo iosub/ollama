@@ -261,25 +261,20 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 	pixelValues = pixelValues.Reshape(ctx, m.patchSize, m.patchSize, m.temporalPatchSize, -1)
 	hiddenStates := m.PatchEmbedding.Forward(ctx, pixelValues, m.numChannels, m.patchSize, m.patchSize, m.temporalPatchSize, 0, 0, 0, 1, 1, 1)
 	
-	// For split GGUF: adjust hiddenSize if PatchEmbedding produced fewer channels
+	// For split GGUF: NO position embedding - pad immediately then use full opts for layers
 	actualHiddenSize := hiddenStates.Dim(0)
 	opts := m.VisionOptions
 	if actualHiddenSize != opts.hiddenSize {
-		logutil.Trace("split GGUF dimension mismatch", "config", opts.hiddenSize, "actual", actualHiddenSize)
+		logutil.Trace("split GGUF: skipping position embedding", "config", opts.hiddenSize, "actual", actualHiddenSize)
 		// Save original hiddenSize for merger calculations
 		opts.configHiddenSize = opts.hiddenSize  // 1152
 		
-		// Apply position embedding to REAL data [768, spatial] with adjusted opts
-		posOpts := opts
-		posOpts.hiddenSize = actualHiddenSize  // 768
-		hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, posOpts)
-		
-		// AFTER position embedding, pad [768, spatial] → [1152, spatial] for vision layers
+		// Pad [768, spatial] → [1152, spatial] WITHOUT position embedding
 		spatialDim := hiddenStates.Dim(1)
 		paddingSize := opts.hiddenSize - actualHiddenSize  // 1152 - 768 = 384
 		padding := ctx.Input().Zeros(hiddenStates.DType(), paddingSize, spatialDim)
 		hiddenStates = hiddenStates.Concat(ctx, padding, 0)  // [768+384, spatial] = [1152, spatial]
-		logutil.Trace("padded hiddenStates AFTER position embedding", "from", actualHiddenSize, "to", opts.hiddenSize, "shape", hiddenStates.Shape())
+		logutil.Trace("split GGUF: padded WITHOUT position embedding", "from", actualHiddenSize, "to", opts.hiddenSize, "shape", hiddenStates.Shape())
 	} else {
 		hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, opts)
 	}
