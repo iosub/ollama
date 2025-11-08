@@ -309,7 +309,8 @@ func (m *Model) EncodeMultimodal(ctx ml.Context, multimodalData []byte) ([]input
 
 	// Calculate tensor dimensions
 	visionOutputs, deepstackVisualEmbeds := m.VisionModel.Forward(ctx, pixelValues, grid)
-	slog.Debug("EncodeMultimodal vision forward complete", "patches", visionOutputs.Dim(1), "deepstack", len(deepstackVisualEmbeds))
+	slog.Debug("EncodeMultimodal vision forward complete", "vision_shape", visionOutputs.Shape(), "patches", visionOutputs.Dim(1), "deepstack", len(deepstackVisualEmbeds))
+	slog.Debug("EncodeMultimodal vision dimensions check", "dim0", visionOutputs.Dim(0), "dim1", visionOutputs.Dim(1), "expected_dim0", 1152)
 	mm := []input.Multimodal{{Tensor: visionOutputs, Data: grid}}
 	for i := range deepstackVisualEmbeds {
 		mm = append(mm, input.Multimodal{Tensor: deepstackVisualEmbeds[i]})
@@ -404,13 +405,15 @@ func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
 	var deepstackVisualEmbeds []ml.Tensor
 	for _, mi := range batch.Multimodal {
 		visionOutputs := mi.Multimodal[0].Tensor
+		slog.Debug("Vision embedding copy - tensor received", "shape", visionOutputs.Shape(), "dim0", visionOutputs.Dim(0), "dim1", visionOutputs.Dim(1))
 		embedDim := visionOutputs.Dim(0)
 		patchCount := visionOutputs.Dim(1)
 		hiddenStride1 := hiddenStates.Stride(1)
 		startColumn := mi.Index + 1 // skip <vision_start>
 		offset := startColumn * hiddenStride1
 		viewSize := embedDim * patchCount
-		slog.Debug("Vision embedding copy", "index", mi.Index, "start_column", startColumn, "hidden_stride1", hiddenStride1, "offset", offset, "embed_dim", embedDim, "patch_count", patchCount, "view_size", viewSize)
+		slog.Debug("Vision embedding copy calculated", "index", mi.Index, "start_column", startColumn, "hidden_stride1", hiddenStride1, "offset", offset, "embed_dim", embedDim, "patch_count", patchCount, "view_size", viewSize)
+		slog.Debug("hiddenStates buffer check", "shape", hiddenStates.Shape(), "stride0", hiddenStates.Stride(0), "stride1", hiddenStates.Stride(1), "total_bytes_needed", offset+viewSize)
 		ctx.Forward(visionOutputs.Copy(ctx, hiddenStates.View(ctx, offset, viewSize)))
 
 		if grid, ok := mi.Multimodal[0].Data.(*Grid); ok {
