@@ -14,6 +14,7 @@ type VisionAttention struct {
 	Query  *nn.Linear `gguf:"attn_q"`
 	Key    *nn.Linear `gguf:"attn_k"`
 	Value  *nn.Linear `gguf:"attn_v"`
+	QKV    *nn.Linear `gguf:"attn_qkv"` // For split GGUF format
 	Output *nn.Linear `gguf:"attn_out"`
 }
 
@@ -28,16 +29,45 @@ func applyRotaryPositionalEmbedding(ctx ml.Context, t, cos, sin ml.Tensor) ml.Te
 }
 
 func (sa *VisionAttention) Forward(ctx ml.Context, hiddenStates, cos, sin ml.Tensor, opts VisionOptions) ml.Tensor {
-	query := sa.Query.Forward(ctx, hiddenStates)
-	query = query.Reshape(ctx, opts.headDim(), opts.numHeads, query.Dim(1))
-	query = applyRotaryPositionalEmbedding(ctx, query, cos, sin)
+	var (
+		query ml.Tensor
+		key   ml.Tensor
+		value ml.Tensor
+	)
 
-	key := sa.Key.Forward(ctx, hiddenStates)
-	key = key.Reshape(ctx, opts.headDim(), opts.numHeads, key.Dim(1))
-	key = applyRotaryPositionalEmbedding(ctx, key, cos, sin)
+	// Support both separate and fused QKV weights
+	if sa.QKV != nil {
+		// Split GGUF format: fused QKV linear layer
+		qkv := sa.QKV.Forward(ctx, hiddenStates)
+		qkv = qkv.Reshape(ctx, 3, opts.headDim(), opts.numHeads, qkv.Dim(1))
 
-	value := sa.Value.Forward(ctx, hiddenStates)
-	value = value.Reshape(ctx, opts.headDim(), opts.numHeads, value.Dim(1))
+		stride := qkv.Stride(0)
+
+		// Split QKV tensor into separate query, key, value
+		query = qkv.View(ctx, 0, opts.headDim()*opts.numHeads*qkv.Dim(3)).
+			Reshape(ctx, opts.headDim(), opts.numHeads, qkv.Dim(3))
+		key = qkv.View(ctx, stride, opts.headDim()*opts.numHeads*qkv.Dim(3)).
+			Reshape(ctx, opts.headDim(), opts.numHeads, qkv.Dim(3))
+		value = qkv.View(ctx, stride*2, opts.headDim()*opts.numHeads*qkv.Dim(3)).
+			Reshape(ctx, opts.headDim(), opts.numHeads, qkv.Dim(3))
+
+		query = applyRotaryPositionalEmbedding(ctx, query, cos, sin)
+		key = applyRotaryPositionalEmbedding(ctx, key, cos, sin)
+	} else if sa.Query != nil && sa.Key != nil && sa.Value != nil {
+		// Standard format: separate Q, K, V linear layers
+		query = sa.Query.Forward(ctx, hiddenStates)
+		query = query.Reshape(ctx, opts.headDim(), opts.numHeads, query.Dim(1))
+		query = applyRotaryPositionalEmbedding(ctx, query, cos, sin)
+
+		key = sa.Key.Forward(ctx, hiddenStates)
+		key = key.Reshape(ctx, opts.headDim(), opts.numHeads, key.Dim(1))
+		key = applyRotaryPositionalEmbedding(ctx, key, cos, sin)
+
+		value = sa.Value.Forward(ctx, hiddenStates)
+		value = value.Reshape(ctx, opts.headDim(), opts.numHeads, value.Dim(1))
+	} else {
+		panic("vision attention missing required weights (need either QKV or Query+Key+Value)")
+	}
 
 	attention := nn.Attention(ctx, query, key, value, math.Pow(float64(opts.headDim()), -0.5), nil)
 	attention = attention.Reshape(ctx, opts.hiddenSize, attention.Dim(2))
