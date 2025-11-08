@@ -304,14 +304,12 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 	opts := m.VisionOptions
 	if actualHiddenSize != opts.hiddenSize {
 		logutil.Trace("split GGUF: dimension mismatch", "config", opts.hiddenSize, "actual", actualHiddenSize)
-		opts.configHiddenSize = opts.hiddenSize  // Save for merger: 1152
 		
-		// Pad [768, spatial] → [1152, spatial] to match vision layer weight dimensions
-		spatialDim := hiddenStates.Dim(1)
-		paddingSize := opts.hiddenSize - actualHiddenSize
-		padding := ctx.Input().Zeros(hiddenStates.DType(), paddingSize, spatialDim)
-		hiddenStates = hiddenStates.Concat(ctx, padding, 0)
-		logutil.Trace("split GGUF: padded (skip pos_embd)", "from", actualHiddenSize, "to", opts.hiddenSize, "shape", hiddenStates.Shape())
+		// For split GGUF: vision layers work with actual size (768), only pad for merger (1152)
+		opts.configHiddenSize = opts.hiddenSize // Save original for merger: 1152
+		opts.hiddenSize = actualHiddenSize       // Use actual for vision layers: 768
+		
+		logutil.Trace("split GGUF: skip pos_embd, use actual hiddenSize for layers", "actual", actualHiddenSize, "config", opts.configHiddenSize)
 	} else {
 		hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, opts)
 	}
