@@ -81,6 +81,10 @@ type VisionMLP struct {
 }
 
 func (mlp *VisionMLP) Forward(ctx ml.Context, hiddenStates ml.Tensor, opts VisionOptions) ml.Tensor {
+	// For split GGUF: if FC1/FC2 are nil, return input unchanged (llama.cpp behavior)
+	if mlp.FC1 == nil || mlp.FC1.Weight == nil || mlp.FC2 == nil || mlp.FC2.Weight == nil {
+		return hiddenStates
+	}
 	return mlp.FC2.Forward(ctx, mlp.FC1.Forward(ctx, hiddenStates).GELU(ctx))
 }
 

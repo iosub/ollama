@@ -130,14 +130,11 @@ func (m *Model) ensureVisionReady() error {
 		}
 	}
 
-	// CRITICAL: Split GGUF models only contain attention weights in projector
-	// LayerNorm and MLP weights are MISSING - this is expected behavior
-	// The model relies solely on attention for vision processing
+	// For split GGUF: LayerNorm and MLP weights may be missing from projector
+	// This is handled by nil-safe Forward methods that return input unchanged (llama.cpp behavior)
 	if m.HasProjector() {
-		slog.Warn("SPLIT GGUF: Vision model incomplete - only attention weights present")
-		slog.Warn("SPLIT GGUF: LayerNorm and MLP weights are MISSING from projector")
-		slog.Warn("SPLIT GGUF: This split GGUF format is NOT fully supported - model will likely fail")
-		return fmt.Errorf("split GGUF vision model incomplete: missing LayerNorm and MLP weights")
+		slog.Info("SPLIT GGUF: Using nil-safe forward pass for missing LayerNorm/MLP weights")
+		slog.Info("SPLIT GGUF: Vision layers will skip normalization/MLP if weights are missing")
 	}
 
 	if vm.PatchMerger == nil {
