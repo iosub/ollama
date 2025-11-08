@@ -69,13 +69,6 @@ func chatPrompt(ctx context.Context, m *Model, tokenize tokenizeFunc, opts *api.
 
 	currMsgIdx := n
 
-	// DISABLED: This logic breaks split GGUF models by replacing image tags before renderer processes them
-	// For qwen3-vl models, we need to replace [img] tags with vision tokens
-	// This applies to both split and non-split models
-	isQwen3VL := slices.Contains(m.Config.ModelFamilies, "qwen3vl")
-
-	useRendererPrefix := m.Config.Renderer != "qwen3-vl-instruct" && m.Config.Renderer != "qwen3-vl-thinking"
-
 	for cnt, msg := range msgs[currMsgIdx:] {
 		if slices.Contains(m.Config.ModelFamilies, "mllama") && len(msg.Images) > 1 {
 			return "", nil, errors.New("this model only supports one image while more than one image requested")
@@ -84,56 +77,28 @@ func chatPrompt(ctx context.Context, m *Model, tokenize tokenizeFunc, opts *api.
 		var prefix string
 		prompt := msg.Content
 
-		startImgID := len(images)
-
 		for _, i := range msg.Images {
 			imgData := llm.ImageData{
 				ID:   len(images),
 				Data: i,
 			}
 
+			imgTag := fmt.Sprintf("[img-%d]", imgData.ID)
+			if !strings.Contains(prompt, "[img]") {
+				prefix += imgTag
+			} else {
+				prompt = strings.Replace(prompt, "[img]", imgTag, 1)
+			}
+
 			images = append(images, imgData)
-
-			if useRendererPrefix {
-				imgTag := fmt.Sprintf("[img-%d]", imgData.ID)
-				if !strings.Contains(prompt, "[img]") {
-					prefix += imgTag
-				} else {
-					prompt = strings.Replace(prompt, "[img]", imgTag, 1)
-				}
-			}
 		}
-
-		content := prefix + prompt
-		if isQwen3VL {
-			for j := range msg.Images {
-				tag := fmt.Sprintf("[img-%d]", startImgID+j)
-				content = strings.ReplaceAll(content, tag, "<|vision_start|><|image_pad|><|vision_end|>")
-			}
-			content = strings.ReplaceAll(content, "[img]", "<|vision_start|><|image_pad|><|vision_end|>")
-		} else if !useRendererPrefix && strings.Contains(content, "[img]") {
-			for j := range msg.Images {
-				tag := fmt.Sprintf("[img-%d]", startImgID+j)
-				content = strings.Replace(content, "[img]", tag, 1)
-			}
-		}
-
-		msgs[currMsgIdx+cnt].Content = content
+		msgs[currMsgIdx+cnt].Content = prefix + prompt
 	}
 
 	// truncate any messages that do not fit into the context window
 	p, err := renderPrompt(m, append(system, msgs[currMsgIdx:]...), tools, think)
 	if err != nil {
 		return "", nil, err
-	}
-
-	// For qwen3-vl models, convert [img] and [img-N] tags to vision tokens
-	if slices.Contains(m.Config.ModelFamilies, "qwen3vl") {
-		for i := range len(images) {
-			tag := fmt.Sprintf("[img-%d]", i)
-			p = strings.ReplaceAll(p, tag, "<|vision_start|><|image_pad|><|vision_end|>")
-		}
-		p = strings.ReplaceAll(p, "[img]", "<|vision_start|><|image_pad|><|vision_end|>")
 	}
 
 	return p, images, nil
