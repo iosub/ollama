@@ -3,6 +3,7 @@ package qwen3vl
 import (
 	"fmt"
 	"image"
+	"log/slog"
 	"math"
 
 	"github.com/ollama/ollama/fs"
@@ -108,6 +109,8 @@ func (p *ImageProcessor) ProcessImage(ctx ml.Context, img image.Image) (ml.Tenso
 		Width:    resizedWidth / p.patchSize,
 		Temporal: 1, // For single images, temporal dimension is 1
 	}
+	
+	slog.Debug("ProcessImage grid calculation", "orig_h", origHeight, "orig_w", origWidth, "resized_h", resizedHeight, "resized_w", resizedWidth, "patch_size", p.patchSize, "grid_h", grid.Height, "grid_w", grid.Width, "total_patches", grid.Height*grid.Width, "divisible_by_4", (grid.Height*grid.Width)%4 == 0)
 
 	patches, err := p.createPatches(normalizedPixels, resizedHeight, resizedWidth, grid)
 	if err != nil {
