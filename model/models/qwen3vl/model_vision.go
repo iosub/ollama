@@ -117,6 +117,9 @@ type VisionOptions struct {
 
 	deepstackVisualIndexes []int32
 	mropeSections          []int
+	
+	// For split GGUF: config hiddenSize for merger calculations even when actual tensors differ
+	configHiddenSize int
 }
 
 func (o VisionOptions) headDim() int {
@@ -130,7 +133,12 @@ type VisionPatchMerger struct {
 }
 
 func (m *VisionPatchMerger) Forward(ctx ml.Context, visionOutputs ml.Tensor, postshuffleNorm bool, opts VisionOptions) ml.Tensor {
-	hiddenSize := opts.hiddenSize * opts.spatialMergeSize * opts.spatialMergeSize
+	// Use configHiddenSize for split GGUF merger calculations (weights expect original dimensions)
+	mergerHiddenSize := opts.hiddenSize
+	if opts.configHiddenSize > 0 {
+		mergerHiddenSize = opts.configHiddenSize
+	}
+	hiddenSize := mergerHiddenSize * opts.spatialMergeSize * opts.spatialMergeSize
 	if postshuffleNorm {
 		visionOutputs = visionOutputs.Reshape(ctx, hiddenSize, -1)
 	}
@@ -266,11 +274,25 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 	actualHiddenSize := hiddenStates.Dim(0)
 	opts := m.VisionOptions
 	if actualHiddenSize != opts.hiddenSize {
-		logutil.Trace("adjusting hiddenSize for split GGUF", "config", opts.hiddenSize, "actual", actualHiddenSize)
-		opts.hiddenSize = actualHiddenSize
+		logutil.Trace("split GGUF dimension mismatch", "config", opts.hiddenSize, "actual", actualHiddenSize)
+		// Save original hiddenSize for merger calculations
+		opts.configHiddenSize = opts.hiddenSize  // 1152
+		
+		// Apply position embedding with truncated dimensions
+		posOpts := opts
+		posOpts.hiddenSize = actualHiddenSize  // 768 for position embedding
+		hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, posOpts)
+		
+		// Pad hiddenStates from [768, spatial] to [1152, spatial] for vision layers
+		// Vision layer weights expect full hiddenSize=1152
+		spatialDim := hiddenStates.Dim(1)
+		paddingSize := opts.hiddenSize - actualHiddenSize  // 1152 - 768 = 384
+		padding := ctx.Input().Zeros(hiddenStates.DType(), paddingSize, spatialDim)
+		hiddenStates = hiddenStates.Concat(ctx, padding, 0)  // [768+384, spatial] = [1152, spatial]
+		logutil.Trace("padded hiddenStates for split GGUF", "from", actualHiddenSize, "to", opts.hiddenSize, "shape", hiddenStates.Shape())
+	} else {
+		hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, opts)
 	}
-	
-	hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, opts)
 
 	cos, sin := m.positions(ctx, grid)
 
