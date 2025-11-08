@@ -3888,11 +3888,15 @@ kernel void kernel_rope_multi(
             const int sec_w012  = args.sect_0 + args.sect_1 + args.sect_2; // end of section 2
             const int sector    = ic % sect_dims;
 
-            float theta_base = (float) pos[i2];
-            if (sector % 3 == 1 && sector < 1 + 3 * args.sect_1) {
+            float theta_base;
+            if (sector < args.sect_0) {
+                theta_base = (float) pos[i2];
+            } else if (sector < sec_w01) {
                 theta_base = (float) pos[i2 + args.ne02];
-            } else if (sector % 3 == 2 && sector < 2 + 3 * args.sect_2) {
+            } else if (sector < sec_w012) {
                 theta_base = (float) pos[i2 + args.ne02 * 2];
+            } else {
+                theta_base = (float) pos[i2 + args.ne02 * 3];
             }
             // end of mrope
 
@@ -4463,72 +4467,8 @@ kernel void kernel_argsort_f32_i32(
     }
 }
 
-typedef void (i32_argsort_t)(
-        constant   ggml_metal_kargs_argsort & args,
-        device  const int32_t * x,
-        device        int32_t * dst,
-        threadgroup   int32_t * shared_values [[threadgroup(0)]],
-        uint3 tgpig[[threadgroup_position_in_grid]],
-        uint3 tpitg[[thread_position_in_threadgroup]]);
-
-template<ggml_sort_order order>
-kernel void kernel_argsort_i32_i32(
-        constant   ggml_metal_kargs_argsort & args,
-        device const int32_t * x,
-        device       int32_t * dst,
-        threadgroup int32_t  * shared_values [[threadgroup(0)]],
-        uint3 tgpig[[threadgroup_position_in_grid]],
-        uint3 tpitg[[thread_position_in_threadgroup]]) {
-    // bitonic sort
-    int col = tpitg[0];
-    int row = tgpig[1];
-
-    if (col >= args.ncols_pad) return;
-
-    device const int32_t * x_row   = x + row * args.ncols;
-    threadgroup int32_t  * dst_row = shared_values;
-
-    // initialize indices
-    dst_row[col] = col;
-
-    threadgroup_barrier(mem_flags::mem_threadgroup);
-
-    for (int k = 2; k <= args.ncols_pad; k *= 2) {
-        for (int j = k / 2; j > 0; j /= 2) {
-            int ixj = col ^ j;
-            if (ixj > col) {
-                if ((col & k) == 0) {
-                    if (dst_row[col] >= args.ncols ||
-                        (dst_row[ixj] < args.ncols && (order == GGML_SORT_ORDER_ASC ?
-                            x_row[dst_row[col]] > x_row[dst_row[ixj]] :
-                            x_row[dst_row[col]] < x_row[dst_row[ixj]]))
-                    ) {
-                        SWAP(dst_row[col], dst_row[ixj]);
-                    }
-                } else {
-                    if (dst_row[ixj] >= args.ncols ||
-                        (dst_row[col] < args.ncols && (order == GGML_SORT_ORDER_ASC ?
-                            x_row[dst_row[col]] < x_row[dst_row[ixj]] :
-                            x_row[dst_row[col]] > x_row[dst_row[ixj]]))
-                    ) {
-                        SWAP(dst_row[col], dst_row[ixj]);
-                    }
-                }
-            }
-            threadgroup_barrier(mem_flags::mem_threadgroup);
-        }
-    }
-
-    // copy the result to dst without the padding
-    if (col < args.ncols) {
-        dst[row * args.ncols + col] = dst_row[col];
-    }
-}
-
 template [[host_name("kernel_argsort_f32_i32_asc")]]  kernel argsort_t kernel_argsort_f32_i32<GGML_SORT_ORDER_ASC>;
 template [[host_name("kernel_argsort_f32_i32_desc")]] kernel argsort_t kernel_argsort_f32_i32<GGML_SORT_ORDER_DESC>;
-template [[host_name("kernel_argsort_i32_i32_asc")]] kernel i32_argsort_t kernel_argsort_i32_i32<GGML_SORT_ORDER_ASC>;
-template [[host_name("kernel_argsort_i32_i32_desc")]] kernel i32_argsort_t kernel_argsort_i32_i32<GGML_SORT_ORDER_DESC>;
 
 kernel void kernel_leaky_relu_f32(
         constant     ggml_metal_kargs_leaky_relu & args,

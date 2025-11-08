@@ -5,8 +5,6 @@
 #include <hipblas/hipblas.h>
 #include <hip/hip_fp16.h>
 #include <hip/hip_bf16.h>
-// for rocblas_initialize()
-#include "rocblas/rocblas.h"
 
 #if defined(GGML_HIP_ROCWMMA_FATTN)
 #include <rocwmma/rocwmma-version.hpp>
@@ -47,9 +45,7 @@
 #define cudaDeviceDisablePeerAccess hipDeviceDisablePeerAccess
 #define cudaDeviceEnablePeerAccess hipDeviceEnablePeerAccess
 #define cudaDeviceProp hipDeviceProp_t
-#define cudaDeviceReset hipDeviceReset
 #define cudaDeviceSynchronize hipDeviceSynchronize
-#define cudaDriverGetVersion hipDriverGetVersion
 #define cudaError_t hipError_t
 #define cudaErrorPeerAccessAlreadyEnabled hipErrorPeerAccessAlreadyEnabled
 #define cudaErrorPeerAccessNotEnabled hipErrorPeerAccessNotEnabled

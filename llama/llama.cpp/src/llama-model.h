@@ -76,7 +76,6 @@ enum llm_type {
     LLM_TYPE_15B,
     LLM_TYPE_16B,
     LLM_TYPE_20B,
-    LLM_TYPE_22B,
     LLM_TYPE_27B,
     LLM_TYPE_30B,
     LLM_TYPE_32B,
@@ -390,8 +389,6 @@ struct llama_layer {
     struct ggml_tensor * ffn_act_alpha_p = nullptr;
     struct ggml_tensor * ffn_act_beta    = nullptr;
     struct ggml_tensor * ffn_act_eps     = nullptr;
-
-    struct ggml_tensor * bskcn_tv = nullptr;
 
     struct llama_layer_posnet posnet;
 

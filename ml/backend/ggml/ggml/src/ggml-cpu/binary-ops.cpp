@@ -51,7 +51,7 @@ static void apply_binary_op(const ggml_compute_params * params, ggml_tensor * ds
     const ggml_tensor * src0 = dst->src[0];
     const ggml_tensor * src1 = dst->src[1];
 
-    // GGML_ASSERT(ggml_can_repeat(src1, src0) && ggml_are_same_shape(src0, dst)); // Temporarily disabled for Qwen3-VL split checkpoints
+    GGML_ASSERT(ggml_can_repeat(src1, src0) && ggml_are_same_shape(src0, dst));
 
     GGML_TENSOR_BINARY_OP_LOCALS
 

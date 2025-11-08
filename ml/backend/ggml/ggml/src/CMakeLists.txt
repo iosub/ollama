@@ -209,9 +209,6 @@ add_library(ggml-base
             ggml-threading.h
             ggml-quants.c
             ggml-quants.h
-            mem_hip.cpp
-            mem_nvml.cpp
-            mem_dxgi_pdh.cpp
             gguf.cpp)
 
 target_include_directories(ggml-base PRIVATE .)
@@ -317,7 +314,6 @@ function(ggml_add_cpu_backend_variant tag_name)
     endif()
 
     ggml_add_cpu_backend_variant_impl(${tag_name})
-    add_dependencies(ggml-cpu ggml-cpu-${tag_name})
 endfunction()
 
 ggml_add_backend(CPU)
@@ -328,7 +324,6 @@ if (GGML_CPU_ALL_VARIANTS)
     elseif (GGML_CPU_ARM_ARCH)
         message(FATAL_ERROR "Cannot use both GGML_CPU_ARM_ARCH and GGML_CPU_ALL_VARIANTS")
     endif()
-    add_custom_target(ggml-cpu)
     if (GGML_SYSTEM_ARCH STREQUAL "x86")
         ggml_add_cpu_backend_variant(x64)
         ggml_add_cpu_backend_variant(sse42        SSE42)
@@ -337,6 +332,10 @@ if (GGML_CPU_ALL_VARIANTS)
         ggml_add_cpu_backend_variant(skylakex     SSE42 AVX F16C AVX2 BMI2 FMA AVX512)
         ggml_add_cpu_backend_variant(icelake      SSE42 AVX F16C AVX2 BMI2 FMA AVX512 AVX512_VBMI AVX512_VNNI)
         ggml_add_cpu_backend_variant(alderlake    SSE42 AVX F16C AVX2 BMI2 FMA AVX_VNNI)
+        if (NOT MSVC)
+            # MSVC doesn't support AMX
+            ggml_add_cpu_backend_variant(sapphirerapids SSE42 AVX F16C AVX2 BMI2 FMA AVX512 AVX512_VBMI AVX512_VNNI AVX512_BF16 AMX_TILE AMX_INT8)
+        endif()
     elseif(GGML_SYSTEM_ARCH STREQUAL "ARM")
         if (CMAKE_SYSTEM_NAME MATCHES "Linux")
             # Many of these features are optional so we build versions with popular

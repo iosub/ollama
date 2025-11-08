@@ -15,8 +15,6 @@
 #include "ops.h"
 #include "ggml.h"
 
-#include "ollama-debug.h"
-
 #if defined(_MSC_VER) || defined(__MINGW32__)
 #include <malloc.h> // using malloc.h with MSC/MINGW
 #elif !defined(__FreeBSD__) && !defined(__NetBSD__) && !defined(__OpenBSD__)
@@ -2441,7 +2439,7 @@ static bool ggml_thread_apply_priority(int32_t prio) {
         // Newer Windows 11 versions aggresively park (offline) CPU cores and often place
         // all our threads onto the first 4 cores which results in terrible performance with
         // n_threads > 4
-        #if (_WIN32_WINNT >= 0x0602) && !defined(__GNUC__)
+        #if _WIN32_WINNT >= 0x0602
         THREAD_POWER_THROTTLING_STATE t;
         ZeroMemory(&t, sizeof(t));
         t.Version     = THREAD_POWER_THROTTLING_CURRENT_VERSION;
@@ -2892,10 +2890,6 @@ static thread_ret_t ggml_graph_compute_thread(void * data) {
         struct ggml_tensor * node = cgraph->nodes[node_n];
 
         ggml_compute_forward(&params, node);
-
-#ifdef OLLAMA_DEBUG
-        ollama_debug(node, true);
-#endif
 
         if (state->ith == 0 && cplan->abort_callback &&
                 cplan->abort_callback(cplan->abort_callback_data)) {

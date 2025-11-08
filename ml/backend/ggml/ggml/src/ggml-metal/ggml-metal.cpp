@@ -25,7 +25,6 @@ static void ggml_backend_metal_buffer_shared_free_buffer(ggml_backend_buffer_t b
     GGML_ASSERT(ggml_metal_buffer_is_shared(ctx));
 
     ggml_metal_buffer_free(ctx);
-    delete buffer;
 }
 
 static void * ggml_backend_metal_buffer_shared_get_base(ggml_backend_buffer_t buffer) {
@@ -100,7 +99,6 @@ static void ggml_backend_metal_buffer_private_free_buffer(ggml_backend_buffer_t 
     GGML_ASSERT(!ggml_metal_buffer_is_shared(ctx));
 
     ggml_metal_buffer_free(ctx);
-    delete buffer;
 }
 
 static void * ggml_backend_metal_buffer_private_get_base(ggml_backend_buffer_t buffer) {
@@ -410,12 +408,10 @@ static bool ggml_backend_metal_cpy_tensor_async(ggml_backend_t backend_src, ggml
     GGML_UNUSED(dst);
 }
 
-static enum ggml_status ggml_backend_metal_graph_compute(ggml_backend_t backend, ggml_cgraph * cgraph, int batch_size) {
+static enum ggml_status ggml_backend_metal_graph_compute(ggml_backend_t backend, ggml_cgraph * cgraph) {
     ggml_metal_t ctx = (ggml_metal_t)backend->context;
 
     return ggml_metal_graph_compute(ctx, cgraph);
-
-    GGML_UNUSED(batch_size);
 }
 
 static void ggml_backend_metal_graph_optimize(ggml_backend_t backend, ggml_cgraph * cgraph) {
@@ -537,16 +533,13 @@ static enum ggml_backend_dev_type ggml_backend_metal_device_get_type(ggml_backen
     GGML_UNUSED(dev);
 }
 
-#define GGML_METAL_NAME "Metal"
 static void ggml_backend_metal_device_get_props(ggml_backend_dev_t dev, ggml_backend_dev_props * props) {
     props->name        = ggml_backend_metal_device_get_name(dev);
     props->description = ggml_backend_metal_device_get_description(dev);
-    props->id          = "0";
     props->type        = ggml_backend_metal_device_get_type(dev);
 
     ggml_backend_metal_device_get_memory(dev, &props->memory_free, &props->memory_total);
 
-    props->library = GGML_METAL_NAME;
     props->caps = {
         /* .async                 = */ true,
         /* .host_buffer           = */ false,

@@ -64,8 +64,6 @@ struct llama_hparams {
     std::array<uint32_t, LLAMA_MAX_LAYERS> n_head_kv_arr;
     std::array<uint32_t, LLAMA_MAX_LAYERS> n_ff_arr;
 
-    std::array<std::array<uint32_t, LLAMA_MAX_LAYERS>, 4> n_bskcn_arr = {};
-
     uint32_t n_layer_dense_lead = 0;
     uint32_t n_lora_q           = 0;
     uint32_t n_lora_kv          = 0;
@@ -251,9 +249,6 @@ struct llama_hparams {
     bool is_recurrent(uint32_t il) const;
 
     uint32_t n_pos_per_embd() const;
-
-    // Block skip connection
-    bool n_bskcn(uint32_t n, uint32_t il) const;
 
     bool is_swa(uint32_t il) const;
 
