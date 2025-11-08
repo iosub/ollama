@@ -197,15 +197,6 @@ func (m *VisionPositionEmbedding) Forward(ctx ml.Context, hiddenStates ml.Tensor
 	n := hiddenStates.Dim(0)
 	positionEmbeds := m.PositionEmbedding.Forward(ctx, indices)
 	positionEmbeds = positionEmbeds.Mul(ctx, weights)
-	
-	// For split GGUF: if positionEmbeds has more channels than hiddenStates, use only first n channels
-	posEmbedDim := positionEmbeds.Dim(0)
-	if posEmbedDim > n {
-		// Use View to get first n channels: [1152, ...] -> [768, ...] and make contiguous
-		positionEmbeds = positionEmbeds.View(ctx, 0, n, positionEmbeds.Stride(1), positionEmbeds.Dim(1)).Contiguous(ctx)
-		logutil.Trace("position embedding truncated for split GGUF", "original", posEmbedDim, "used", n, "hidden", hiddenStates.Shape())
-	}
-	
 	positionEmbeds = positionEmbeds.Reshape(ctx, n, -1, 4)
 
 	positionEmbeds = positionEmbeds.View(ctx, 0, n, positionEmbeds.Stride(1), grid.Height*grid.Width).
@@ -278,18 +269,15 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 		// Save original hiddenSize for merger calculations
 		opts.configHiddenSize = opts.hiddenSize  // 1152
 		
-		// Apply position embedding with truncated dimensions
-		posOpts := opts
-		posOpts.hiddenSize = actualHiddenSize  // 768 for position embedding
-		hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, posOpts)
-		
-		// Pad hiddenStates from [768, spatial] to [1152, spatial] for vision layers
-		// Vision layer weights expect full hiddenSize=1152
+		// PAD FIRST: [768, spatial] → [1152, spatial] BEFORE position embedding
 		spatialDim := hiddenStates.Dim(1)
 		paddingSize := opts.hiddenSize - actualHiddenSize  // 1152 - 768 = 384
 		padding := ctx.Input().Zeros(hiddenStates.DType(), paddingSize, spatialDim)
 		hiddenStates = hiddenStates.Concat(ctx, padding, 0)  // [768+384, spatial] = [1152, spatial]
-		logutil.Trace("padded hiddenStates for split GGUF", "from", actualHiddenSize, "to", opts.hiddenSize, "shape", hiddenStates.Shape())
+		logutil.Trace("padded hiddenStates BEFORE position embedding", "from", actualHiddenSize, "to", opts.hiddenSize, "shape", hiddenStates.Shape())
+		
+		// NOW apply position embedding to full [1152, spatial] tensor (no truncation needed)
+		hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, opts)
 	} else {
 		hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, opts)
 	}
