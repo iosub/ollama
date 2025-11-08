@@ -1,6 +1,6 @@
-# Implementing Support for the “Spli” GGUF Format
+# Implementing Support for the "Split" GGUF Format
 
-> Working notes for enabling the new GGUF variant shipped with hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M inside the Ollama engine.
+> Technical documentation for enabling split GGUF models (e.g., hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M) in the Ollama engine with dual-backend architecture.
 
 ---
 
