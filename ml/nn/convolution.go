@@ -54,6 +54,30 @@ func (m *Conv3D) Forward(ctx ml.Context, t ml.Tensor, c, s0, s1, s2, p0, p1, p2,
 		t2 := m.Weight1.Conv3D(ctx, t, c, s0, s1, s2, p0, p1, p2, d0, d1, d2)
 		logutil.Trace("conv3d dual weight full outputs", "t1_shape", t1.Shape(), "t2_shape", t2.Shape())
 		
+		// Apply bias split: first half to t1, second half to t2, BEFORE concatenating
+		if bias != nil && biasSize > 0 {
+			t1Shape := t1.Shape()
+			t1Channels := t1Shape[0]
+			
+			// Split bias: [1152] -> [576+576] or [768] -> [384+384] for each weight output
+			// biasSize should be t1Channels * 2 for proper split
+			if biasSize == t1Channels * 2 {
+				// Use View to get first half and second half of bias
+				// bias is 1D [biasSize], we want [t1Channels] for each half
+				bias1 := bias.View(ctx, 0, t1Channels)
+				bias2 := bias.View(ctx, t1Channels * 4, t1Channels) // offset in bytes (float32 = 4 bytes)
+				
+				// Reshape and add to each output
+				t1 = t1.Add(ctx, bias1.Reshape(ctx, t1Channels, 1))
+				t2 = t2.Add(ctx, bias2.Reshape(ctx, t1Channels, 1))
+				
+				logutil.Trace("conv3d applied split bias BEFORE concat", "bias_shape", biasShape, "t1_channels", t1Channels, "bias_size", biasSize, "split", true)
+				bias = nil // Mark bias as already applied
+			} else {
+				logutil.Trace("conv3d bias size mismatch for split", "bias_size", biasSize, "t1_channels", t1Channels, "expected", t1Channels*2)
+			}
+		}
+		
 		// Concatenate along channel dimension (dim 0)
 		t = t1.Concat(ctx, t2, 0)
 		logutil.Trace("conv3d dual weight strategy", "type", "channel-concat-all-frames", "output_shape", t.Shape())
