@@ -6,9 +6,27 @@
 
 ## 1. High-Level Goals
 
-- Load Qwen3-VL “Spli” GGUF through the **Ollama runner** (new engine) instead of falling back to legacy llama.cpp runner.
+- Load Qwen3-VL "Split" GGUF through the **Ollama runner** (new engine) instead of falling back to legacy llama.cpp runner.
 - Preserve full multimodal capabilities (vision tokenizer, deepstack embeddings, MoE routers) and structured-output constraints.
 - Maintain Windows + Vulkan compatibility and avoid regressions for existing Qwen3-VL builds.
+
+### Implementation Strategy (Updated Nov 8, 2025)
+
+**Objective:** Create a separate code path for split GGUF models that uses the Ollama runner, while leaving the non-split model process completely untouched.
+
+**Requirements:**
+1. **Do NOT modify non-split model behavior** - Non-split models (e.g., `qwen3-vl:8b-instruct-q4_K_M`) must continue working exactly as they do now with zero changes.
+2. **Create new split-specific path** - Detect split GGUF format (presence of projector files) and route to specialized handling.
+3. **Use Ollama runner for split** - Split models must use the new Ollama Go-based runner, not llama.cpp compatibility mode.
+4. **Reuse existing code** - Maximize code reuse from current implementation (Conv3D, VisionModel, attention, etc.).
+5. **Load projector tensors** - The key challenge: backend must load tensors from BOTH model GGUF and projector GGUF files.
+
+**Key Technical Challenge:**
+The current `ml.NewBackend(modelPath)` API only loads tensors from a single GGUF file. Split models require loading:
+- Text/language tensors from main model file (`sha256-108e7ff9...`)
+- Vision tensors from projector file (`sha256-d406d03e...`)
+
+Both sets of tensors must be available in the same backend for `ensureVisionReady()` to find `v.patch_embed.weight` and other vision weights.
 
 ---
 
