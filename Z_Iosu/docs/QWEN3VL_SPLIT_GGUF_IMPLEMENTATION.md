@@ -215,9 +215,158 @@ git checkout upstream/main -- ml/nn/convolution.go
      - Path 2: Separate Query/Key/Value (standard format)
    - Maintains full backward compatibility
 
+## Critical Findings: Split GGUF Format Incompleteness
+
+**Date:** 2025-11-08  
+**Status:** ⚠️ BLOCKER - Split GGUF format incomplete
+
+### Analysis Summary
+
+After implementing dual-backend loading and extensive debugging, we discovered that the split GGUF projector file for `hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M` is **incomplete**.
+
+### Tensors Present in Projector GGUF
+
+✅ **Attention weights:**
+- `v.blk.N.attn_qkv.weight` / `v.blk.N.attn_qkv.bias`
+- `v.blk.N.attn_out.weight` / `v.blk.N.attn_out.bias`
+
+✅ **Patch embedding:**
+- `v.patch_embd.weight` / `v.patch_embd.weight.1` / `v.patch_embd.bias`
+
+✅ **Position embedding (optional):**
+- `v.position_embd.weight`
+
+✅ **Post LayerNorm:**
+- `v.post_ln.weight` / `v.post_ln.bias`
+
+✅ **Mergers:**
+- `mm.0.weight` / `mm.0.bias` (FC1)
+- `mm.2.weight` / `mm.2.bias` (FC2)
+- `v.deepstack.N.*` (deepstack mergers for layers 8, 16, 24)
+
+### Tensors MISSING from Projector GGUF
+
+❌ **Vision LayerNorm:**
+- `v.blk.N.norm1.weight` / `v.blk.N.norm1.bias`
+- `v.blk.N.norm2.weight` / `v.blk.N.norm2.bias`
+
+❌ **Vision MLP:**
+- `v.blk.N.mlp.linear_fc1.weight` / `v.blk.N.mlp.linear_fc1.bias`
+- `v.blk.N.mlp.linear_fc2.weight` / `v.blk.N.mlp.linear_fc2.bias`
+
+### Why Ollama Fails
+
+```
+Runtime Error: nil pointer dereference
+Location: ml/nn.(*LayerNorm).Forward at normalization.go:13
+Cause: LayerNorm.Weight is nil
+
+Call stack:
+VisionEncoderLayer.Forward:96
+  → e.Norm1.Forward(ctx, hiddenStates, opts.eps)  // Norm1.Weight is nil
+  → CRASH
+```
+
+**Root cause:**
+1. Ollama's `populateFields()` tries to load `v.blk.N.norm1.weight`
+2. Tensor doesn't exist in projector GGUF
+3. Field remains `nil`
+4. Forward pass crashes on first layer
+
+### Why llama.cpp Succeeds
+
+llama.cpp loads tensors with optional flag:
+```cpp
+layer.ln_1_w = get_tensor(string_format(TN_LN_1, prefix, il, "weight"), false);
+//                                                                      ^^^^^^
+//                                                                      optional=true
+```
+
+When tensor is missing:
+- Returns `nullptr` without error
+- Likely skips LayerNorm operation or uses identity
+- Model continues without crash
+
+### Comparison with llama.cpp Implementation
+
+**llama.cpp approach (PR #16780):**
+- Uses dual Conv2D (each 1152 channels)
+- Complex spatial merge reshape operations
+- Position embedding resized with bilinear interpolation
+- LayerNorm and MLP loaded as **optional**
+- Missing tensors handled gracefully with defaults
+
+**Our approach:**
+- Uses Conv3D with dual weights (384+384=768 channels)
+- Simple padding to match expected dimensions
+- Position embedding skipped when incompatible
+- LayerNorm and MLP are **required** by struct definition
+- Missing tensors cause nil pointer crashes
+
+### Attempted Solutions
+
+1. **Dual-backend tensor loading** ✅
+   - Successfully loads attention weights from projector
+   - Correctly falls back to main backend
+   - Works perfectly for available tensors
+
+2. **Dynamic tensor creation** ❌
+   - Attempted to create identity LayerNorm/MLP
+   - Multiple compilation errors (no Ones/Zeros/Eye methods)
+   - Would require extensive GGML backend changes
+
+3. **Optional struct fields** ❌
+   - Would break existing model loading
+   - Requires nil-checking throughout forward pass
+   - Significant architectural change
+
+### Incompatibility Assessment
+
+**This split GGUF format is fundamentally incompatible with Ollama's architecture:**
+
+| Component | llama.cpp | Ollama | Compatible? |
+|-----------|-----------|--------|-------------|
+| Optional tensor loading | ✅ Yes | ❌ No | ❌ |
+| Nil-safe forward pass | ✅ Yes | ❌ No | ❌ |
+| LayerNorm required | ❌ No | ✅ Yes | ❌ |
+| MLP required | ❌ No | ✅ Yes | ❌ |
+| Struct-based loading | ❌ No | ✅ Yes | ❌ |
+
+### Recommendations
+
+**Option 1: Use non-split GGUF (RECOMMENDED)**
+- Use standard single-file GGUF models
+- All weights present in one file
+- Full compatibility with Ollama
+- No code changes needed
+
+**Option 2: Complete the split GGUF**
+- Add missing LayerNorm weights to projector
+- Add missing MLP weights to projector
+- Regenerate split GGUF with complete tensors
+- This requires access to original model weights
+
+**Option 3: Major Ollama refactor (NOT RECOMMENDED)**
+- Implement optional tensor loading system
+- Add nil-safe forward pass for all layers
+- Make LayerNorm and MLP optional
+- Extensive testing required
+- High maintenance burden
+- Significant architectural changes
+
+### Conclusion
+
+The split GGUF format as currently distributed is **incomplete and incompatible** with Ollama's model loading architecture. The projector file contains only attention weights, missing critical LayerNorm and MLP components that Ollama requires for inference.
+
+**Status:** Cannot proceed without:
+1. Complete split GGUF with all required tensors, OR
+2. Standard non-split GGUF model, OR
+3. Major Ollama architectural refactor (not recommended)
+
 ## Notes
 
 - All code comments and documentation use English
 - Changes are minimal and surgical to reduce maintenance burden
 - Backward compatibility with standard models is mandatory
 - Split GGUF support is additive, not replacing existing functionality
+- **Split GGUF format incomplete - LayerNorm/MLP weights missing from projector**
