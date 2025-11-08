@@ -71,16 +71,19 @@ func (m *Conv3D) Forward(ctx ml.Context, t ml.Tensor, c, s0, s1, s2, p0, p1, p2,
 			logutil.Trace("SPLIT GGUF Conv3D: channel check", "t1_channels", t1Shape[0], "t2_channels", t2Shape[0], "expected", 1152)
 		}
 		
-		// ADD the outputs (match llama.cpp: ggml_add)
-		t = t1.Add(ctx, t2)
-		addShape := t.Shape()
-		logutil.Trace("SPLIT GGUF Conv3D: ADD result", "shape", addShape, "type", "element-wise add")
+		// CONCAT the outputs along channel dimension (dim 0)
+		// llama.cpp uses ADD because each Conv2D produces full 1152 channels
+		// Our Conv3D divides channels: 1152/3=384 per weight
+		// So we CONCAT: 384 + 384 = 768, then need to handle the mismatch
+		t = t1.Concat(ctx, t2, 0)
+		concatShape := t.Shape()
+		logutil.Trace("SPLIT GGUF Conv3D: CONCAT result", "shape", concatShape, "type", "channel concatenation")
 		
-		if len(addShape) > 0 {
-			logutil.Trace("SPLIT GGUF Conv3D: final channels after ADD", "channels", addShape[0], "expected", 1152, "match", addShape[0] == 1152)
+		if len(concatShape) > 0 {
+			logutil.Trace("SPLIT GGUF Conv3D: final channels after CONCAT", "channels", concatShape[0], "expected", 1152, "actual", concatShape[0])
 		}
 		
-		// Bias will be applied after ADD (standard path below)
+		// Bias will be applied after CONCAT (standard path below)
 	} else {
 		t = m.Weight.Conv3D(ctx, t, c, s0, s1, s2, p0, p1, p2, d0, d1, d2)
 		if m.Weight1 != nil {
