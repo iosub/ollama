@@ -201,8 +201,8 @@ func (m *VisionPositionEmbedding) Forward(ctx ml.Context, hiddenStates ml.Tensor
 	// For split GGUF: if positionEmbeds has more channels than hiddenStates, use only first n channels
 	posEmbedDim := positionEmbeds.Dim(0)
 	if posEmbedDim > n {
-		// Use View to get first n channels: [1152, ...] -> [768, ...]
-		positionEmbeds = positionEmbeds.View(ctx, 0, n, positionEmbeds.Stride(1), positionEmbeds.Dim(1))
+		// Use View to get first n channels: [1152, ...] -> [768, ...] and make contiguous
+		positionEmbeds = positionEmbeds.View(ctx, 0, n, positionEmbeds.Stride(1), positionEmbeds.Dim(1)).Contiguous(ctx)
 		logutil.Trace("position embedding truncated for split GGUF", "original", posEmbedDim, "used", n, "hidden", hiddenStates.Shape())
 	}
 	
