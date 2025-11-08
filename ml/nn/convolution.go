@@ -47,22 +47,23 @@ func (m *Conv3D) Forward(ctx ml.Context, t ml.Tensor, c, s0, s1, s2, p0, p1, p2,
 	}
 
 	// For Qwen3-VL split models: Weight1 indicates split GGUF format
-	// Match llama.cpp behavior: ADD two convolutions instead of concatenate
-	// llama.cpp: inp = ggml_add(ctx0, inp, inp_1);
+	// llama.cpp uses Conv2D, but we have Conv3D weights
+	// Strategy: Use stride=1 in temporal dim to process all frames together
 	if m.Weight1 != nil && s2 == 3 {
 		wShape := m.Weight.Shape()
 		w1Shape := m.Weight1.Shape()
 		logutil.Trace("conv3d using dual weights for temporal_patch_size=3", "s2", s2, "c", c, "weight_shape", wShape, "weight1_shape", w1Shape)
 		
-		// Process with both weights - llama.cpp: two separate conv2d operations
-		t1 := m.Weight.Conv3D(ctx, t, c, s0, s1, s2, p0, p1, p2, d0, d1, d2)
-		t2 := m.Weight1.Conv3D(ctx, t, c, s0, s1, s2, p0, p1, p2, d0, d1, d2)
+		// CRITICAL: Use stride=1 in temporal dim (s2) to preserve all channels
+		// Conv3D with stride=s2 divides channels by s2, but we want full channels
+		// llama.cpp: two conv2d operations that each produce full n_embd channels
+		t1 := m.Weight.Conv3D(ctx, t, c, s0, s1, 1, p0, p1, p2, d0, d1, d2)  // stride_temporal=1
+		t2 := m.Weight1.Conv3D(ctx, t, c, s0, s1, 1, p0, p1, p2, d0, d1, d2)  // stride_temporal=1
 		logutil.Trace("conv3d dual weight outputs", "t1_shape", t1.Shape(), "t2_shape", t2.Shape())
 		
 		// ADD the outputs (match llama.cpp: ggml_add)
-		// This produces [1152, spatial] directly without concatenation
 		t = t1.Add(ctx, t2)
-		logutil.Trace("conv3d dual weight strategy", "type", "ADD (llama.cpp)", "output_shape", t.Shape())
+		logutil.Trace("conv3d dual weight strategy", "type", "ADD with stride=1", "output_shape", t.Shape())
 		
 		// Bias will be applied after ADD (standard path below)
 	} else {

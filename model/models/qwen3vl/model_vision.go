@@ -301,9 +301,12 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 	if actualHiddenSize != opts.hiddenSize {
 		// For split GGUF: Conv3D with dual weights uses ADD (not concat)
 		// This should produce [1152, spatial] directly matching llama.cpp
-		// If dimensions still don't match, it's an error
+		// If dimensions don't match, adjust opts to use actual dimensions
 		logutil.Trace("split GGUF: dimension mismatch after dual-weight ADD", "expected", opts.hiddenSize, "actual", actualHiddenSize)
-		logutil.Trace("split GGUF: skipping position embedding")
+		
+		// Use actual hidden size for subsequent operations (headDim, merger, etc.)
+		opts.hiddenSize = actualHiddenSize
+		logutil.Trace("split GGUF: adjusted hiddenSize for layers", "hiddenSize", opts.hiddenSize)
 		
 		// Skip position embedding for split GGUF
 		// Position embeddings are resized in llama.cpp which we don't support yet
