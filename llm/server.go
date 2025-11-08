@@ -270,7 +270,7 @@ func NewLlamaServer(systemInfo ml.SystemInfo, gpus []ml.DeviceInfo, modelPath st
 		err := s.cmd.Wait()
 		// Favor a more detailed message over the process exit status
 		if err != nil && s.status != nil && s.status.LastErrMsg != "" {
-			slog.Error("llama runner terminated", "error", err)
+			slog.Error("runner terminated", "runner_type", s.estimate.Library, "error", err)
 			if strings.Contains(s.status.LastErrMsg, "unknown model") {
 				s.status.LastErrMsg = "this model is not supported by your version of Ollama. You may need to upgrade"
 			}
@@ -1696,7 +1696,7 @@ func (s *llmServer) Close() error {
 	s.llamaModelLock.Unlock()
 
 	if s.cmd != nil {
-		slog.Debug("stopping llama server", "pid", s.Pid())
+		slog.Debug("stopping runner", "runner_type", s.estimate.Library, "pid", s.Pid())
 		if err := s.cmd.Process.Kill(); err != nil {
 			return err
 		}
