@@ -287,6 +287,10 @@ type VisionModel struct {
 }
 
 func (m *VisionModel) positions(ctx ml.Context, grid *Grid) (_, _ ml.Tensor) {
+	return m.positionsWithOpts(ctx, grid, m.VisionOptions)
+}
+
+func (m *VisionModel) positionsWithOpts(ctx ml.Context, grid *Grid, opts VisionOptions) (_, _ ml.Tensor) {
 	indices := ctx.Input().FromInts(slices.Collect(func(yield func(int32) bool) {
 		for y := range grid.Height {
 			for x := range grid.Width {
@@ -304,10 +308,11 @@ func (m *VisionModel) positions(ctx ml.Context, grid *Grid) (_, _ ml.Tensor) {
 	indices = indices.Permute(ctx, 0, 2, 1, 3).Contiguous(ctx)
 	indices = indices.Reshape(ctx, -1)
 
-	halfDim := m.headDim() / 2
+	// Use opts.headDim() instead of m.headDim() to match actual tensor dimensions
+	halfDim := opts.headDim() / 2
 	maxGrid := max(grid.Height, grid.Width)
 	frequencies := ctx.Input().FromFloats(slices.Collect(func(yield func(float32) bool) {
-		ropeTheta := float64(m.ropeTheta)
+		ropeTheta := float64(opts.ropeTheta)
 		for i := range maxGrid {
 			for j := range halfDim / 2 {
 				if !yield(float32(i) / float32(math.Pow(ropeTheta, float64(j*2)/float64(halfDim)))) {
@@ -364,7 +369,8 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 		hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, opts)
 	}
 
-	cos, sin := m.positions(ctx, grid)
+	// CRITICAL: Pass updated opts to positions() so cos/sin dimensions match padded tensor
+	cos, sin := m.positionsWithOpts(ctx, grid, opts)
 
 	deepstackStates := make([]ml.Tensor, len(m.deepstackVisualIndexes))
 	for i, layer := range m.Layers {
