@@ -299,17 +299,14 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 	actualHiddenSize := hiddenStates.Dim(0)
 	opts := m.VisionOptions
 	if actualHiddenSize != opts.hiddenSize {
-		logutil.Trace("split GGUF: dimension mismatch", "config", opts.hiddenSize, "actual", actualHiddenSize)
+		// For split GGUF: Conv3D with dual weights uses ADD (not concat)
+		// This should produce [1152, spatial] directly matching llama.cpp
+		// If dimensions still don't match, it's an error
+		logutil.Trace("split GGUF: dimension mismatch after dual-weight ADD", "expected", opts.hiddenSize, "actual", actualHiddenSize)
+		logutil.Trace("split GGUF: skipping position embedding")
 		
-		// For split GGUF: PAD to config size (1152) because QKV weights expect it
-		// llama.cpp: spatial merge produces n_embd=1152, layers use n_embd=1152
-		// QKV weight shape [1152, 3456] requires input [1152, spatial]
-		spatialDim := hiddenStates.Dim(1)
-		paddingSize := opts.hiddenSize - actualHiddenSize
-		padding := ctx.Input().Zeros(hiddenStates.DType(), paddingSize, spatialDim)
-		hiddenStates = hiddenStates.Concat(ctx, padding, 0)
-		
-		logutil.Trace("split GGUF: padded for QKV weights", "from", actualHiddenSize, "to", opts.hiddenSize, "shape", hiddenStates.Shape())
+		// Skip position embedding for split GGUF
+		// Position embeddings are resized in llama.cpp which we don't support yet
 	} else {
 		hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, opts)
 	}
