@@ -303,9 +303,13 @@ func (m *VisionModel) positions(ctx ml.Context, grid *Grid) (_, _ ml.Tensor) {
 
 // Forward computes the vision model for an input tensor
 func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid) (ml.Tensor, []ml.Tensor) {
+	slog.Debug("VisionModel.Forward start", "input_shape", pixelValues.Shape(), "temporal_patch_size", m.temporalPatchSize)
 	pixelValues = pixelValues.Reshape(ctx, m.patchSize, m.patchSize, m.temporalPatchSize, -1)
+	slog.Debug("VisionModel.Forward after reshape", "shape", pixelValues.Shape())
 	hiddenStates := m.PatchEmbedding.Forward(ctx, pixelValues, m.numChannels, m.patchSize, m.patchSize, m.temporalPatchSize, 0, 0, 0, 1, 1, 1)
+	slog.Debug("VisionModel.Forward after PatchEmbedding", "shape", hiddenStates.Shape())
 	hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, m.VisionOptions)
+	slog.Debug("VisionModel.Forward after PositionEmbedding", "shape", hiddenStates.Shape())
 
 	cos, sin := m.positions(ctx, grid)
 

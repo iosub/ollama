@@ -42,13 +42,49 @@ func (m *Conv3D) Forward(ctx ml.Context, t ml.Tensor, c, s0, s1, s2, p0, p1, p2,
 	}
 
 	// For Qwen3-VL split models: Weight1 indicates split GGUF format
-	// temporal_patch_size is controlled by caller (forced to 2), just use primary weight
-	if m.Weight1 != nil {
-		logutil.Trace("conv3d detected dual-weight split model", "weight_shape", m.Weight.Shape(), "weight1_shape", m.Weight1.Shape())
+	// For temporal_patch_size=3, need to handle dual weights correctly
+	if m.Weight1 != nil && s2 == 3 {
+		wShape := m.Weight.Shape()
+		w1Shape := m.Weight1.Shape()
+		logutil.Trace("conv3d using dual weights for temporal_patch_size=3", "s2", s2, "c", c, "weight_shape", wShape, "weight1_shape", w1Shape)
+		
+		// Strategy 1: Apply each weight to different temporal slices and concatenate along spatial dim
+		// weight handles frames 0-1, weight1 handles frame 2
+		t1 := m.Weight.Conv3D(ctx, t, c, s0, s1, 2, p0, p1, p2, d0, d1, d2)
+		t2 := m.Weight1.Conv3D(ctx, t, c, s0, s1, 1, p0, p1, p2, d0, d1, d2)
+		logutil.Trace("conv3d dual weight temporal split outputs", "t1_shape", t1.Shape(), "t2_shape", t2.Shape())
+		
+		// Check if spatial concatenation makes sense
+		t1Shape := t1.Shape()
+		t2Shape := t2.Shape()
+		if len(t1Shape) >= 2 && len(t2Shape) >= 2 && t1Shape[0] == t2Shape[0] {
+			// Same channel count, concatenate along spatial dimension
+			t = t1.Concat(ctx, t2, 1)
+			logutil.Trace("conv3d dual weight strategy", "type", "temporal-split-spatial-concat", "output_shape", t.Shape())
+		} else {
+			// Fallback: try channel concatenation
+			t3 := m.Weight.Conv3D(ctx, t, c, s0, s1, s2, p0, p1, p2, d0, d1, d2)
+			t4 := m.Weight1.Conv3D(ctx, t, c, s0, s1, s2, p0, p1, p2, d0, d1, d2)
+			logutil.Trace("conv3d dual weight full outputs", "t3_shape", t3.Shape(), "t4_shape", t4.Shape())
+			t = t3.Concat(ctx, t4, 0)
+			logutil.Trace("conv3d dual weight strategy", "type", "channel-concat", "output_shape", t.Shape())
+		}
+	} else {
+		t = m.Weight.Conv3D(ctx, t, c, s0, s1, s2, p0, p1, p2, d0, d1, d2)
+		if m.Weight1 != nil {
+			logutil.Trace("conv3d detected dual-weight but using single", "s2", s2)
+		}
+		logutil.Trace("conv3d single weight output", "shape", t.Shape())
 	}
-
-	// Apply convolution with primary weight
-	t = m.Weight.Conv3D(ctx, t, c, s0, s1, s2, p0, p1, p2, d0, d1, d2)
+	
+	// Validate output shape
+	finalShape := t.Shape()
+	if len(finalShape) >= 2 {
+		logutil.Trace("conv3d output validation", "channels", finalShape[0], "spatial", finalShape[1], "expected_channels_approx", 1152)
+		if finalShape[0] < 1000 {
+			logutil.Trace("conv3d output channel count LOW", "actual", finalShape[0], "expected", 1152, "WARNING", true)
+		}
+	}
 	
 	if bias != nil {
 		outShape := t.Shape()

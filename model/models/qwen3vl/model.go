@@ -29,20 +29,41 @@ type Model struct {
 }
 
 func (m *Model) ensureVisionReady() error {
+	slog.Debug("ensureVisionReady invoked", "visionReady", m.visionReady)
+
 	if m.visionReady {
 		return nil
 	}
 
 	if m.VisionModel == nil {
+		slog.Debug("ensureVisionReady missing VisionModel")
 		return model.ErrNoVisionModel
 	}
 
 	backend := m.Backend()
 	if backend == nil {
+		slog.Debug("ensureVisionReady missing backend")
 		return model.ErrNoVisionModel
 	}
 
 	vm := m.VisionModel
+	
+	// For split GGUF: detect deepstack mergers by scanning for v.deepstack.N.norm.weight tensors
+	if len(vm.DeepstackMerger) == 0 {
+		var detectedIndexes []int32
+		// Scan for deepstack tensors in layers 0-31
+		for i := int32(0); i < 32; i++ {
+			prefix := fmt.Sprintf("v.deepstack.%d.norm.weight", i)
+			if tensor := backend.Get(prefix); tensor != nil {
+				detectedIndexes = append(detectedIndexes, i)
+			}
+		}
+		if len(detectedIndexes) > 0 {
+			slog.Debug("detected deepstack layers for split GGUF", "indexes", detectedIndexes, "count", len(detectedIndexes))
+			vm.deepstackVisualIndexes = detectedIndexes
+			vm.DeepstackMerger = make([]*VisionPatchMerger, len(detectedIndexes))
+		}
+	}
 
 	if vm.PatchEmbedding == nil {
 		vm.PatchEmbedding = &nn.Conv3D{}
@@ -56,7 +77,14 @@ func (m *Model) ensureVisionReady() error {
 	}
 
 	if vm.PatchEmbedding.Weight == nil {
+		slog.Debug("ensureVisionReady missing patch embedding weight")
 		return model.ErrNoVisionModel
+	}
+	if vm.PatchEmbedding.Weight1 == nil {
+		vm.PatchEmbedding.Weight1 = backend.Get("v.patch_embed.weight.1")
+		if vm.PatchEmbedding.Weight1 == nil {
+			vm.PatchEmbedding.Weight1 = backend.Get("v.patch_embd.weight.1")
+		}
 	}
 
 	// Deduce temporal_patch_size from weight shape: [patchSize, patchSize, temporalPatchSize, channels]
@@ -93,6 +121,7 @@ func (m *Model) ensureVisionReady() error {
 			pos = backend.Get("v.position_embd.weight")
 		}
 		if pos == nil {
+			slog.Debug("ensureVisionReady missing position embedding")
 			return model.ErrNoVisionModel
 		}
 		vm.PositionEmbedding.PositionEmbedding = &nn.Embedding{Weight: pos}
@@ -191,7 +220,8 @@ func (m *Model) ensureVisionReady() error {
 		return err
 	}
 
-	if len(vm.deepstackVisualIndexes) == len(vm.DeepstackMerger) {
+	// Load deepstack mergers (if any - already resized above for split GGUF)
+	if len(vm.deepstackVisualIndexes) == len(vm.DeepstackMerger) && len(vm.DeepstackMerger) > 0 {
 		for i := range vm.DeepstackMerger {
 			if vm.DeepstackMerger[i] == nil {
 				vm.DeepstackMerger[i] = &VisionPatchMerger{}
@@ -231,41 +261,50 @@ func (m *Model) ensureVisionReady() error {
 			}
 
 			if merger.Norm.Weight == nil || merger.FC1.Weight == nil || merger.FC2.Weight == nil {
+				slog.Debug("ensureVisionReady deepstack merger incomplete", "index", vm.deepstackVisualIndexes[i])
 				return model.ErrNoVisionModel
 			}
 		}
 	}
 
 	m.visionReady = true
+	slog.Debug("ensureVisionReady completed", "deepstack_mergers", len(vm.DeepstackMerger))
 	return nil
 }
 
 func (m *Model) EncodeMultimodal(ctx ml.Context, multimodalData []byte) ([]input.Multimodal, error) {
+	slog.Debug("EncodeMultimodal invoked", "data_bytes", len(multimodalData))
 	if len(m.VisionModel.Layers) == 0 {
+		slog.Debug("EncodeMultimodal no vision layers")
 		return nil, model.ErrNoVisionModel
 	}
 
 	if err := m.ensureVisionReady(); err != nil {
+		slog.Debug("EncodeMultimodal ensureVisionReady failed", "error", err)
 		return nil, err
 	}
 
 	img, _, err := image.Decode(bytes.NewReader(multimodalData))
 	if err != nil {
+		slog.Debug("EncodeMultimodal image decode failed", "error", err)
 		return nil, err
 	}
 
 	pixelValues, grid, err := m.ProcessImage(ctx, img)
 	if err != nil {
+		slog.Debug("EncodeMultimodal process image failed", "error", err)
 		return nil, err
 	}
 
 	// Calculate tensor dimensions
 	visionOutputs, deepstackVisualEmbeds := m.VisionModel.Forward(ctx, pixelValues, grid)
+	slog.Debug("EncodeMultimodal vision forward complete", "patches", visionOutputs.Dim(1), "deepstack", len(deepstackVisualEmbeds))
 	mm := []input.Multimodal{{Tensor: visionOutputs, Data: grid}}
 	for i := range deepstackVisualEmbeds {
 		mm = append(mm, input.Multimodal{Tensor: deepstackVisualEmbeds[i]})
 	}
 
+	slog.Debug("EncodeMultimodal returning embeddings", "modalities", len(mm))
 	return mm, nil
 }
 
@@ -282,11 +321,13 @@ type modelInput struct {
 
 // PostTokenize arranges Qwen 3 VL's inputs for the forward pass
 func (m *Model) PostTokenize(inputs []*input.Input) ([]*input.Input, error) {
+	slog.Debug("PostTokenize invoked", "inputs", len(inputs))
 	m.positionCache = m.positionCache[:0]
 	return slices.Collect(func(yield func(*input.Input) bool) {
 		for i := range inputs {
 			s := []modelInput{{Input: inputs[i]}}
 			if mm := inputs[i].Multimodal; mm != nil {
+				slog.Debug("PostTokenize processing multimodal entry", "index", i, "tensors", len(mm))
 				t := mm[0].Tensor
 				s = slices.Repeat([]modelInput{
 					{
@@ -352,20 +393,37 @@ func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
 	var deepstackVisualEmbeds []ml.Tensor
 	for _, mi := range batch.Multimodal {
 		visionOutputs := mi.Multimodal[0].Tensor
-		ctx.Forward(visionOutputs.Copy(ctx, hiddenStates.View(ctx, mi.Index*hiddenStates.Stride(1), visionOutputs.Dim(0)*visionOutputs.Dim(1))))
+		embedDim := visionOutputs.Dim(0)
+		patchCount := visionOutputs.Dim(1)
+		hiddenStride1 := hiddenStates.Stride(1)
+		startColumn := mi.Index + 1 // skip <vision_start>
+		offset := startColumn * hiddenStride1
+		viewSize := embedDim * patchCount
+		slog.Debug("Vision embedding copy", "index", mi.Index, "start_column", startColumn, "hidden_stride1", hiddenStride1, "offset", offset, "embed_dim", embedDim, "patch_count", patchCount, "view_size", viewSize)
+		ctx.Forward(visionOutputs.Copy(ctx, hiddenStates.View(ctx, offset, viewSize)))
 
 		if grid, ok := mi.Multimodal[0].Data.(*Grid); ok {
-			for i := range visionOutputs.Dim(1) {
-				w := grid.Width / m.spatialMergeSize
-				positionSlice[1][mi.Index+i] += int32(i / w)
-				positionSlice[2][mi.Index+i] += int32(i % w)
+			patchesPerRow := grid.Width / m.spatialMergeSize
+			if patchesPerRow > 0 {
+				for patch := 0; patch < visionOutputs.Dim(1); patch++ {
+					tokenIdx := startColumn + patch
+					if tokenIdx >= len(positionSlice[0]) {
+						break
+					}
+					positionSlice[1][tokenIdx] += int32(patch / patchesPerRow)
+					positionSlice[2][tokenIdx] += int32(patch % patchesPerRow)
+				}
 			}
 		}
 
 		deepstackVisualEmbeds = make([]ml.Tensor, len(mi.Multimodal[1:]))
+		slog.Debug("creating deepstack visual embeds", "count", len(mi.Multimodal[1:]), "hidden_shape", hiddenStates.Shape())
 		for i, mm := range mi.Multimodal[1:] {
 			deepstackVisualEmbeds[i] = ctx.Input().Zeros(mm.Tensor.DType(), hiddenStates.Shape()...)
-			ctx.Forward(mm.Tensor.Copy(ctx, deepstackVisualEmbeds[i].View(ctx, mi.Index*deepstackVisualEmbeds[i].Stride(1), mm.Tensor.Dim(0)*mm.Tensor.Dim(1))))
+			dsOffset := startColumn * deepstackVisualEmbeds[i].Stride(1)
+			dsViewSize := mm.Tensor.Dim(0) * mm.Tensor.Dim(1)
+			slog.Debug("copying deepstack embed", "ds_index", i, "tensor_shape", mm.Tensor.Shape(), "offset", dsOffset, "view_size", dsViewSize)
+			ctx.Forward(mm.Tensor.Copy(ctx, deepstackVisualEmbeds[i].View(ctx, dsOffset, dsViewSize)))
 		}
 	}
 
@@ -381,8 +439,13 @@ func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
 		}
 
 		hiddenStates = layer.Forward(ctx, hiddenStates, positions, outputs, m.Cache, m.Options)
-		if i < len(deepstackVisualEmbeds) {
-			hiddenStates = hiddenStates.Add(ctx, deepstackVisualEmbeds[i])
+		
+		// Add deepstack visual embeddings at the correct layers (8, 16, 24 for split GGUF)
+		if m.VisionModel != nil && len(m.VisionModel.deepstackVisualIndexes) > 0 && len(deepstackVisualEmbeds) > 0 {
+			if dsIdx := slices.Index(m.VisionModel.deepstackVisualIndexes, int32(i)); dsIdx >= 0 && dsIdx < len(deepstackVisualEmbeds) {
+				slog.Debug("adding deepstack embedding", "layer", i, "ds_index", dsIdx, "hidden_shape", hiddenStates.Shape(), "ds_shape", deepstackVisualEmbeds[dsIdx].Shape())
+				hiddenStates = hiddenStates.Add(ctx, deepstackVisualEmbeds[dsIdx])
+			}
 		}
 	}
 

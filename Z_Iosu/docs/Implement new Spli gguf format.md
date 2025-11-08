@@ -100,14 +100,121 @@
 
 ---
 
-## 6. Next Actions
+## 6. Implementation Progress (Nov 8, 2025)
 
-1. ✅ Run diagnostics (`OLLAMA_NEW_ENGINE=1`, gguf dump) and archive results.
-2. Diff the metadata against `model/models/qwen3vl/*` to identify missing keys.
-   - ✅ Base model blobs expose only `general.*` and `qwen3vl.*` entries—no `vision.*` keys—so the current loader relies on defaults and never hydrates `VisionModel`.
-   - ✅ Vision parameters now live in the companion projector GGUF under `clip.vision.*` and `clip.projector_type` instead of the embedded `v.*` hierarchy expected by `VisionModel`.
-   - TODO Map projector metadata to `newVisionModel`/`newImageProcessor` fields (head count, patch size, deepstack indexes, mean/std, spatial merge size, projection dims).
-3. Draft loader patches and add targeted tests before touching the runner proper.
+### Completed Tasks
+
+#### ✅ Split GGUF Detection and Loading
+- **File**: `model/model.go`, `model/models/qwen3vl/model.go`
+- **Changes**:
+  - Enabled split GGUF format loading by removing the hard rejection in model loader
+  - Implemented projector metadata mapping: `clip.vision.is_deepstack_layers` → `qwen3vl.vision.deepstack_visual_indexes`
+  - Extended `toBoolSlice` to handle GGML internal types (`*ggml.array[bool]`) using reflection
+  - Added tensor-based deepstack layer detection by scanning for `v.deepstack.N.norm.weight` tensors in backend
+  - Deepstack mergers now correctly initialized based on actual model weights, not just config
+
+#### ✅ Vision Embedding Pipeline Fixes
+- **File**: `model/models/qwen3vl/model.go`
+- **Changes**:
+  - Fixed vision embedding copy offset: added `+1` to skip `<|vision_start|>` token before copying embeddings into hidden states
+  - Fixed MRoPE position calculation to use `startColumn` matching vision embedding offset
+  - Corrected deepstack embedding integration: now adds embeddings at correct transformer layers (8, 16, 24) instead of sequential layers (0, 1, 2)
+  - Added comprehensive debug logging for vision embedding copy, deepstack creation, and layer integration
+
+#### ✅ Conv3D Dual-Weight Handling (In Progress)
+- **File**: `ml/nn/convolution.go`
+- **Status**: Implementing correct dual-weight convolution for `temporal_patch_size=3`
+- **Problem**: Split models have two weight tensors (`weight` and `weight.1`) for handling 3 temporal frames
+- **Current Approach** (latest iteration):
+  - **Strategy 1 (Temporal Split)**: Apply `weight` to frames 0-1 (stride=2), `weight.1` to frame 2 (stride=1), concatenate spatially (dim 1)
+  - **Fallback (Channel Concat)**: Apply both weights with full stride=3, concatenate along channel dimension (dim 0)
+  - Auto-validates output shape and logs warnings if channel count < 1000
+- **Previous Attempts**:
+  - ❌ Ignoring `weight.1` → hallucination
+  - ❌ Summing outputs → magnitude explosion, hallucination  
+  - ❌ Averaging outputs → channel reduction (384 vs 1152), hallucination
+  - 🔄 Testing concatenation strategies
+
+#### ✅ Prompt Processing
+- **File**: `server/prompt.go`
+- **Changes**:
+  - Disabled `isSplitQwen` logic that was incorrectly pre-processing tokens and preventing proper `PostTokenize` expansion
+  - Images now correctly passed to renderer for proper tokenization
+
+#### ✅ Comprehensive Logging
+- **Files**: `model/models/qwen3vl/model.go`, `model/models/qwen3vl/model_vision.go`, `ml/nn/convolution.go`
+- **Added**:
+  - Deepstack detection and initialization logging
+  - Vision shape tracking through entire pipeline (reshape → PatchEmbedding → PositionEmbedding)
+  - Conv3D strategy selection and output validation
+  - Embedding copy offset and stride diagnostics
+
+### Current Status
+
+**Model loads and generates output, but still hallucinates.**
+
+**Root Cause**: Conv3D dual-weight handling for `temporal_patch_size=3` not producing correct output shape.
+- Non-split model (working): `[1152 4756]` after PatchEmbedding
+- Split model (broken): `[384 5400]` → `[768 5400]` → wrong channel count
+
+**Latest Logs** (`ollama-debug70-SPLIT.log`):
+```
+conv3d using dual weights for temporal_patch_size=3 s2=3
+conv3d dual weight averaged output_shape=[384 5400]
+VisionModel.Forward after PatchEmbedding shape=[384 5400]
+PatchMerger.Forward input shape=[1152 5400]
+```
+
+### Next Actions
+
+1. **Test Current Conv3D Strategies**
+   - Compile with latest temporal-split + fallback logic
+   - Check logs for:
+     - `"conv3d dual weight temporal split outputs"` shapes
+     - `"conv3d dual weight strategy"` which path was taken
+     - `"conv3d output validation"` final channel count
+   - If temporal-split succeeds → shape should be `[1152 ~5400]`
+   - If both fail → need to investigate weight tensor structure
+
+2. **Alternative Approaches if Concat Fails**
+   - Investigate if dual weights should be applied to different input regions, not different strides
+   - Check if `weight.1` is meant for a different convolution dimension
+   - Compare with official Qwen3-VL implementation if available
+
+3. **Post-Fix Validation**
+   - Test with multiple images to ensure no regressions
+   - Verify no-split model still works correctly
+   - Add unit tests for dual-weight convolution
+   - Document final dual-weight strategy in code comments
+
+4. **Documentation**
+   - Update architecture notes with split GGUF structure
+   - Document dual-weight convolution semantics for temporal_patch_size=3
+   - Add troubleshooting guide for future split model formats
+
+### Key Files Modified
+
+- `model/model.go` - Projector metadata mapping, `toBoolSlice` reflection support
+- `model/models/qwen3vl/model.go` - Vision embedding offsets, deepstack integration, tensor-based detection
+- `model/models/qwen3vl/model_vision.go` - Vision pipeline logging
+- `ml/nn/convolution.go` - Dual-weight Conv3D strategies
+- `server/prompt.go` - Split model prompt processing fix
+
+### Test Commands
+
+```powershell
+# Build
+powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildCPU buildOllama
+
+# Test split model
+.\ollama.exe run hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M
+
+# Test non-split model (regression check)
+.\ollama.exe run qwen3-vl:8b-instruct-q4_K_M
+
+# Logs
+C:\IA\tools\ollama\Z_Iosu\logs\ollama-debugXX-SPLIT.log
+```
 
 ---
 

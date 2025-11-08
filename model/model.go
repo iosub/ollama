@@ -42,18 +42,29 @@ func cloneKV(kv fsggml.KV) fsggml.KV {
 
 func applyProjectorMetadata(dst fsggml.KV, src fsggml.KV) {
 	slog.Debug("applyProjectorMetadata called", "src_keys", len(src), "dst_keys", len(dst))
-	
+
 	// Log ALL source keys to debug
 	slog.Debug("=== ALL PROJECTOR KEYS ===")
 	for key := range src {
 		slog.Debug("projector key", "key", key)
 	}
 	slog.Debug("=== END PROJECTOR KEYS ===")
-	
-	// Get the architecture from the destination KV (e.g., "qwen3vl")
+
 	arch := dst.Architecture()
+	if arch == "" {
+		if a, ok := dst["general.architecture"].(string); ok {
+			arch = a
+		} else if a, ok := src["general.architecture"].(string); ok {
+			arch = a
+		}
+	}
+	if arch == "" {
+		slog.Debug("applyProjectorMetadata: no architecture detected; skipping mapping")
+		return
+	}
+
 	slog.Debug("applying metadata for architecture", "arch", arch)
-	
+
 	clipVisionCount := 0
 	for key := range src {
 		if strings.HasPrefix(key, "clip.vision.") {
@@ -62,30 +73,285 @@ func applyProjectorMetadata(dst fsggml.KV, src fsggml.KV) {
 		}
 	}
 	slog.Debug("clip.vision keys found", "count", clipVisionCount)
-	
+
+	var (
+		patchSize       uint32
+		imageSize       uint32
+		spatialMerge    uint32
+		temporalPatch   uint32
+		deepstackMapped bool
+	)
+
 	for key, value := range src {
 		switch {
 		case strings.HasPrefix(key, "clip.vision.is_deepstack_layers"):
-			if flags, ok := value.([]bool); ok {
+			slog.Debug("attempting to map is_deepstack_layers", "value_type", fmt.Sprintf("%T", value), "value", value)
+			if flags, ok := toBoolSlice(value); ok {
 				var indexes []int32
 				for idx, flag := range flags {
 					if flag {
 						indexes = append(indexes, int32(idx))
 					}
 				}
-				// Use architecture-prefixed key
 				prefixedKey := arch + ".vision.deepstack_visual_indexes"
 				dst[prefixedKey] = indexes
-				slog.Debug("mapped deepstack_visual_indexes", "key", prefixedKey, "count", len(indexes))
+				deepstackMapped = true
+				slog.Debug("mapped deepstack_visual_indexes", "key", prefixedKey, "count", len(indexes), "indexes", indexes)
+			} else {
+				slog.Warn("failed to convert is_deepstack_layers to bool slice", "value_type", fmt.Sprintf("%T", value))
 			}
 		case strings.HasPrefix(key, "clip.vision."):
-			// Map clip.vision.* to {arch}.vision.*
 			suffix := strings.TrimPrefix(key, "clip.vision.")
 			visionKey := arch + ".vision." + suffix
-			dst[visionKey] = value
-			slog.Debug("mapped vision key", "clip_key", key, "vision_key", visionKey)
+			switch suffix {
+			case "image_mean":
+				if mean, ok := toFloat32Slice(value); ok {
+					dst[visionKey] = mean
+					slog.Debug("mapped vision image_mean", "key", visionKey, "len", len(mean))
+				}
+			case "image_std":
+				if std, ok := toFloat32Slice(value); ok {
+					dst[visionKey] = std
+					slog.Debug("mapped vision image_std", "key", visionKey, "len", len(std))
+				}
+			case "attention.layer_norm_epsilon", "rope.freq_base":
+				if f32, ok := toFloat32(value); ok {
+					dst[visionKey] = f32
+					slog.Debug("mapped float vision key", "clip_key", key, "vision_key", visionKey, "value", f32)
+				}
+			case "patch_size":
+				if v, ok := toUint32(value); ok {
+					dst[visionKey] = v
+					patchSize = v
+					slog.Debug("mapped patch_size", "value", v)
+				}
+			case "spatial_merge_size":
+				if v, ok := toUint32(value); ok {
+					dst[visionKey] = v
+					spatialMerge = v
+					slog.Debug("mapped spatial_merge_size", "value", v)
+				}
+			case "temporal_patch_size":
+				if v, ok := toUint32(value); ok {
+					dst[visionKey] = v
+					temporalPatch = v
+					slog.Debug("mapped temporal_patch_size", "value", v)
+				}
+			case "image_size":
+				if v, ok := toUint32(value); ok {
+					dst[visionKey] = v
+					imageSize = v
+					slog.Debug("mapped image_size", "value", v)
+				}
+			case "num_channels", "block_count", "embedding_length", "feed_forward_length", "projection_dim", "attention.head_count":
+				if v, ok := toUint32(value); ok {
+					dst[visionKey] = v
+					slog.Debug("mapped uint vision key", "clip_key", key, "vision_key", visionKey, "value", v)
+				}
+			default:
+				dst[visionKey] = value
+				if slog.Default().Enabled(nil, slog.LevelDebug) {
+					slog.Debug("mapped vision key", "clip_key", key, "vision_key", visionKey)
+				}
+			}
+		case key == "clip.projector_type":
+			dst[arch+".vision.projector_type"] = value
+			slog.Debug("mapped projector_type", "value", value)
+		case key == "clip.use_gelu":
+			if b, ok := value.(bool); ok {
+				dst[arch+".vision.use_gelu"] = b
+				slog.Debug("mapped use_gelu", "value", b)
+			}
 		}
 	}
+
+	if !deepstackMapped {
+		if indexes := dst.Ints(arch + ".vision.deepstack_visual_indexes"); len(indexes) > 0 {
+			slog.Debug("deepstack indexes already present", "count", len(indexes))
+		}
+	}
+
+	if _, ok := dst[arch+".vision.temporal_patch_size"]; !ok && temporalPatch > 0 {
+		dst[arch+".vision.temporal_patch_size"] = temporalPatch
+	}
+
+	if _, ok := dst[arch+".vision.spatial_merge_size"]; !ok && spatialMerge > 0 {
+		dst[arch+".vision.spatial_merge_size"] = spatialMerge
+	}
+
+	if _, ok := dst[arch+".vision.patch_size"]; !ok && patchSize > 0 {
+		dst[arch+".vision.patch_size"] = patchSize
+	}
+
+	if _, ok := dst[arch+".vision.image_size"]; !ok && imageSize > 0 {
+		dst[arch+".vision.image_size"] = imageSize
+	}
+
+	if _, ok := dst[arch+".vision.num_channels"]; !ok {
+		if v, ok := toUint32(src["clip.vision.num_channels"]); ok {
+			dst[arch+".vision.num_channels"] = v
+			slog.Debug("backfilled num_channels", "value", v)
+		}
+	}
+
+	if _, ok := dst[arch+".vision.num_positional_embeddings"]; !ok && patchSize > 0 && imageSize > 0 {
+		grid := imageSize / patchSize
+		if grid > 0 {
+			dst[arch+".vision.num_positional_embeddings"] = uint32(grid * grid)
+			slog.Debug("derived num_positional_embeddings", "value", grid*grid)
+		}
+	}
+
+	if _, ok := dst[arch+".vision.spatial_merge_size"]; !ok && spatialMerge == 0 {
+		dst[arch+".vision.spatial_merge_size"] = 2
+	}
+}
+
+func toUint32(v interface{}) (uint32, bool) {
+	switch t := v.(type) {
+	case uint8:
+		return uint32(t), true
+	case uint16:
+		return uint32(t), true
+	case uint32:
+		return t, true
+	case uint64:
+		return uint32(t), true
+	case int:
+		if t < 0 {
+			return 0, false
+		}
+		return uint32(t), true
+	case int32:
+		if t < 0 {
+			return 0, false
+		}
+		return uint32(t), true
+	case int64:
+		if t < 0 {
+			return 0, false
+		}
+		return uint32(t), true
+	case float32:
+		if t < 0 {
+			return 0, false
+		}
+		return uint32(t), true
+	case float64:
+		if t < 0 {
+			return 0, false
+		}
+		return uint32(t), true
+	case string:
+		if u, err := strconv.ParseUint(t, 10, 32); err == nil {
+			return uint32(u), true
+		}
+	}
+	return 0, false
+}
+
+func toFloat32(v interface{}) (float32, bool) {
+	switch t := v.(type) {
+	case float32:
+		return t, true
+	case float64:
+		return float32(t), true
+	case int:
+		return float32(t), true
+	case int32:
+		return float32(t), true
+	case int64:
+		return float32(t), true
+	case uint32:
+		return float32(t), true
+	case uint64:
+		return float32(t), true
+	case string:
+		if f, err := strconv.ParseFloat(t, 32); err == nil {
+			return float32(f), true
+		}
+	}
+	return 0, false
+}
+
+func toFloat32Slice(v interface{}) ([]float32, bool) {
+	switch t := v.(type) {
+	case []float32:
+		return t, true
+	case []float64:
+		out := make([]float32, len(t))
+		for i := range t {
+			out[i] = float32(t[i])
+		}
+		return out, true
+	case []interface{}:
+		out := make([]float32, 0, len(t))
+		for _, item := range t {
+			if f, ok := toFloat32(item); ok {
+				out = append(out, f)
+			} else {
+				return nil, false
+			}
+		}
+		return out, true
+	}
+	return nil, false
+}
+
+func toBoolSlice(v interface{}) ([]bool, bool) {
+	switch t := v.(type) {
+	case []bool:
+		return t, true
+	case []interface{}:
+		out := make([]bool, 0, len(t))
+		for _, item := range t {
+			if b, ok := item.(bool); ok {
+				out = append(out, b)
+			} else {
+				return nil, false
+			}
+		}
+		return out, true
+	case []uint8:
+		out := make([]bool, len(t))
+		for i, v := range t {
+			out[i] = v != 0
+		}
+		return out, true
+	case []int32:
+		out := make([]bool, len(t))
+		for i, v := range t {
+			out[i] = v != 0
+		}
+		return out, true
+	case []uint32:
+		out := make([]bool, len(t))
+		for i, v := range t {
+			out[i] = v != 0
+		}
+		return out, true
+	default:
+		// Try reflection for GGML array types like *ggml.array[bool]
+		rv := reflect.ValueOf(v)
+		if rv.Kind() == reflect.Ptr {
+			rv = rv.Elem()
+		}
+		if rv.Kind() == reflect.Struct {
+			// Look for "values" field
+			valuesField := rv.FieldByName("values")
+			if valuesField.IsValid() && valuesField.Kind() == reflect.Slice {
+				// Try to convert to []bool
+				if valuesField.Type().Elem().Kind() == reflect.Bool {
+					out := make([]bool, valuesField.Len())
+					for i := 0; i < valuesField.Len(); i++ {
+						out[i] = valuesField.Index(i).Bool()
+					}
+					return out, true
+				}
+			}
+		}
+	}
+	return nil, false
 }
 
 // Model implements a specific model architecture, defining the forward pass and any model-specific configuration
