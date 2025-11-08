@@ -72,7 +72,8 @@ func (sa *VisionAttention) Forward(ctx ml.Context, hiddenStates, cos, sin ml.Ten
 		value = sa.Value.Forward(ctx, hiddenStates)
 		value = value.Reshape(ctx, opts.headDim(), opts.numHeads, value.Dim(1))
 	} else {
-		panic("vision attention missing required weights (need either QKV or Query+Key+Value)")
+		// For split GGUF: if no attention weights, return input unchanged
+		return hiddenStates
 	}
 
 	attention := nn.Attention(ctx, query, key, value, math.Pow(float64(opts.headDim()), -0.5), nil)
