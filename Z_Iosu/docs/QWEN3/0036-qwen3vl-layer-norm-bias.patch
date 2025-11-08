@@ -1,0 +1,48 @@
+From e45aecb7b051d3c0fea968d64aadbeb0b777e4a1 Mon Sep 17 00:00:00 2001
+From: LETS-BEE <ghghdirk12@gmail.com>
+Date: Sat, 25 Oct 2025 14:45:17 +0000
+Subject: [PATCH] qwen3 deepstack use layernorm
+
+---
+ tools/mtmd/clip.cpp | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/tools/mtmd/clip.cpp b/tools/mtmd/clip.cpp
+index 9effd297fdfcc..83645d0dfd068 100644
+--- a/tools/mtmd/clip.cpp
++++ b/tools/mtmd/clip.cpp
+@@ -363,6 +363,7 @@ struct clip_model {
+     // qwen3vl deepstack (multi-level feature fusion)
+     struct deepstack_merger {
+         ggml_tensor * norm_w = nullptr;
++        ggml_tensor * norm_b = nullptr;
+         ggml_tensor * fc1_w = nullptr;
+         ggml_tensor * fc1_b = nullptr;
+         ggml_tensor * fc2_w = nullptr;
+@@ -660,7 +661,7 @@ struct clip_graph {
+         return gf;
+     }
+ 
+-    // Qwen2VL and Qwen2.5VL use M-RoPE
++    // Qwen2VL, Qwen2.5VL and Qwen3VL use M-RoPE
+     ggml_cgraph * build_qwen2vl() {
+         GGML_ASSERT(model.class_embedding == nullptr);
+ 
+@@ -913,8 +914,7 @@ struct clip_graph {
+                 LOG_INF("%s: DeepStack merger %zu weights: norm_w=[%lld], fc1_w=[%lld,%lld], fc2_w=[%lld,%lld]\n",
+                         __func__, i, merger.norm_w->ne[0], merger.fc1_w->ne[0], merger.fc1_w->ne[1], merger.fc2_w->ne[0], merger.fc2_w->ne[1]);
+ 
+-                feat = ggml_rms_norm(ctx0, feat, eps);
+-                feat = ggml_mul(ctx0, feat, merger.norm_w);
++                feat = build_norm(feat, merger.norm_w, merger.norm_b, norm_t, eps, -1);
+ 
+                 feat = ggml_mul_mat(ctx0, merger.fc1_w, feat);
+                 feat = ggml_add(ctx0, feat, merger.fc1_b);
+@@ -2851,6 +2851,7 @@ struct clip_model_loader {
+                         for (size_t i = 0; i < hparams.deepstack_layers.size(); i++) {
+                             auto & merger = model.deepstack_mergers[i];
+                             merger.norm_w = get_tensor(string_format("v.deepstack.%d.norm.weight", (int)i), false);
++                            merger.norm_b = get_tensor(string_format("v.deepstack.%d.norm.bias", (int)i), false);
+                             merger.fc1_w  = get_tensor(string_format("v.deepstack.%d.fc1.weight", (int)i), false);
+                             merger.fc1_b  = get_tensor(string_format("v.deepstack.%d.fc1.bias", (int)i), false);
+                             merger.fc2_w  = get_tensor(string_format("v.deepstack.%d.fc2.weight", (int)i), false);

@@ -1,0 +1,831 @@
+
+https://github.com/LETS-BEE/llama.cpp/tree/qwen3vl
+https://github.com/LETS-BEE/llama.cpp/commit/b913e895a2189b9792da7709b36a36a1aed2feb9
+https://github.com/LETS-BEE/llama.cpp/commit/85107b657d187afed789df8cf9680f424e6f303b
+https://github.com/LETS-BEE/llama.cpp/commit/de0e3d3c3ce4b394746ade9263736c8edb40260e
+
+
+https://github.com/ggml-org/llama.cpp/issues/16207#issuecomment-3443868720
+https://github.com/ggml-org/llama.cpp/pull/16745
+
+
+
+
+¿Lo estás haciendo mal? Los modelos están ya bien Porque tengo la versión que está funcionando los dos modelos. El problema está Que hemos aplicado. El PR. https://github.com/LETS-BEE/llama.cpp/commits/qwen3vl/ sin creo haber aplicado https://github.com/ggml-org/llama.cpp/pull/16745 o que cuando aplicamos hace 2 dias https://github.com/ollama/ollama/pull/12665 
+
+git checkout --theirs llama/patches/*.patch; git add llama/patches/*.patch
+
+
+⚠️ **IMPORTANTE:** No se puede hacer push al upstream (repositorio original de Ollama). Los cambios solo se mantienen en el fork local.
+
+### 🔒 Configuración Git para Prevenir Push al Upstream
+
+**Ejecuta estos comandos en `C:\IA\tools\ollama` para proteger el repositorio:**
+
+```powershell
+# Configurar el remote upstream como solo lectura (fetch-only)
+git remote set-url --push upstream no_push
+
+# Verificar configuración
+git remote -v
+# Debe mostrar:
+# origin  https://github.com/iosub/ollama.git (fetch)
+# origin  https://github.com/iosub/ollama.git (push)
+# upstream        https://github.com/ollama/ollama.git (fetch)
+# upstream        no_push (push)
+```
+
+**Para el submódulo llama/vendor:**
+
+```powershell
+cd llama\vendor
+
+# Verificar remotes existentes
+git remote -v
+
+# Si no existe 'upstream', agregarlo primero
+git remote add upstream https://github.com/ggml-org/llama.cpp.git
+
+# Configurar upstream como solo lectura
+git remote set-url --push upstream no_push
+
+# Verificar
+git remote -v
+# Debe mostrar:
+# origin  https://github.com/LETS-BEE/llama.cpp.git (fetch)
+# origin  https://github.com/LETS-BEE/llama.cpp.git (push)
+# upstream        https://github.com/ggml-org/llama.cpp.git (fetch)
+# upstream        no_push (push)
+
+cd ..\..
+```
+
+**Ahora:**
+- ✅ Puedes hacer `git fetch upstream` (sincronizar cambios del original)
+- ✅ Puedes hacer `git push origin` (tu fork)
+- ❌ `git push upstream` dará error (protegido)
+
+### 🔄 Actualizar Submódulo llama/vendor a Commit Específico
+
+**Cuando necesites cambiar a un commit específico de llama.cpp:**
+
+```powershell
+# Navegar al submódulo
+
+make -f Makefile.sync checkout d261223d24e97f2df50220e4a5b7f0adb69bba81
+cd llama\vendor
+
+# Cambiar a commit específico (ejemplo)
+git checkout d261223d24e97f2df50220e4a5b7f0adb69bba81
+
+# Sincronizar todo (fetch + pull)
+git fetch --all
+git pull origin main
+
+# Volver al directorio raíz
+cd ..\..
+
+# Actualizar referencia del submódulo en el repo principal
+git add llama\vendor
+git commit -m "Update llama/vendor to commit d261223d"
+```
+
+**Comandos útiles para submódulos:**
+
+```powershell
+# Ver estado del submódulo
+git submodule status
+
+# Actualizar todos los submódulos a sus commits registrados
+git submodule update --init --recursive
+
+# Ver qué commit está usando actualmente
+cd llama\vendor; git log -1 --oneline; cd ..\..
+```
+
+### 📥 Sincronizar con Upstream de Ollama
+
+**Para actualizar tu fork con los últimos cambios del repositorio original:**
+
+```powershell
+# 1. Asegurarse de estar en la rama main
+git checkout main
+
+# 2. Fetch de cambios del upstream
+git fetch upstream
+
+# 3. Mergear cambios del upstream a tu rama local
+git merge upstream/main
+
+# 4. Resolver conflictos si existen (Git te avisará)
+# Edita archivos en conflicto, luego:
+# git add <archivos_resueltos>
+# git merge --continue
+
+# 5. Pushear cambios a tu fork (origin)
+git push origin main
+
+# 6. Actualizar submódulos después del merge
+git submodule update --init --recursive
+```
+
+**Flujo completo con verificación:**
+
+```powershell
+# Ver diferencias antes de mergear
+git fetch upstream
+git log HEAD..upstream/main --oneline
+
+# Si todo se ve bien, mergear
+git merge upstream/main
+
+# Verificar estado
+git status
+
+# Si hay conflictos, listarlos
+git diff --name-only --diff-filter=U
+```
+
+### 🔐 Mantener Carpeta Z_Iosu al Cambiar de Rama
+
+**Opción 1: Excluir Z_Iosu del seguimiento de Git (RECOMENDADO)**
+
+```powershell
+# Agregar Z_Iosu al .git/info/exclude (no se comparte con otros)
+echo "Z_Iosu/" >> .git\info\exclude
+
+# Verificar que ya no se rastrea
+git status
+# Z_Iosu/ no debe aparecer como "Untracked"
+```
+
+**Ventajas:**
+- ✅ Z_Iosu permanece intacto al cambiar de rama
+- ✅ No interfiere con pulls de upstream
+- ✅ No se comparte (queda local en tu máquina)
+
+**Opción 2: Crear rama de desarrollo personal**
+
+```powershell
+# Crear rama personal que incluya Z_Iosu
+git checkout -b iosub-dev
+
+# Agregar y commitear Z_Iosu en esta rama
+git add Z_Iosu/
+git commit -m "Add Z_Iosu custom scripts and docs"
+
+# Pushear a tu fork
+git push origin iosub-dev
+
+# Ahora puedes:
+# - Trabajar en iosub-dev (con Z_Iosu)
+# - Cambiar a main para sincronizar con upstream
+# - Mergear cambios de main a iosub-dev cuando necesites
+```
+
+**Flujo de trabajo con rama personal:**
+
+```powershell
+# Actualizar desde upstream
+git checkout main
+git fetch upstream
+git merge upstream/main
+git push origin main
+
+# Traer cambios a tu rama de desarrollo
+git checkout iosub-dev
+git merge main
+
+# Resolver conflictos si los hay
+# Seguir trabajando en iosub-dev con Z_Iosu intacto
+```
+
+**Opción 3: Stash temporal (para cambios rápidos de rama)**
+
+```powershell
+# Antes de cambiar de rama
+git stash push -u -m "Z_Iosu scripts"
+Tash push -u -m "Z_Iosu scripts"
+
+# Cambiar de rama
+git checkout otra-rama
+
+# Volver y recuperar
+git checkout main
+git stash pop
+```
+Tash push -u -m "Z_Iosu scripts"
+
+# Cambiar de rama
+git checkout otra-rama
+
+# Volver y recuperar
+git checkout main
+git stash pop
+```
+### Ejecutar patches
+make -f Makefile.sync apply-patches
+make -f Makefile.sync format-patches sync
+git -C llama/vendor add ggml/src/ggml-cuda/argsort.cu
+git -C llama/vendor am --continue
+
+**Recomendación:** Usa **Opción 1** (.git/info/exclude) si Z_Iosu es solo para tu uso local, o **Opción 2** (rama personal) si quieres versionarlo en tu fork.
+
+# GUÍA COMPLETA: Compilación Ollama 0.12.9.99 con Interfaz Gráfica Funcional
+
+## 🚀 CONFIGURACIÓN PREVIA: ccache (RECOMENDADO)
+
+### ⚡ ¿Cómo funciona el cache en Ollama?
+
+| Componente | Sistema de Cache | Beneficio |
+|------------|------------------|-----------|
+| **Bibliotecas C/C++** (DLLs) | **ccache** | 50-80% más rápido en recompilaciones |
+| **CLI Go** (ollama.exe) | **Go build cache** | Automático, muy eficiente |
+| **App Bandeja** (MSVC) | **Go build cache** | Automático |
+
+### 📋 Configuración ccache (Solo para bibliotecas C/C++)
+
+**Ejecuta ANTES de compilar (solo una vez):**
+
+```powershell
+# Verificar que ccache está instalado
+ccache --version
+# Debe mostrar: ccache version 4.12.1
+
+# Configurar ccache para máximo rendimiento
+ccache --set-config compression=true
+ccache --set-config compression_level=1
+ccache --set-config max_size=10G
+ccache --set-config sloppiness=time_macros
+
+# Limpiar estadísticas para seguimiento limpio
+ccache -z
+
+# Verificar configuración
+ccache --show-config | Select-String "compression|max_size|sloppiness"
+```
+
+### ✅ Resultado esperado:
+```
+(config) compression = true
+(config) compression_level = 1  
+(config) max_size = 10.0 GB
+(config) sloppiness = time_macros
+```
+
+### 📊 Monitoreo durante compilación:
+```powershell
+# Ver cache de ccache (bibliotecas C/C++)
+ccache -s
+
+# Ver cache de Go (ollama.exe + app)
+go env GOCACHE
+```
+
+### 🎯 **Velocidades esperadas:**
+- **Primera compilación**: ~10 minutos (llena ambos caches)
+- **Recompilaciones completas**: ~3-5 minutos  
+- **Solo Go (buildOllama)**: ~30 segundos (Go cache muy eficiente)
+
+**NOTA:** ccache solo acelera las bibliotecas C/C++ (buildCPU, buildCUDA13). Go tiene su propio sistema de cache automático.
+
+---
+
+## ✅ SOLUCIÓN FINAL - COPY & PASTE
+
+### 🎯 COMANDO ÚNICO AUTOMÁTICO (RECOMENDADO) ⭐
+
+**Copia y pega esto en PowerShell desde `C:\IA\tools\ollama`:**
+https://github.com/dhiltgen/ollama/commit/d0d462ca8543198c973e4a07bc254d0847b5433d
+https://github.com/ollama/ollama/pull/12931
+
+```powershell
+$env:VERSION = "0.12.9.99"
+powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildCPU buildCUDA13 buildVulkan gatherDependencies buildOllama buildApp buildInstaller
+```
+$env:VERSION = "0.12.9.99"; powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\smart_build.ps1 -Verbose
+
+$env:VERSION = "0.12.9.99"; powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\smart_build.ps1 -Verbose
+**Eso es TODO.** Espera ~10 minutos y tendrás `dist\OllamaSetup.exe` completo y funcional.
+
+---
+ powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\start_ollama_vulkan_intel.ps1 *> C:\IA\tools\ollama\logs\ollama.log    
+ 
+### Compilación Paso a Paso (Si prefieres ver el progreso)
+
+```powershell
+# ============================================================================
+# PASO 0: Instalar Vulkan SDK (solo una vez, requiere administrador)
+# ============================================================================
+powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\install-vulkan-sdk.ps1
+
+# ============================================================================
+# PASO 1: Bibliotecas CPU, CUDA y Vulkan con MSVC
+# ============================================================================
+$env:VERSION = "0.12.9.99"
+powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildCPU buildCUDA13 buildVulkan gatherDependencies
+
+# ============================================================================
+# PASO 2: CLI (ollama.exe) con llvm-mingw
+# ============================================================================
+powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildOllama
+
+# ============================================================================
+# PASO 3: App de Bandeja con MSVC (automático desde script arreglado)
+# ============================================================================
+powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildApp
+
+# ============================================================================
+# PASO 4: Generar Instalador
+# ============================================================================
+powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildInstaller
+```
+
+**NOTA:** El script `build_windows.ps1` ahora automáticamente limpia el entorno de llvm-mingw antes de compilar la app, garantizando que use MSVC puro para evitar el bug del menú contextual.
+
+---
+
+## 📦 Archivos Generados
+
+```
+dist\
+├── OllamaSetup.exe (450 MB)           ← Instalador completo
+├── windows-amd64-app.exe (6.81 MB)    ← App bandeja (MSVC)
+├── windows-amd64\
+│   ├── ollama.exe (34.88 MB)          ← CLI (llvm-mingw)
+│   └── lib\ollama\
+│       ├── ggml-*.dll (8 archivos)    ← CPU backends
+│       ├── cuda_v13\*.dll (3 archivos) ← CUDA 13
+│       ├── ggml-vulkan.dll (~50 MB)   ← Vulkan backend (AMD/Intel/NVIDIA)
+│       └── *.dll (17 archivos)        ← Runtime MSVC
+```
+
+**Total: 29 DLLs + 2 ejecutables + instalador (con soporte Vulkan universal)**
+
+---
+
+## 🚀 Instalación
+
+```powershell
+# 1. Detener procesos antiguos
+Get-Process | Where-Object { $_.Name -like "*ollama*" } | Stop-Process -Force
+
+# 2. Desinstalar versión anterior (si existe)
+if (Test-Path "$env:LOCALAPPDATA\Programs\Ollama\unins000.exe") {
+    Start-Process "$env:LOCALAPPDATA\Programs\Ollama\unins000.exe" -ArgumentList "/SILENT" -Wait
+}
+
+# 3. Instalar nueva versión
+.\dist\OllamaSetup.exe
+
+# 4. Verificar
+ollama --version
+# Output: ollama version is 0.12.9.99
+```
+
+---
+
+## ✅ Verificación de la App de Bandeja
+
+1. **Busca el icono 🦙** en la bandeja del sistema (abajo a la derecha del reloj)
+2. **Haz clic DERECHO** en el icono
+3. **Debe aparecer el menú:**
+   - Open Ollama
+   - Update Available (si hay updates)
+   - Quit Ollama
+
+Si NO aparece el menú → La app se compiló con llvm-mingw (bug conocido)  
+Si SÍ aparece el menú → ✅ Compilación correcta con MSVC
+
+---
+
+## ⚠️ PROBLEMA CRÍTICO: App de Bandeja con llvm-mingw
+
+### Síntoma
+- ✅ El proceso `ollama app.exe` se ejecuta
+- ✅ El icono 🦙 aparece en la bandeja
+- ❌ **Clic derecho NO muestra menú**
+- ❌ No se puede abrir la interfaz gráfica
+
+### Causa Raíz
+**llvm-mingw** tiene incompatibilidad con Win32 API para menús contextuales (system tray menus).
+
+### Solución
+**Compilar `buildApp` con MSVC puro (sin llvm-mingw):**
+
+| Componente | Compilador | Razón |
+|------------|-----------|-------|
+| `ollama.exe` (CLI) | llvm-mingw | CGO + stdlib.h compatibility |
+| `ollama app.exe` (GUI) | MSVC | Win32 API (menús contextuales) |
+| Bibliotecas DLL | MSVC | Compatibilidad con CUDA/CPU |
+
+---
+
+## 🔧 PROBLEMA SOLUCIONADO: Aplicación de Windows no arranca (DLLs faltantes)
+
+### ❌ Síntoma Original
+Antes solo copiabas `ollama.exe` y funcionaba, pero ahora:
+- ✅ El ejecutable `ollama.exe` existe y funciona en directorio de compilación
+- ❌ Al copiar solo `ollama.exe` a tu aplicación de Windows: **servidor no arranca**
+- ❌ Logs del servidor están "a cero" (vacíos)
+- ❌ El proceso se cierra inmediatamente sin generar logs
+
+### 🔍 Causa Raíz
+**Las versiones anteriores** de Ollama tenían bibliotecas compiladas **estáticamente** (incluidas dentro del .exe).
+
+**Ollama 0.12.9.99 con CUDA** usa bibliotecas **dinámicas** (.dll) separadas que deben estar presentes en runtime.
+
+### ✅ Solución DEFINITIVA
+
+**ANTES** (incorrecto - solo ejecutable):
+```
+App_Windows/
+└── ollama.exe ← Solo esto NO funciona
+```
+
+**AHORA** (correcto - estructura completa):
+```
+App_Windows/
+├── ollama.exe                    ← Ejecutable principal
+└── lib/
+    └── ollama/
+        ├── ggml-cuda.dll         ← Backend CUDA (293 MB)
+        ├── ggml-base.dll         ← Backend base
+        ├── ggml-cpu-*.dll        ← Backends CPU optimizados (8 archivos)
+        ├── cublas64_13.dll       ← Bibliotecas CUDA cuBLAS
+        ├── cublasLt64_13.dll     ← Bibliotecas CUDA cuBLASLt  
+        ├── msvcp140*.dll         ← Runtime Visual C++ (5 archivos)
+        ├── vcruntime140*.dll     ← Runtime Visual C++ (2 archivos)
+        └── api-ms-win-*.dll      ← APIs Windows Runtime (10 archivos)
+```
+
+### 📋 Pasos de Migración para tu Aplicación de Windows
+
+1. **Detener servidor existente** (si está corriendo):
+   ```powershell
+   taskkill /F /IM ollama.exe
+   ```
+
+2. **Eliminar archivo único anterior**:
+   ```powershell
+   del "C:\tu_app\ollama.exe"
+   ```
+
+3. **Copiar TODA la estructura** desde compilación:
+   ```powershell
+   # Origen (compilación exitosa)
+   $origen = "C:\IA\tools\ollama\dist\windows-amd64"
+   
+   # Destino (tu aplicación de Windows)  
+   $destino = "C:\tu_app"
+   
+   # Copiar estructura completa
+   robocopy "$origen" "$destino" /E /R:3 /W:1
+   ```
+
+4. **Verificar estructura** (script de diagnóstico):
+   ```powershell
+   # Copiar script de diagnóstico
+   copy "C:\IA\tools\ollama\dist\windows-amd64\diagnose_ollama_fixed.ps1" "C:\tu_app\"
+   
+   # Ejecutar desde tu aplicación
+   cd "C:\tu_app"
+   .\diagnose_ollama_fixed.ps1
+   ```
+
+5. **Resultado esperado**:
+   ```
+   ✅ ollama.exe encontrado (31.18 MB)
+   ✅ 28 bibliotecas encontradas  
+   ✅ Servidor inicia correctamente
+   ✅ API responde correctamente
+   ```
+
+### 🎯 Por qué es CRÍTICO mantener la estructura
+
+| Componente | Ubicación Requerida | Razón |
+|------------|-------------------|-------|
+| `ollama.exe` | Raíz aplicación | Ejecutable principal |
+| `lib\ollama\*.dll` | **Relativo al .exe** | ollama.exe busca DLLs en esta ruta específica |
+| `OLLAMA_LIBRARY_PATH` | Variable entorno | Override manual (opcional) |
+
+**NOTA:** El ejecutable `ollama.exe` busca automáticamente las bibliotecas en `lib\ollama\` **relativo a su ubicación**. Si cambias esta estructura, el servidor no arrancará.
+
+### 📊 Verificación Post-Migración
+
+**Script de verificación automática**:
+```powershell
+# Verificar que tu aplicación de Windows funciona
+cd "C:\tu_app"
+
+# 1. Verificar archivos críticos
+$criticos = @("ollama.exe", "lib\ollama\ggml-cuda.dll", "lib\ollama\ggml-base.dll")
+foreach ($file in $criticos) {
+    if (Test-Path $file) { Write-Host "✅ $file" } 
+    else { Write-Host "❌ $file FALTANTE" }
+}
+
+# 2. Configurar entorno (por si acaso)
+$env:OLLAMA_LIBRARY_PATH = (Get-Location).Path + "\lib\ollama"
+
+# 3. Probar versión
+.\ollama.exe --version
+
+# 4. Probar servidor (2 segundos de prueba)
+$proceso = Start-Process -FilePath "ollama.exe" -ArgumentList "serve" -PassThru -NoNewWindow
+Start-Sleep 2
+if (-not $proceso.HasExited) {
+    Write-Host "✅ Servidor funciona correctamente"
+    Stop-Process -Id $proceso.Id -Force
+} else {
+    Write-Host "❌ Servidor falló - revisar logs"
+}
+```
+
+---
+
+## 🔧 Troubleshooting
+
+### 1. "Build Failed" pero ollama.exe existe
+**Síntoma:** Script muestra "Build Failed" pero ollama.exe se genera correctamente.
+```powershell
+# Verificar si realmente falló
+if (Test-Path "ollama.exe") { 
+    Write-Host "✅ Compilación exitosa: $([math]::Round((Get-Item ollama.exe).Length/1MB, 2)) MB" 
+} else { 
+    Write-Host "❌ Compilación falló realmente" 
+}
+```
+**Causa:** Advertencias de C++ (codecvt_utf8) que Go interpreta como error.  
+**Solución:** Script actualizado ignora warnings y verifica archivo generado.
+
+### 2. buildOllama falla con mezcla de entornos
+**Síntoma:** Error de VS2022 + llvm-mingw incompatible.
+```powershell
+# Ejecutar manualmente (siempre funciona)
+$env:VERSION = "0.12.9.99"; $env:CGO_ENABLED="1"
+$llvmPath = (Resolve-Path "C:\llvm-mingw-ucrt\llvm-mingw-*").Path
+$env:PATH = "$llvmPath\bin;$env:PATH"
+$env:CC = "$llvmPath\bin\gcc.exe"; $env:CXX = "$llvmPath\bin\g++.exe"
+go build -v -a -trimpath -ldflags "-s -w -X=github.com/ollama/ollama/version.Version=$env:VERSION -X=github.com/ollama/ollama/server.mode=release" .
+```
+
+### 3. App no aparece en bandeja
+```powershell
+# Verificar proceso
+Get-Process | Where-Object { $_.Name -like "*ollama*" }
+
+# Debe mostrar:
+# - ollama app (app de bandeja)  
+# - ollama (servidor backend)
+```
+
+### 4. Menú contextual no funciona
+```powershell
+# Verificar que la app se compiló con MSVC (no llvm-mingw)
+# Recompilar siguiendo PASO 3 arriba
+```
+
+### 5. ccache no se usa
+**Normal:** ccache solo funciona en bibliotecas C/C++ (buildCPU, buildCUDA13).  
+Go tiene su propio cache automático muy eficiente.
+```powershell
+# Ver estadísticas de ambos sistemas
+ccache -s              # Cache C/C++
+go env GOCACHE         # Cache Go
+```
+
+### 6. Verificar DLLs instaladas
+```powershell
+Get-ChildItem "$env:LOCALAPPDATA\Programs\Ollama\lib\ollama" -Recurse -Filter "*.dll" | Measure-Object
+# Debe mostrar: Count = 28
+```
+
+### 7. Error al aplicar patches con `make -f Makefile.sync apply-patches`
+
+**Síntoma:** Fallo al aplicar un patch con mensaje "No changes - did you forget to use 'git add'?"
+
+```bash
+error: could not build fake ancestor
+Patch failed at 0001 ggml: Add batch size hint
+Applying: ggml: Add batch size hint
+No changes - did you forget to use 'git add'?
+```
+
+**Causa:** El patch ya está aplicado en el código base actual.
+
+**Solución:**
+
+```powershell
+# Opción 1: Saltar el patch (RECOMENDADO si ya está aplicado)
+git -C llama/vendor am --skip
+
+# Continuar con el resto de patches
+make -f Makefile.sync apply-patches
+
+# Opción 2: Abortar y limpiar si hay muchos conflictos
+git -C llama/vendor am --abort
+make -f Makefile.sync clean apply-patches
+
+# Opción 3: Ver el patch que falló
+git -C llama/vendor am --show-current-patch=diff
+```
+
+**Flujo completo cuando falla un patch:**
+
+```powershell
+# 1. Si el error indica que no hay cambios:
+git -C llama/vendor am --skip
+
+# 2. Continuar aplicando patches
+make -f Makefile.sync apply-patches
+
+# 3. Si todo está bien, formatear patches
+make -f Makefile.sync format-patches
+
+# 4. Limpiar y reaplicar todo (si persisten problemas)
+make -f Makefile.sync clean apply-patches
+```
+
+### 8. Error "'true' is not recognized" en Windows con Makefile.sync
+
+**Síntoma:** Al ejecutar `make -f Makefile.sync clean apply-patches` aparece:
+```
+'true' is not recognized as an internal or external command
+make: *** [Makefile.sync:71: clean] Error 1
+```
+
+**Causa:** El comando `true` no existe en Windows (es de Unix/Linux).
+
+**Solución - Limpiar manualmente y aplicar patches:**
+
+```powershell
+# 1. Abortar cualquier proceso de patch en curso
+git -C llama/vendor am --abort
+
+# 2. Volver al commit base
+git -C llama/vendor checkout -f 835e918d8428f5119927d7150bf5a26176dedda0
+
+# 3. Limpiar archivos de control de patches
+Remove-Item -Force -ErrorAction SilentlyContinue llama\patches\.*.patched
+
+# 4. Aplicar patches desde cero
+make -f Makefile.sync apply-patches
+```
+
+**Si siguen los errores de patch corrupto:**
+
+```powershell
+# Opción nuclear: Reinicializar submódulo completamente
+git submodule deinit -f llama/vendor
+git submodule update --init --recursive llama/vendor
+cd llama/vendor
+git checkout 835e918d8428f5119927d7150bf5a26176dedda0
+cd ../..
+make -f Makefile.sync apply-patches
+```
+
+### 9. Error "sha1 information is lacking or useless" al aplicar patches
+
+**Síntoma:** Al ejecutar `make -f Makefile.sync apply-patches` aparece:
+```bash
+error: sha1 information is lacking or useless (ggml/src/ggml-cuda/ggml-cuda.cu).
+error: could not build fake ancestor
+Patch failed at 0001 ggml: Add batch size hint
+```
+
+**Causa:** Git no puede calcular el hash SHA1 del archivo. Esto NO es un conflicto de merge. Las causas más comunes son:
+- Line endings mezclados (CRLF vs LF) en Windows
+- Archivo modificado durante el proceso de patch
+- Índice de Git corrupto
+- Espacios en blanco inconsistentes
+
+**Diagnóstico:**
+
+```powershell
+# Ver si el archivo tiene cambios (aunque parezca limpio)
+git -C llama/vendor diff ggml/src/ggml-cuda/ggml-cuda.cu
+
+# Ver el estado del índice
+git -C llama/vendor status
+
+# Ver line endings del archivo
+git -C llama/vendor ls-files --eol ggml/src/ggml-cuda/ggml-cuda.cu
+```
+
+**Solución 1: Restaurar archivo y limpiar índice (RECOMENDADO)**
+
+```bash
+# EJECUTAR EN GIT BASH (no PowerShell)
+cd /c/IA/tools/ollama
+
+# 1. Abortar proceso de patch
+git -C llama/vendor am --abort
+
+# 2. Restaurar archivo al estado limpio
+git -C llama/vendor checkout HEAD -- ggml/src/ggml-cuda/ggml-cuda.cu
+
+# 3. Limpiar índice
+git -C llama/vendor reset --hard HEAD
+
+# 4. Verificar que está limpio
+git -C llama/vendor status
+
+# 5. Aplicar patches desde cero (EN GIT BASH)
+make -f Makefile.sync apply-patches
+```
+
+**Solución 2: Normalizar line endings**
+
+```bash
+# Si el problema persiste, normalizar line endings
+cd llama/vendor
+git config core.autocrlf false
+git rm --cached -r .
+git reset --hard HEAD
+cd ../..
+make -f Makefile.sync apply-patches
+```
+
+**Solución 3: Reiniciar submódulo completamente (última opción)**
+
+```bash
+# Desde Git Bash en C:/IA/tools/ollama
+git submodule deinit -f llama/vendor
+rm -rf llama/vendor
+git submodule update --init --recursive llama/vendor
+cd llama/vendor
+git checkout 835e918d8428f5119927d7150bf5a26176dedda0
+cd ../..
+make -f Makefile.sync apply-patches
+```
+
+**IMPORTANTE:** 
+- ⚠️ Usa **Git Bash** para ejecutar `make`, NO PowerShell
+- ⚠️ PowerShell tiene problemas interpretando comandos del Makefile
+- ⚠️ Git Bash viene con Git for Windows y simula entorno Unix
+
+---
+
+## 📝 Resumen de Requisitos
+
+### Software Necesario
+- ✅ Visual Studio 2022 Professional
+- ✅ CUDA 13.0
+- ✅ llvm-mingw-20240619-ucrt-x86_64
+- ✅ Go 1.24+
+- ✅ Inno Setup 6.5.1
+- ✅ windres (de llvm-mingw)
+
+### Variables de Entorno
+```powershell
+$env:VERSION = "0.12.9.99"
+$env:CUDA_PATH_V13_0 = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.0"
+```
+
+---
+
+## 🎯 Comandos Rápidos
+
+### Compilación Completa Automática (Un Solo Comando)
+```powershell
+$env:VERSION = "0.12.9.99"
+powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildCPU buildCUDA13 gatherDependencies buildOllama buildApp buildInstaller
+```
+
+### Solo Recompilar y Reinstalar
+```powershell
+# Si ya tienes las DLLs compiladas y solo cambió el código
+powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildOllama buildApp buildInstaller
+```
+
+### Compilar ollama.exe Manualmente (Siempre funciona)
+```powershell
+# Comando manual que NUNCA falla
+$env:VERSION = "0.12.9.99"; $env:CGO_ENABLED="1"
+$llvmPath = (Resolve-Path "C:\llvm-mingw-ucrt\llvm-mingw-*").Path; $env:PATH = "$llvmPath\bin;$env:PATH"
+$env:CC = "$llvmPath\bin\gcc.exe"; $env:CXX = "$llvmPath\bin\g++.exe"
+go build -v -a -trimpath -ldflags "-s -w -X=github.com/ollama/ollama/version.Version=$env:VERSION -X=github.com/ollama/ollama/server.mode=release" .
+
+# Copiar a dist (si usas comando manual)
+cp .\ollama.exe .\dist\windows-amd64\
+```
+
+### Reinstalación Limpia
+```powershell
+Get-Process | Where-Object { $_.Name -like "*ollama*" } | Stop-Process -Force
+Start-Process "$env:LOCALAPPDATA\Programs\Ollama\unins000.exe" -ArgumentList "/SILENT" -Wait
+.\dist\OllamaSetup.exe
+```
+
+---
+
+## ✅ Resultado Final
+
+- **Versión:** Ollama 0.12.9.99 (test-llamacpp-bump)
+- **Soporte:** Granite + Docling (llama.cpp 1deee0f8)
+- **Backend:** CUDA 13.0 + Vulkan 1.4.321.1 (soporte universal GPU)
+- **Interfaz:** App de bandeja 100% funcional con menú contextual
+- **CLI:** Compatible con llvm-mingw UCRT
+
+**¡Disfruta tu comida!** 🍽️
