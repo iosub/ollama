@@ -29,11 +29,12 @@ type ImageProcessor struct {
 func newImageProcessor(c fs.Config) ImageProcessor {
 	patchSize := int(c.Uint("vision.patch_size", 14))
 	mergeSize := int(c.Uint("vision.spatial_merge_size", 2))
+	temporalPatchSize := int(c.Uint("vision.temporal_patch_size", 2))
 
 	return ImageProcessor{
 		numChannels:       int(c.Uint("vision.num_channels", 3)), // not set
 		patchSize:         patchSize,
-		temporalPatchSize: 2,
+		temporalPatchSize: temporalPatchSize,
 		mergeSize:         mergeSize,
 		shortestEdge:      int(c.Uint("vision.shortest_edge", 64<<10)),
 		// FIXME(mxyng): the model defined longest edge (16M) is too large for the default
