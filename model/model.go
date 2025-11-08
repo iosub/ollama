@@ -411,6 +411,11 @@ func (m *Base) Backend() ml.Backend {
 	return m.b
 }
 
+// HasProjector returns true if this is a split GGUF model with a projector backend
+func (m *Base) HasProjector() bool {
+	return m.projectorBackend != nil
+}
+
 // GetTensor retrieves a tensor from the model backend, falling back to projector backend for split GGUF models
 func (m *Base) GetTensor(name string) ml.Tensor {
 	// Try main backend first
@@ -421,8 +426,10 @@ func (m *Base) GetTensor(name string) ml.Tensor {
 	// For split GGUF models, try projector backend
 	if m.projectorBackend != nil {
 		if t := m.projectorBackend.Get(name); t != nil {
-			slog.Debug("split GGUF: loaded tensor from projector", "name", name)
+			slog.Info("SPLIT GGUF: ✓ Tensor loaded from PROJECTOR", "name", name, "shape", t.Shape())
 			return t
+		} else {
+			slog.Debug("SPLIT GGUF: Tensor not found in projector", "name", name)
 		}
 	}
 	
@@ -468,6 +475,8 @@ func NewWithProjector(modelPath string, projectorPaths []string, params ml.Backe
 		return New(modelPath, params)
 	}
 
+	slog.Info("=== SPLIT GGUF: NewWithProjector invoked ===", "modelPath", modelPath, "projectorPaths", projectorPaths)
+
 	// Create main model backend
 	b, err := ml.NewBackend(modelPath, params)
 	if err != nil {
@@ -480,12 +489,13 @@ func NewWithProjector(modelPath string, projectorPaths []string, params ml.Backe
 	}
 
 	// Create separate backend for projector tensors (split GGUF approach)
+	slog.Info("SPLIT GGUF: Creating projector backend...", "path", projectorPaths[0])
 	projectorBackend, err := ml.NewBackend(projectorPaths[0], params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load projector: %w", err)
 	}
 
-	slog.Debug("split GGUF: loaded projector backend", "path", projectorPaths[0])
+	slog.Info("SPLIT GGUF: ✓ Projector backend loaded successfully", "path", projectorPaths[0])
 
 	var merged fsggml.KV
 	if baseKV, ok := ggmlBackend.Config().(fsggml.KV); ok {
@@ -520,8 +530,10 @@ func NewWithProjector(modelPath string, projectorPaths []string, params ml.Backe
 	}
 
 	base := Base{b: ggmlBackend, projectorBackend: projectorBackend, config: m.Config()}
+	slog.Info("SPLIT GGUF: Base created with dual backends", "hasProjector", base.projectorBackend != nil)
 	v := reflect.ValueOf(m)
 	v.Elem().Set(populateFields(base, v.Elem()))
+	slog.Info("SPLIT GGUF: ✓ Model fields populated, ready for use")
 	return m, nil
 }
 
@@ -653,7 +665,7 @@ func populateFields(base Base, v reflect.Value, tags ...Tag) reflect.Value {
 						if tensor == nil {
 							tensor = base.projectorBackend.Get(tensorName)
 							if tensor != nil {
-								slog.Debug("populateFields: loaded tensor from projector", "name", tensorName)
+								slog.Info("SPLIT GGUF: ✓ populateFields loaded from PROJECTOR", "name", tensorName, "shape", tensor.Shape())
 							}
 						}
 					} else {

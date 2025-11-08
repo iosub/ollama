@@ -29,9 +29,10 @@ type Model struct {
 }
 
 func (m *Model) ensureVisionReady() error {
-	slog.Debug("ensureVisionReady invoked", "visionReady", m.visionReady)
+	slog.Info("=== SPLIT GGUF: ensureVisionReady START ===", "visionReady", m.visionReady, "hasProjector", m.HasProjector())
 
 	if m.visionReady {
+		slog.Info("SPLIT GGUF: Vision already ready, skipping")
 		return nil
 	}
 
@@ -268,6 +269,7 @@ func (m *Model) ensureVisionReady() error {
 	}
 
 	m.visionReady = true
+	slog.Info("=== SPLIT GGUF: ensureVisionReady COMPLETE ===")
 	slog.Debug("ensureVisionReady completed", "deepstack_mergers", len(vm.DeepstackMerger))
 	return nil
 }
