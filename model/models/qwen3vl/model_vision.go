@@ -261,20 +261,21 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 	pixelValues = pixelValues.Reshape(ctx, m.patchSize, m.patchSize, m.temporalPatchSize, -1)
 	hiddenStates := m.PatchEmbedding.Forward(ctx, pixelValues, m.numChannels, m.patchSize, m.patchSize, m.temporalPatchSize, 0, 0, 0, 1, 1, 1)
 	
-	// For split GGUF: NO position embedding - pad immediately then use full opts for layers
+	// For split GGUF: skip position embedding and pad to expected dimensions
+	// llama.cpp uses dual conv2d + complex spatial merge reshape
+	// We use conv3d which handles temporal dim differently - just pad to match layer expectations
 	actualHiddenSize := hiddenStates.Dim(0)
 	opts := m.VisionOptions
 	if actualHiddenSize != opts.hiddenSize {
-		logutil.Trace("split GGUF: skipping position embedding", "config", opts.hiddenSize, "actual", actualHiddenSize)
-		// Save original hiddenSize for merger calculations
-		opts.configHiddenSize = opts.hiddenSize  // 1152
+		logutil.Trace("split GGUF: dimension mismatch", "config", opts.hiddenSize, "actual", actualHiddenSize)
+		opts.configHiddenSize = opts.hiddenSize  // Save for merger: 1152
 		
-		// Pad [768, spatial] → [1152, spatial] WITHOUT position embedding
+		// Pad [768, spatial] → [1152, spatial] to match vision layer weight dimensions
 		spatialDim := hiddenStates.Dim(1)
-		paddingSize := opts.hiddenSize - actualHiddenSize  // 1152 - 768 = 384
+		paddingSize := opts.hiddenSize - actualHiddenSize
 		padding := ctx.Input().Zeros(hiddenStates.DType(), paddingSize, spatialDim)
-		hiddenStates = hiddenStates.Concat(ctx, padding, 0)  // [768+384, spatial] = [1152, spatial]
-		logutil.Trace("split GGUF: padded WITHOUT position embedding", "from", actualHiddenSize, "to", opts.hiddenSize, "shape", hiddenStates.Shape())
+		hiddenStates = hiddenStates.Concat(ctx, padding, 0)
+		logutil.Trace("split GGUF: padded (skip pos_embd)", "from", actualHiddenSize, "to", opts.hiddenSize, "shape", hiddenStates.Shape())
 	} else {
 		hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, opts)
 	}
