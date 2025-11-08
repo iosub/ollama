@@ -13,6 +13,18 @@ Implement minimal changes to Ollama's upstream Qwen3-VL support to enable loadin
 
 This commit represents the latest stable Ollama codebase with working Qwen3-VL support for standard models.
 
+**Reference implementation:** llama.cpp PR #16780
+- **Title:** Add Qwen3-VL support
+- **URL:** https://github.com/ggml-org/llama.cpp/pull/16780
+- **Purpose:** Used as reference for understanding split GGUF architecture and dual Conv2D approach
+
+The llama.cpp PR was analyzed to understand:
+- Dual Conv2D weight handling for temporal_patch_size=3
+- Spatial merge reshape operations
+- Position embedding resizing strategies
+- Optional tensor loading patterns
+- Qwen3-VL specific architectural details
+
 ## Problem Statement
 
 The current Ollama implementation supports Qwen3-VL models in standard GGUF format where all vision model weights are in a single file. Split GGUF models distribute weights across multiple files with structural differences:
