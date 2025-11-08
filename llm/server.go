@@ -1170,11 +1170,15 @@ func (s *llmServer) getServerStatus(ctx context.Context) (ServerStatus, error) {
 		if s.status != nil && s.status.LastErrMsg != "" {
 			msg = s.status.LastErrMsg
 		}
+		runnerType := "llama"
+		if s.textProcessor != nil {
+			runnerType = "ollama"
+		}
 		if s.cmd.ProcessState.ExitCode() == -1 {
 			// Most likely a signal killed it, log some more details to try to help troubleshoot
-			slog.Warn("llama runner process no longer running", "sys", s.cmd.ProcessState.Sys(), "string", s.cmd.ProcessState)
+			slog.Warn(fmt.Sprintf("%s runner process no longer running", runnerType), "sys", s.cmd.ProcessState.Sys(), "string", s.cmd.ProcessState)
 		}
-		return ServerStatusError, fmt.Errorf("llama runner process no longer running: %d %s", s.cmd.ProcessState.ExitCode(), msg)
+		return ServerStatusError, fmt.Errorf("%s runner process no longer running: %d %s", runnerType, s.cmd.ProcessState.ExitCode(), msg)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d/health", s.port), nil)
@@ -1252,7 +1256,11 @@ func (s *llmServer) WaitUntilRunning(ctx context.Context) error {
 	stallDuration := envconfig.LoadTimeout()    // If no progress happens
 	stallTimer := time.Now().Add(stallDuration) // give up if we stall
 
-	slog.Info("waiting for llama runner to start responding")
+	runnerType := "llama"
+	if s.textProcessor != nil {
+		runnerType = "ollama"
+	}
+	slog.Info(fmt.Sprintf("waiting for %s runner to start responding", runnerType))
 	var lastStatus ServerStatus = -1
 	fullyLoaded := false
 
@@ -1260,9 +1268,9 @@ func (s *llmServer) WaitUntilRunning(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			slog.Warn("client connection closed before server finished loading, aborting load")
-			return fmt.Errorf("timed out waiting for llama runner to start: %w", ctx.Err())
+			return fmt.Errorf("timed out waiting for %s runner to start: %w", runnerType, ctx.Err())
 		case err := <-s.done:
-			return fmt.Errorf("llama runner process has terminated: %w", err)
+			return fmt.Errorf("%s runner process has terminated: %w", runnerType, err)
 		default:
 		}
 		if time.Now().After(stallTimer) {
@@ -1271,14 +1279,14 @@ func (s *llmServer) WaitUntilRunning(ctx context.Context) error {
 			if s.status != nil && s.status.LastErrMsg != "" {
 				msg = s.status.LastErrMsg
 			}
-			return fmt.Errorf("timed out waiting for llama runner to start - progress %0.2f - %s", s.loadProgress, msg)
+			return fmt.Errorf("timed out waiting for %s runner to start - progress %0.2f - %s", runnerType, s.loadProgress, msg)
 		}
 		if s.cmd.ProcessState != nil {
 			msg := ""
 			if s.status != nil && s.status.LastErrMsg != "" {
 				msg = s.status.LastErrMsg
 			}
-			return fmt.Errorf("llama runner process no longer running: %d %s", s.cmd.ProcessState.ExitCode(), msg)
+			return fmt.Errorf("%s runner process no longer running: %d %s", runnerType, s.cmd.ProcessState.ExitCode(), msg)
 		}
 		ctx, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
 		defer cancel()
@@ -1290,7 +1298,7 @@ func (s *llmServer) WaitUntilRunning(ctx context.Context) error {
 		}
 		switch status {
 		case ServerStatusReady:
-			slog.Info(fmt.Sprintf("llama runner started in %0.2f seconds", time.Since(s.loadStart).Seconds()))
+			slog.Info(fmt.Sprintf("%s runner started in %0.2f seconds", runnerType, time.Since(s.loadStart).Seconds()))
 			return nil
 		default:
 			lastStatus = status
