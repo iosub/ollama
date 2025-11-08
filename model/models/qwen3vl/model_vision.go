@@ -349,38 +349,29 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 	patchOutputShape := hiddenStates.Shape()
 	logutil.Trace("SPLIT GGUF Vision: after PatchEmbedding", "shape", patchOutputShape)
 	
-	opts := m.VisionOptions
-	
-	// For split GGUF: Conv3D CONCAT produces 768, need to pad to 1152
-	// Conv3D with temporal_patch_size=3 divides channels: 384+384=768 via CONCAT
-	// llama.cpp Conv2D produces 1152 per weight, uses ADD
-	// We need padding to match QKV weight expectations
-	
+	// Detect split GGUF: Conv3D CONCAT produces 768, non-split produces 1152
 	actualHiddenSize := hiddenStates.Dim(0)
-	logutil.Trace("SPLIT GGUF Vision: dimension check", "actual", actualHiddenSize, "config", opts.hiddenSize, "match", actualHiddenSize == opts.hiddenSize)
+	configHiddenSize := m.VisionOptions.hiddenSize
+	isSplitGGUF := actualHiddenSize != configHiddenSize
 	
-	// Track if padding was applied (indicates split GGUF model)
-	wasPadded := actualHiddenSize != opts.hiddenSize
+	logutil.Trace("SPLIT GGUF Vision: dimension check", "actual", actualHiddenSize, "config", configHiddenSize, "is_split", isSplitGGUF)
 	
-	if wasPadded {
-		// For split GGUF: CONCAT produces 768, pad to 1152
-		logutil.Trace("SPLIT GGUF Vision: padding required", "from", actualHiddenSize, "to", opts.hiddenSize)
+	// For split GGUF: use actual size (768) during vision processing to avoid zero-padding corruption
+	// For non-split: use config size (1152)
+	opts := m.VisionOptions
+	if isSplitGGUF {
+		// CRITICAL: Process vision layers with actual hiddenSize (768) to avoid corrupting 33% with zeros
+		// Padding will be applied AFTER vision processing, before mergers
+		logutil.Trace("SPLIT GGUF Vision: using actual hiddenSize for processing", "size", actualHiddenSize)
+		opts.hiddenSize = actualHiddenSize
 		
-		spatialDim := hiddenStates.Dim(1)
-		paddingSize := opts.hiddenSize - actualHiddenSize
-		padding := ctx.Input().Zeros(hiddenStates.DType(), paddingSize, spatialDim)
-		hiddenStates = hiddenStates.Concat(ctx, padding, 0)
-		
-		logutil.Trace("SPLIT GGUF Vision: padded hiddenStates", "shape", hiddenStates.Shape())
-		
-		// Skip position embedding for split GGUF (dimension incompatibility)
+		// Skip position embedding for split GGUF (dimension incompatibility with padding)
 		logutil.Trace("SPLIT GGUF Vision: skipping position embedding")
 	} else {
 		logutil.Trace("SPLIT GGUF Vision: dimensions match, applying position embedding")
 		hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, opts)
 	}
 
-	// CRITICAL: Pass updated opts to positions() so cos/sin dimensions match padded tensor
 	cos, sin := m.positionsWithOpts(ctx, grid, opts)
 
 	deepstackStates := make([]ml.Tensor, len(m.deepstackVisualIndexes))
@@ -392,6 +383,29 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 				deepstackStates[idx] = m.DeepstackMerger[idx].Forward(ctx, hiddenStates, true, opts)
 			}
 		}
+	}
+
+	// Apply padding AFTER vision layers for split GGUF to avoid corrupting visual information
+	if isSplitGGUF {
+		logutil.Trace("SPLIT GGUF Vision: applying padding after layers", "from", actualHiddenSize, "to", configHiddenSize)
+		spatialDim := hiddenStates.Dim(1)
+		paddingSize := configHiddenSize - actualHiddenSize
+		padding := ctx.Input().Zeros(hiddenStates.DType(), paddingSize, spatialDim)
+		hiddenStates = hiddenStates.Concat(ctx, padding, 0)
+		logutil.Trace("SPLIT GGUF Vision: padded main output", "shape", hiddenStates.Shape())
+		
+		// Pad deepstack features too
+		for i, ds := range deepstackStates {
+			if ds != nil {
+				dsSpatialDim := ds.Dim(1)
+				dsPadding := ctx.Input().Zeros(ds.DType(), paddingSize, dsSpatialDim)
+				deepstackStates[i] = ds.Concat(ctx, dsPadding, 0)
+				logutil.Trace("SPLIT GGUF Vision: padded deepstack", "index", i, "shape", deepstackStates[i].Shape())
+			}
+		}
+		
+		// Restore opts.hiddenSize for mergers
+		opts.hiddenSize = configHiddenSize
 	}
 
 	hiddenStates = m.PatchMerger.Forward(ctx, hiddenStates, false, opts)
