@@ -269,15 +269,17 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 		// Save original hiddenSize for merger calculations
 		opts.configHiddenSize = opts.hiddenSize  // 1152
 		
-		// PAD FIRST: [768, spatial] → [1152, spatial] BEFORE position embedding
+		// Apply position embedding to REAL data [768, spatial] with adjusted opts
+		posOpts := opts
+		posOpts.hiddenSize = actualHiddenSize  // 768
+		hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, posOpts)
+		
+		// AFTER position embedding, pad [768, spatial] → [1152, spatial] for vision layers
 		spatialDim := hiddenStates.Dim(1)
 		paddingSize := opts.hiddenSize - actualHiddenSize  // 1152 - 768 = 384
 		padding := ctx.Input().Zeros(hiddenStates.DType(), paddingSize, spatialDim)
 		hiddenStates = hiddenStates.Concat(ctx, padding, 0)  // [768+384, spatial] = [1152, spatial]
-		logutil.Trace("padded hiddenStates BEFORE position embedding", "from", actualHiddenSize, "to", opts.hiddenSize, "shape", hiddenStates.Shape())
-		
-		// NOW apply position embedding to full [1152, spatial] tensor (no truncation needed)
-		hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, opts)
+		logutil.Trace("padded hiddenStates AFTER position embedding", "from", actualHiddenSize, "to", opts.hiddenSize, "shape", hiddenStates.Shape())
 	} else {
 		hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, opts)
 	}
