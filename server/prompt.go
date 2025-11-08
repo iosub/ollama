@@ -70,8 +70,9 @@ func chatPrompt(ctx context.Context, m *Model, tokenize tokenizeFunc, opts *api.
 	currMsgIdx := n
 
 	// DISABLED: This logic breaks split GGUF models by replacing image tags before renderer processes them
-	// isSplitQwen := slices.Contains(m.Config.ModelFamilies, "qwen3vl") && len(m.ProjectorPaths) > 0
-	isSplitQwen := false
+	// For qwen3-vl models, we need to replace [img] tags with vision tokens
+	// This applies to both split and non-split models
+	isQwen3VL := slices.Contains(m.Config.ModelFamilies, "qwen3vl")
 
 	useRendererPrefix := m.Config.Renderer != "qwen3-vl-instruct" && m.Config.Renderer != "qwen3-vl-thinking"
 
@@ -104,7 +105,7 @@ func chatPrompt(ctx context.Context, m *Model, tokenize tokenizeFunc, opts *api.
 		}
 
 		content := prefix + prompt
-		if isSplitQwen {
+		if isQwen3VL {
 			for j := range msg.Images {
 				tag := fmt.Sprintf("[img-%d]", startImgID+j)
 				content = strings.ReplaceAll(content, tag, "<|vision_start|><|image_pad|><|vision_end|>")
