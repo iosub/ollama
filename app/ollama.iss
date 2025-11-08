@@ -90,7 +90,11 @@ DialogFontSize=12
 [Files]
 #if FileExists("..\dist\windows-ollama-app-amd64.exe")
 Source: "..\dist\windows-ollama-app-amd64.exe"; DestDir: "{app}"; DestName: "{#MyAppExeName}" ;Check: not IsArm64();  Flags: ignoreversion 64bit; BeforeInstall: TaskKill('{#MyAppExeName}')
+#if FileExists("..\dist\windows-amd64\vc_redist.x64.exe")
 Source: "..\dist\windows-amd64\vc_redist.x64.exe"; DestDir: "{tmp}"; Check: not IsArm64() and vc_redist_needed(); Flags: deleteafterinstall
+#elif FileExists("..\dist\vc_redist.x64.exe")
+Source: "..\dist\vc_redist.x64.exe"; DestDir: "{tmp}"; Check: not IsArm64() and vc_redist_needed(); Flags: deleteafterinstall
+#endif
 Source: "..\dist\windows-amd64\ollama.exe"; DestDir: "{app}"; Check: not IsArm64(); Flags: ignoreversion 64bit; BeforeInstall: TaskKill('ollama.exe')
 Source: "..\dist\windows-amd64\lib\ollama\*"; DestDir: "{app}\lib\ollama\"; Check: not IsArm64(); Flags: ignoreversion 64bit recursesubdirs
 #endif

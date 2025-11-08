@@ -336,10 +336,12 @@ function buildApp() {
     
     # Clean previous build artifacts
     Remove-Item "ollama.syso" -ErrorAction SilentlyContinue
+    # Remove-Item "cmd\app\ollama.syso" -ErrorAction SilentlyContinue
     Remove-Item "${script:SRC_DIR}\dist\windows-${script:TARGET_ARCH}-app.exe" -ErrorAction SilentlyContinue
     
     # Generate Windows resources
-    & windres -l 0 -o ollama.syso ollama.rc
+    # Resource needs to live alongside the GUI sources for Go to link it
+    & windres --target=pe-x86-64 -l 0 -o "cmd/app/ollama.syso" ollama.rc
     if ($LASTEXITCODE -ne 0) { 
         write-error "windres failed"
         exit($LASTEXITCODE)
@@ -348,13 +350,13 @@ function buildApp() {
     # CRITICAL: Clear llvm-mingw environment to use MSVC for Win32 API compatibility
     # llvm-mingw produces broken context menus in system tray apps
     $env:CGO_ENABLED="1"
-    $env:CC=""
+        $env:CC=""
     $env:CXX=""
     Remove-Item env:\CGO_CFLAGS -ErrorAction SilentlyContinue
     Remove-Item env:\CGO_CXXFLAGS -ErrorAction SilentlyContinue
     
     write-host "Compiling GUI app with MSVC (ensures working context menus)"
-    & go build -trimpath -ldflags "-s -w -H windowsgui -X=github.com/ollama/ollama/version.Version=$script:VERSION -X=github.com/ollama/ollama/server.mode=release" -o "${script:SRC_DIR}\dist\windows-${script:TARGET_ARCH}-app.exe" .
+        & go build -trimpath -ldflags "-s -w -H windowsgui -X=github.com/ollama/ollama/app/version.Version=$script:VERSION -X=github.com/ollama/ollama/server.mode=release" -o "${script:SRC_DIR}\dist\windows-${script:TARGET_ARCH}-app.exe" .\cmd\app
     if ($LASTEXITCODE -ne 0) { 
         write-error "App build failed"
         exit($LASTEXITCODE)

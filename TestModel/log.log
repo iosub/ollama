@@ -1,0 +1,309 @@
+batchID=729
+time=2025-11-06T19:40:24.350-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=730
+time=2025-11-06T19:40:24.350-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=730
+time=2025-11-06T19:40:24.350-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=730 id=731
+time=2025-11-06T19:40:24.350-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=731 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.350-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=731
+time=2025-11-06T19:40:24.350-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=731
+time=2025-11-06T19:40:24.360-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=730
+time=2025-11-06T19:40:24.360-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=730
+time=2025-11-06T19:40:24.360-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=730 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.361-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=8 from=[23]
+time=2025-11-06T19:40:24.361-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=730
+time=2025-11-06T19:40:24.361-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=731
+time=2025-11-06T19:40:24.361-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=731
+time=2025-11-06T19:40:24.361-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=731 id=732
+time=2025-11-06T19:40:24.361-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=732 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.361-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=732
+time=2025-11-06T19:40:24.361-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=732
+time=2025-11-06T19:40:24.371-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=731
+time=2025-11-06T19:40:24.371-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=731
+time=2025-11-06T19:40:24.371-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=731 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.372-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=9 from=[24]
+time=2025-11-06T19:40:24.372-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=731
+time=2025-11-06T19:40:24.372-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=732
+time=2025-11-06T19:40:24.372-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=732
+time=2025-11-06T19:40:24.372-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=732 id=733
+time=2025-11-06T19:40:24.372-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=733 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.372-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=733
+time=2025-11-06T19:40:24.372-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=733
+time=2025-11-06T19:40:24.382-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=732
+time=2025-11-06T19:40:24.382-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=732
+time=2025-11-06T19:40:24.382-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=732 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.382-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=0 from=[15]
+time=2025-11-06T19:40:24.382-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=732
+time=2025-11-06T19:40:24.382-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=733
+time=2025-11-06T19:40:24.383-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=733
+time=2025-11-06T19:40:24.383-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=733 id=734
+time=2025-11-06T19:40:24.383-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=734 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.384-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=734
+time=2025-11-06T19:40:24.384-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=734
+time=2025-11-06T19:40:24.394-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=733
+time=2025-11-06T19:40:24.394-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=733
+time=2025-11-06T19:40:24.394-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=733 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.395-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=1 from=[16]
+time=2025-11-06T19:40:24.395-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=733
+time=2025-11-06T19:40:24.395-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=734
+time=2025-11-06T19:40:24.395-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=734
+time=2025-11-06T19:40:24.395-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=734 id=735
+time=2025-11-06T19:40:24.395-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=735 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.395-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=735
+time=2025-11-06T19:40:24.395-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=735
+time=2025-11-06T19:40:24.405-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=734
+time=2025-11-06T19:40:24.405-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=734
+time=2025-11-06T19:40:24.405-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=734 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.405-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=2 from=[17]
+time=2025-11-06T19:40:24.405-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=734
+time=2025-11-06T19:40:24.405-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=735
+time=2025-11-06T19:40:24.405-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=735
+time=2025-11-06T19:40:24.405-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=735 id=736
+time=2025-11-06T19:40:24.405-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=736 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.406-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=736
+time=2025-11-06T19:40:24.406-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=736
+time=2025-11-06T19:40:24.415-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=735
+time=2025-11-06T19:40:24.415-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=735
+time=2025-11-06T19:40:24.415-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=735 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.416-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=3 from=[18]
+time=2025-11-06T19:40:24.416-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=735
+time=2025-11-06T19:40:24.416-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=736
+time=2025-11-06T19:40:24.416-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=736
+time=2025-11-06T19:40:24.416-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=736 id=737
+time=2025-11-06T19:40:24.416-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=737 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.417-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=737
+time=2025-11-06T19:40:24.417-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=737
+time=2025-11-06T19:40:24.427-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=736
+time=2025-11-06T19:40:24.427-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=736
+time=2025-11-06T19:40:24.427-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=736 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.427-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=4 from=[19]
+time=2025-11-06T19:40:24.427-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=736
+time=2025-11-06T19:40:24.427-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=737
+time=2025-11-06T19:40:24.427-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=737
+time=2025-11-06T19:40:24.427-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=737 id=738
+time=2025-11-06T19:40:24.427-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=738 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.428-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=738
+time=2025-11-06T19:40:24.428-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=738
+time=2025-11-06T19:40:24.438-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=737
+time=2025-11-06T19:40:24.438-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=737
+time=2025-11-06T19:40:24.438-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=737 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.438-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=5 from=[20]
+time=2025-11-06T19:40:24.438-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=737
+time=2025-11-06T19:40:24.438-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=738
+time=2025-11-06T19:40:24.438-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=738
+time=2025-11-06T19:40:24.438-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=738 id=739
+time=2025-11-06T19:40:24.438-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=739 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.439-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=739
+time=2025-11-06T19:40:24.439-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=739
+time=2025-11-06T19:40:24.449-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=738
+time=2025-11-06T19:40:24.449-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=738
+time=2025-11-06T19:40:24.449-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=738 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.449-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=6 from=[21]
+time=2025-11-06T19:40:24.449-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=738
+time=2025-11-06T19:40:24.449-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=739
+time=2025-11-06T19:40:24.450-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=739
+time=2025-11-06T19:40:24.450-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=739 id=740
+time=2025-11-06T19:40:24.450-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=740 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.450-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=740
+time=2025-11-06T19:40:24.450-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=740
+time=2025-11-06T19:40:24.460-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=739
+time=2025-11-06T19:40:24.460-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=739
+time=2025-11-06T19:40:24.460-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=739 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.460-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=7 from=[22]
+time=2025-11-06T19:40:24.460-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=739
+time=2025-11-06T19:40:24.460-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=740
+time=2025-11-06T19:40:24.460-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=740
+time=2025-11-06T19:40:24.460-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=740 id=741
+time=2025-11-06T19:40:24.460-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=741 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.461-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=741
+time=2025-11-06T19:40:24.461-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=741
+time=2025-11-06T19:40:24.471-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=740
+time=2025-11-06T19:40:24.471-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=740
+time=2025-11-06T19:40:24.471-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=740 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.471-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=8 from=[23]
+time=2025-11-06T19:40:24.471-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=740
+time=2025-11-06T19:40:24.471-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=741
+time=2025-11-06T19:40:24.471-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=741
+time=2025-11-06T19:40:24.471-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=741 id=742
+time=2025-11-06T19:40:24.471-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=742 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.472-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=742
+time=2025-11-06T19:40:24.472-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=742
+time=2025-11-06T19:40:24.482-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=741
+time=2025-11-06T19:40:24.482-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=741
+time=2025-11-06T19:40:24.482-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=741 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.482-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=9 from=[24]
+time=2025-11-06T19:40:24.482-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=741
+time=2025-11-06T19:40:24.482-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=742
+time=2025-11-06T19:40:24.482-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=742
+time=2025-11-06T19:40:24.482-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=742 id=743
+time=2025-11-06T19:40:24.482-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=743 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.483-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=743
+time=2025-11-06T19:40:24.483-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=743
+time=2025-11-06T19:40:24.493-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=742
+time=2025-11-06T19:40:24.493-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=742
+time=2025-11-06T19:40:24.493-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=742 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.493-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=0 from=[15]
+time=2025-11-06T19:40:24.493-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=742
+time=2025-11-06T19:40:24.493-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=743
+time=2025-11-06T19:40:24.493-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=743
+time=2025-11-06T19:40:24.493-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=743 id=744
+time=2025-11-06T19:40:24.493-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=744 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.494-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=744
+time=2025-11-06T19:40:24.494-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=744
+time=2025-11-06T19:40:24.504-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=743
+time=2025-11-06T19:40:24.504-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=743
+time=2025-11-06T19:40:24.504-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=743 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.504-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=1 from=[16]
+time=2025-11-06T19:40:24.504-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=743
+time=2025-11-06T19:40:24.504-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=744
+time=2025-11-06T19:40:24.504-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=744
+time=2025-11-06T19:40:24.504-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=744 id=745
+time=2025-11-06T19:40:24.504-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=745 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.505-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=745
+time=2025-11-06T19:40:24.505-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=745
+time=2025-11-06T19:40:24.515-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=744
+time=2025-11-06T19:40:24.515-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=744
+time=2025-11-06T19:40:24.515-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=744 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.515-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=2 from=[17]
+time=2025-11-06T19:40:24.515-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=744
+time=2025-11-06T19:40:24.515-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=745
+time=2025-11-06T19:40:24.515-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=745
+time=2025-11-06T19:40:24.515-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=745 id=746
+time=2025-11-06T19:40:24.515-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=746 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.516-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=746
+time=2025-11-06T19:40:24.516-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=746
+time=2025-11-06T19:40:24.526-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=745
+time=2025-11-06T19:40:24.526-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=745
+time=2025-11-06T19:40:24.526-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=745 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.526-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=3 from=[18]
+time=2025-11-06T19:40:24.526-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=745
+time=2025-11-06T19:40:24.526-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=746
+time=2025-11-06T19:40:24.526-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=746
+time=2025-11-06T19:40:24.526-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=746 id=747
+time=2025-11-06T19:40:24.526-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=747 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.527-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=747
+time=2025-11-06T19:40:24.527-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=747
+time=2025-11-06T19:40:24.537-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=746
+time=2025-11-06T19:40:24.537-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=746
+time=2025-11-06T19:40:24.537-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=746 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.537-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=4 from=[19]
+time=2025-11-06T19:40:24.537-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=746
+time=2025-11-06T19:40:24.537-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=747
+time=2025-11-06T19:40:24.537-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=747
+time=2025-11-06T19:40:24.537-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=747 id=748
+time=2025-11-06T19:40:24.537-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=748 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.538-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=748
+time=2025-11-06T19:40:24.538-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=748
+time=2025-11-06T19:40:24.548-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=747
+time=2025-11-06T19:40:24.548-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=747
+time=2025-11-06T19:40:24.548-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=747 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.548-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=5 from=[20]
+time=2025-11-06T19:40:24.548-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=747
+time=2025-11-06T19:40:24.548-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=748
+time=2025-11-06T19:40:24.548-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=748
+time=2025-11-06T19:40:24.548-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=748 id=749
+time=2025-11-06T19:40:24.548-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=749 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.549-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=749
+time=2025-11-06T19:40:24.549-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=749
+time=2025-11-06T19:40:24.559-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=748
+time=2025-11-06T19:40:24.559-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=748
+time=2025-11-06T19:40:24.559-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=748 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.559-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=6 from=[21]
+time=2025-11-06T19:40:24.559-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=748
+time=2025-11-06T19:40:24.559-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=749
+time=2025-11-06T19:40:24.559-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=749
+time=2025-11-06T19:40:24.559-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=749 id=750
+time=2025-11-06T19:40:24.560-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=750 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.560-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=750
+time=2025-11-06T19:40:24.560-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=750
+time=2025-11-06T19:40:24.570-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=749
+time=2025-11-06T19:40:24.570-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=749
+time=2025-11-06T19:40:24.570-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=749 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.570-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=7 from=[22]
+time=2025-11-06T19:40:24.570-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=749
+time=2025-11-06T19:40:24.570-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=750
+time=2025-11-06T19:40:24.570-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=750
+time=2025-11-06T19:40:24.570-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=750 id=751
+time=2025-11-06T19:40:24.570-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=751 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.571-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=751
+time=2025-11-06T19:40:24.571-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=751
+time=2025-11-06T19:40:24.581-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=750
+time=2025-11-06T19:40:24.581-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=750
+time=2025-11-06T19:40:24.581-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=750 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.581-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=8 from=[23]
+time=2025-11-06T19:40:24.581-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=750
+time=2025-11-06T19:40:24.581-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=751
+time=2025-11-06T19:40:24.581-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=751
+time=2025-11-06T19:40:24.581-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=751 id=752
+time=2025-11-06T19:40:24.581-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=752 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.582-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=752
+time=2025-11-06T19:40:24.582-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=752
+time=2025-11-06T19:40:24.592-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=751
+time=2025-11-06T19:40:24.592-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=751
+time=2025-11-06T19:40:24.592-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=751 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.592-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=9 from=[24]
+time=2025-11-06T19:40:24.592-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=751
+time=2025-11-06T19:40:24.592-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=752
+time=2025-11-06T19:40:24.592-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=752
+time=2025-11-06T19:40:24.592-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=752 id=753
+time=2025-11-06T19:40:24.592-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=753 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.593-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=753
+time=2025-11-06T19:40:24.593-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=753
+time=2025-11-06T19:40:24.603-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=752
+time=2025-11-06T19:40:24.603-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=752
+time=2025-11-06T19:40:24.603-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=752 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.603-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=0 from=[15]
+time=2025-11-06T19:40:24.603-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=752
+time=2025-11-06T19:40:24.603-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=753
+time=2025-11-06T19:40:24.603-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=753
+time=2025-11-06T19:40:24.603-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=753 id=754
+time=2025-11-06T19:40:24.603-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=754 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.603-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=754
+time=2025-11-06T19:40:24.603-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=754
+time=2025-11-06T19:40:24.614-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=753
+time=2025-11-06T19:40:24.614-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=753
+time=2025-11-06T19:40:24.614-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=753 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.614-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=1 from=[16]
+time=2025-11-06T19:40:24.614-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=753
+time=2025-11-06T19:40:24.614-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=754
+time=2025-11-06T19:40:24.614-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=754
+time=2025-11-06T19:40:24.614-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=754 id=755
+time=2025-11-06T19:40:24.614-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=755 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.614-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=755
+time=2025-11-06T19:40:24.615-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=755
+time=2025-11-06T19:40:24.625-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=754
+time=2025-11-06T19:40:24.625-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=754
+time=2025-11-06T19:40:24.625-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=754 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.625-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=2 from=[17]
+time=2025-11-06T19:40:24.625-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=754
+time=2025-11-06T19:40:24.625-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=755
+time=2025-11-06T19:40:24.625-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=755
+time=2025-11-06T19:40:24.625-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=755 id=756
+time=2025-11-06T19:40:24.625-05:00 level=TRACE source=runner.go:570 msg="forwardBatch iBatch" batchID=756 seqIdx=0 seq.iBatch=0 i+1=1 len(seq.inputs)=1
+time=2025-11-06T19:40:24.625-05:00 level=TRACE source=runner.go:446 msg="forwardBatch waiting for compute to start" pendingBatch.id=756
+time=2025-11-06T19:40:24.625-05:00 level=TRACE source=runner.go:622 msg="computeBatch: waiting for inputs to be ready" batchID=756
+time=2025-11-06T19:40:24.631-05:00 level=DEBUG source=sched.go:385 msg="context for request finished" runner.name=hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M runner.inference="[{ID:17aacd29-624e-4ad3-904d-bcea65a08029 Library:Vulkan}]" runner.size="6.4 GiB" runner.vram="6.4 GiB" runner.parallel=1 runner.pid=18028 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89 runner.num_ctx=8192
+[GIN] 2025/11/06 - 19:40:24 | 200 |    9.1684177s |       127.0.0.1 | POST     "/api/chat"
+time=2025-11-06T19:40:24.631-05:00 level=DEBUG source=sched.go:290 msg="runner with non-zero duration has gone idle, adding timer" runner.name=hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M runner.inference="[{ID:17aacd29-624e-4ad3-904d-bcea65a08029 Library:Vulkan}]" runner.size="6.4 GiB" runner.vram="6.4 GiB" runner.parallel=1 runner.pid=18028 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89 runner.num_ctx=8192 duration=5m0s
+time=2025-11-06T19:40:24.631-05:00 level=DEBUG source=sched.go:308 msg="after processing request finished event" runner.name=hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M runner.inference="[{ID:17aacd29-624e-4ad3-904d-bcea65a08029 Library:Vulkan}]" runner.size="6.4 GiB" runner.vram="6.4 GiB" runner.parallel=1 runner.pid=18028 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89 runner.num_ctx=8192 refCount=0
+time=2025-11-06T19:40:24.635-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=755
+time=2025-11-06T19:40:24.635-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=755
+time=2025-11-06T19:40:24.635-05:00 level=TRACE source=runner.go:731 msg="computeBatch: vocab details" batchID=755 seqIdx=0 len(logits)=151936 len(activeBatch.batch.Outputs)=1 vocabSize=151936 iBatches=[0]
+time=2025-11-06T19:40:24.636-05:00 level=TRACE source=bytepairencoding.go:280 msg=decoded string=3 from=[18]
+time=2025-11-06T19:40:24.636-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=755
+time=2025-11-06T19:40:24.636-05:00 level=TRACE source=runner.go:624 msg="computeBatch: inputs are ready" batchID=756
+time=2025-11-06T19:40:24.636-05:00 level=TRACE source=runner.go:697 msg="computeBatch: signaling computeStartedCh" batchID=756
+time=2025-11-06T19:40:24.636-05:00 level=TRACE source=runner.go:448 msg="forwardBatch compute started, setting up next batch" pendingBatch.id=756 id=757
+time=2025-11-06T19:40:24.647-05:00 level=TRACE source=runner.go:705 msg="computeBatch: logits ready" batchID=756
+time=2025-11-06T19:40:24.647-05:00 level=TRACE source=runner.go:710 msg="computeBatch: decoding" batchID=756
+time=2025-11-06T19:40:24.647-05:00 level=TRACE source=runner.go:629 msg="computeBatch: outputs are ready" batchID=756
+
+
+>> /bye
+PS C:\IA\tools\ollama\dist\windows-amd64> .\ollama.exe run hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M 
+>>> "C:\IA\1.png"  extrae todos los datos de la imagen
+Added image 'C:\IA\1.png'
+La imagen que has proporcionado no contiene ningún dato visual real, sino que consiste en una secuencia repetida de texto:
+
+```
+# 012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789010123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012
+
+>>> Send a message (/? for help)

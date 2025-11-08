@@ -1,0 +1,140 @@
+package nn
+
+import (
+	"github.com/ollama/ollama/logutil"
+	"github.com/ollama/ollama/ml"
+)
+
+// Bias broadcast helpers ensure Conv layers can add channel biases even when
+// ggml exposes tensors in unexpected shapes after convolution.
+
+type Conv2D struct {
+	Weight ml.Tensor `gguf:"weight"`
+	Bias   ml.Tensor `gguf:"bias"`
+}
+
+func (m *Conv2D) Forward(ctx ml.Context, t ml.Tensor, s0, s1, p0, p1, d0, d1 int) ml.Tensor {
+	t = m.Weight.Conv2D(ctx, t, s0, s1, p0, p1, d0, d1)
+	if m.Bias != nil {
+		// Bias shape is (out_channels,) while t shape is (width, height, out_channels, batch)
+		t = t.Add(ctx, m.Bias.Reshape(ctx, 1, 1, -1))
+	}
+	return t
+}
+
+type Conv3D struct {
+	Weight  ml.Tensor `gguf:"weight"`
+	Weight1 ml.Tensor `gguf:"weight.1"` // Temporal weight for Qwen3-VL split models
+	Bias    ml.Tensor `gguf:"bias"`
+}
+
+func (m *Conv3D) Forward(ctx ml.Context, t ml.Tensor, c, s0, s1, s2, p0, p1, p2, d0, d1, d2 int) ml.Tensor {
+	bias := m.Bias
+	biasShape := []int(nil)
+	biasSize := 0
+	if bias != nil {
+		bias = bias.Contiguous(ctx)
+		biasShape = bias.Shape()
+		biasSize = 1
+		for _, d := range biasShape {
+			biasSize *= d
+		}
+	}
+
+	// For Qwen3-VL split models: Weight1 indicates split GGUF format
+	// temporal_patch_size is controlled by caller (forced to 2), just use primary weight
+	if m.Weight1 != nil {
+		logutil.Trace("conv3d detected dual-weight split model", "weight_shape", m.Weight.Shape(), "weight1_shape", m.Weight1.Shape())
+	}
+
+	convChannels := c
+	if m.Weight != nil {
+		if shape := m.Weight.Shape(); len(shape) >= 4 && c > 0 && shape[3]%c != 0 {
+			convChannels = 1
+			logutil.Trace("conv3d adjusting channel divisor", "original", c, "new", convChannels, "out_channels", shape[3])
+		}
+	}
+
+	// Apply convolution with primary weight
+	input := t
+	t = m.Weight.Conv3D(ctx, input, convChannels, s0, s1, s2, p0, p1, p2, d0, d1, d2)
+
+	// If secondary temporal kernel present (split GGUF), accumulate its contribution from the original input.
+	if m.Weight1 != nil {
+		extra := m.Weight1.Conv3D(ctx, input, convChannels, s0, s1, s2, p0, p1, p2, d0, d1, d2)
+		t = t.Add(ctx, extra)
+	}
+
+	if bias != nil {
+		outShape := t.Shape()
+		totalOut := 1
+		for _, d := range outShape {
+			totalOut *= d
+		}
+
+		logutil.Trace("conv3d bias reshape", "bias_shape", biasShape, "output_shape", outShape, "bias_size", biasSize, "total_output", totalOut)
+
+		if biasSize == 0 {
+			logutil.Trace("conv3d bias reshape", "strategy", "skip-zero")
+			return t
+		}
+
+		if len(outShape) < 2 {
+			logutil.Trace("conv3d bias reshape", "strategy", "scalar-or-1d")
+			return t.Add(ctx, bias.Reshape(ctx, outShape...))
+		}
+
+	if len(outShape) == 2 {
+		channels := outShape[0]
+		seqLen := outShape[1]
+		
+		if biasSize == channels {
+			// Standard broadcast: bias [channels] -> [channels, 1] -> [channels, seq_len]
+			biasReshaped := bias.Reshape(ctx, channels, 1)
+			logutil.Trace("conv3d bias reshape", "strategy", "broadcast-2d", "bias_shape", biasReshaped.Shape(), "out_shape", outShape)
+			return t.Add(ctx, biasReshaped)
+		}
+
+		if biasSize > channels && biasSize%channels == 0 {
+			group := biasSize / channels
+			collapsed := bias.Reshape(ctx, channels, group).SumRows(ctx)
+			biasReshaped := collapsed.Reshape(ctx, channels, 1)
+			logutil.Trace("conv3d bias reshape", "strategy", "collapse-groups", "bias_shape", bias.Shape(), "out_shape", outShape, "group", group)
+			return t.Add(ctx, biasReshaped)
+		}
+
+		if totalOut%biasSize == 0 && biasSize > channels {
+			// Bias is larger than output channels - try to broadcast across sequence dimension
+			repeats := totalOut / biasSize
+			if repeats*biasSize == totalOut {
+				biasReshaped := bias.Reshape(ctx, biasSize, 1).Repeat(ctx, 1, repeats)
+				biasFlat := biasReshaped.Reshape(ctx, outShape...)
+				logutil.Trace("conv3d bias reshape", "strategy", "broadcast-repeat", "bias_shape", bias.Shape(), "out_shape", outShape, "repeats", repeats)
+				return t.Add(ctx, biasFlat)
+			}
+		}
+
+		// Fallback: skip if dimensions don't match
+		logutil.Trace("conv3d bias reshape", "strategy", "skip-bias-temporarily-v2", "reason", "dimension-mismatch", "channels", channels, "bias_size", biasSize, "seq_len", seqLen)
+		return t
+	}
+	
+	// Original logic for Conv3D
+	channels := outShape[0]
+	if biasSize != channels {
+		logutil.Trace("conv3d bias reshape", "strategy", "skip-incompatible", "channels", channels, "bias_size", biasSize)
+		return t
+	}
+
+	remaining := outShape[1:]
+	broadcastShape := append([]int{channels}, make([]int, len(remaining))...)
+	fullShape := append([]int{channels}, remaining...)
+
+	reshaped := t.Contiguous(ctx).Reshape(ctx, fullShape...)
+	biasExpanded := bias.Reshape(ctx, broadcastShape...)
+	logutil.Trace("conv3d bias reshape", "strategy", "axis-first", "full_shape", reshaped.Shape(), "bias_shape", biasExpanded.Shape())
+	withBias := reshaped.Add(ctx, biasExpanded)
+	return withBias.Reshape(ctx, outShape...)
+}
+	return t
+}

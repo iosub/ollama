@@ -17,6 +17,7 @@ import (
 	"reflect"
 	"regexp"
 	"runtime"
+	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -729,15 +730,33 @@ func (s *Server) computeBatch(activeBatch batchState) {
 		// sample a token
 		vocabSize := len(outputs) / activeBatch.batch.Outputs.Dim(0)
 		logutil.Trace("computeBatch: vocab details", "batchID", activeBatch.id, "seqIdx", i, "len(logits)", len(outputs), "len(activeBatch.batch.Outputs)", activeBatch.batch.Outputs.Dim(0), "vocabSize", vocabSize, "iBatches", iBatches)
-		token, err := seq.sampler.Sample(outputs[iBatches[i]*vocabSize : (iBatches[i]+1)*vocabSize])
+		logits := outputs[iBatches[i]*vocabSize : (iBatches[i]+1)*vocabSize]
+		if seq.numPredicted == 1 && len(seq.pendingResponses) == 0 {
+			vocab := s.model.(model.TextProcessor).Vocabulary()
+			eosIDs := vocab.EOS
+			for _, eosID := range eosIDs {
+				if int(eosID) < len(logits) {
+					logits[eosID] = float32(math.Inf(-1))
+				}
+			}
+
+			for _, special := range vocab.SpecialVocabulary() {
+				id := vocab.Encode(special)
+				if id >= 0 && int(id) < len(logits) {
+					logits[id] = float32(math.Inf(-1))
+				}
+			}
+		}
+		token, err := seq.sampler.Sample(logits)
 		if err != nil {
 			panic("failed to sample token")
 		}
 
 		nextBatchTokens[i].Token = token
+		isEOS := s.model.(model.TextProcessor).Is(token, model.SpecialEOS)
 
 		// if it's an end of sequence token, break
-		if s.model.(model.TextProcessor).Is(token, model.SpecialEOS) {
+		if isEOS {
 			// TODO (jmorganca): we should send this back
 			// as it's important for the /api/generate context
 			// seq.responses <- piece
