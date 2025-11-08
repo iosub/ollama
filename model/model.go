@@ -465,17 +465,27 @@ func NewWithProjector(modelPath string, projectorPaths []string, params ml.Backe
 		merged = make(fsggml.KV)
 	}
 
+	// Load projector GGUFs and merge their metadata
 	for _, projector := range projectorPaths {
-		cfg, err := ggmlBackend.AttachProjector(projector)
+		// Open projector file
+		projFile, err := os.Open(projector)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to open projector %s: %w", projector, err)
 		}
-		applyProjectorMetadata(merged, cfg)
+		defer projFile.Close()
+		
+		// Parse projector KV metadata (no array size limit for projectors)
+		projGGML, err := fsggml.Decode(projFile, -1)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode projector %s: %w", projector, err)
+		}
+		
+		// Apply projector metadata to merged config
+		applyProjectorMetadata(merged, projGGML.KV())
 	}
 
-	ggmlBackend.SetConfig(merged)
-
-	m, err := modelForArch(ggmlBackend.Config())
+	// Use merged config for model creation
+	m, err := modelForArch(merged)
 	if err != nil {
 		return nil, err
 	}
