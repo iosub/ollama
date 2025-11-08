@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"github.com/ollama/ollama/fs"
+	"github.com/ollama/ollama/logutil"
 	"github.com/ollama/ollama/ml"
 	"github.com/ollama/ollama/ml/nn"
 )
@@ -188,6 +189,15 @@ func (m *VisionPositionEmbedding) Forward(ctx ml.Context, hiddenStates ml.Tensor
 	n := hiddenStates.Dim(0)
 	positionEmbeds := m.PositionEmbedding.Forward(ctx, indices)
 	positionEmbeds = positionEmbeds.Mul(ctx, weights)
+	
+	// For split GGUF: if positionEmbeds has more channels than hiddenStates, use only first n channels
+	posEmbedDim := positionEmbeds.Dim(0)
+	if posEmbedDim > n {
+		// Use View to get first n channels: [1152, ...] -> [768, ...]
+		positionEmbeds = positionEmbeds.View(ctx, 0, n, positionEmbeds.Stride(1), positionEmbeds.Dim(1))
+		logutil.Trace("position embedding truncated for split GGUF", "original", posEmbedDim, "used", n, "hidden", hiddenStates.Shape())
+	}
+	
 	positionEmbeds = positionEmbeds.Reshape(ctx, n, -1, 4)
 
 	positionEmbeds = positionEmbeds.View(ctx, 0, n, positionEmbeds.Stride(1), grid.Height*grid.Width).
@@ -251,19 +261,28 @@ func (m *VisionModel) positions(ctx ml.Context, grid *Grid) (_, _ ml.Tensor) {
 func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid) (ml.Tensor, []ml.Tensor) {
 	pixelValues = pixelValues.Reshape(ctx, m.patchSize, m.patchSize, m.temporalPatchSize, -1)
 	hiddenStates := m.PatchEmbedding.Forward(ctx, pixelValues, m.numChannels, m.patchSize, m.patchSize, m.temporalPatchSize, 0, 0, 0, 1, 1, 1)
-	hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, m.VisionOptions)
+	
+	// For split GGUF: adjust hiddenSize if PatchEmbedding produced fewer channels
+	actualHiddenSize := hiddenStates.Dim(0)
+	opts := m.VisionOptions
+	if actualHiddenSize != opts.hiddenSize {
+		logutil.Trace("adjusting hiddenSize for split GGUF", "config", opts.hiddenSize, "actual", actualHiddenSize)
+		opts.hiddenSize = actualHiddenSize
+	}
+	
+	hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, opts)
 
 	cos, sin := m.positions(ctx, grid)
 
 	deepstackStates := make([]ml.Tensor, len(m.deepstackVisualIndexes))
 	for i, layer := range m.Layers {
-		hiddenStates = layer.Forward(ctx, hiddenStates, cos, sin, m.VisionOptions)
+		hiddenStates = layer.Forward(ctx, hiddenStates, cos, sin, opts)
 		if i := slices.Index(m.deepstackVisualIndexes, int32(i)); i >= 0 {
-			deepstackStates[i] = m.DeepstackMerger[i].Forward(ctx, hiddenStates, true, m.VisionOptions)
+			deepstackStates[i] = m.DeepstackMerger[i].Forward(ctx, hiddenStates, true, opts)
 		}
 	}
 
-	hiddenStates = m.PatchMerger.Forward(ctx, hiddenStates, false, m.VisionOptions)
+	hiddenStates = m.PatchMerger.Forward(ctx, hiddenStates, false, opts)
 	return hiddenStates, deepstackStates
 }
 
