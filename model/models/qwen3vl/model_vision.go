@@ -137,9 +137,6 @@ type VisionOptions struct {
 
 	deepstackVisualIndexes []int32
 	mropeSections          []int
-	
-	// For split GGUF: config hiddenSize for merger calculations even when actual tensors differ
-	configHiddenSize int
 }
 
 func (o VisionOptions) headDim() int {
@@ -158,12 +155,10 @@ func (m *VisionPatchMerger) Forward(ctx ml.Context, visionOutputs ml.Tensor, pos
 		return visionOutputs
 	}
 	
-	// Use configHiddenSize for split GGUF merger calculations (weights expect original dimensions)
-	mergerHiddenSize := opts.hiddenSize
-	if opts.configHiddenSize > 0 {
-		mergerHiddenSize = opts.configHiddenSize
-	}
-	hiddenSize := mergerHiddenSize * opts.spatialMergeSize * opts.spatialMergeSize
+	// For split GGUF: merger uses ACTUAL hiddenSize (768) not config (1152)
+	// llama.cpp: embeddings = ggml_reshape_3d(ctx0, embeddings, n_embd * 4, ...)
+	// where n_embd is the actual layer dimension
+	hiddenSize := opts.hiddenSize * opts.spatialMergeSize * opts.spatialMergeSize
 	if postshuffleNorm {
 		visionOutputs = visionOutputs.Reshape(ctx, hiddenSize, -1)
 	}
@@ -305,11 +300,11 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 	if actualHiddenSize != opts.hiddenSize {
 		logutil.Trace("split GGUF: dimension mismatch", "config", opts.hiddenSize, "actual", actualHiddenSize)
 		
-		// For split GGUF: vision layers work with actual size (768), only pad for merger (1152)
-		opts.configHiddenSize = opts.hiddenSize // Save original for merger: 1152
-		opts.hiddenSize = actualHiddenSize       // Use actual for vision layers: 768
+		// For split GGUF: vision layers AND merger use actual size (768)
+		// llama.cpp: n_embd is actual layer dimension, used for all operations
+		opts.hiddenSize = actualHiddenSize
 		
-		logutil.Trace("split GGUF: skip pos_embd, use actual hiddenSize for layers", "actual", actualHiddenSize, "config", opts.configHiddenSize)
+		logutil.Trace("split GGUF: skip pos_embd, use actual hiddenSize", "actual", actualHiddenSize)
 	} else {
 		hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, opts)
 	}
