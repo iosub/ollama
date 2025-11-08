@@ -321,8 +321,11 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 	deepstackStates := make([]ml.Tensor, len(m.deepstackVisualIndexes))
 	for i, layer := range m.Layers {
 		hiddenStates = layer.Forward(ctx, hiddenStates, cos, sin, opts)
-		if i := slices.Index(m.deepstackVisualIndexes, int32(i)); i >= 0 {
-			deepstackStates[i] = m.DeepstackMerger[i].Forward(ctx, hiddenStates, true, opts)
+		if idx := slices.Index(m.deepstackVisualIndexes, int32(i)); idx >= 0 {
+			// For split GGUF: only process deepstack if merger exists (llama.cpp has_deepstack check)
+			if idx < len(m.DeepstackMerger) && m.DeepstackMerger[idx] != nil {
+				deepstackStates[idx] = m.DeepstackMerger[idx].Forward(ctx, hiddenStates, true, opts)
+			}
 		}
 	}
 
