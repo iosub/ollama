@@ -1,8 +1,9 @@
-package qwen3vl
+package qwen3vlsplit
 
 import (
 	"fmt"
 	"image"
+	"log/slog"
 	"math"
 
 	"github.com/ollama/ollama/fs"
@@ -28,11 +29,12 @@ type ImageProcessor struct {
 func newImageProcessor(c fs.Config) ImageProcessor {
 	patchSize := int(c.Uint("vision.patch_size", 14))
 	mergeSize := int(c.Uint("vision.spatial_merge_size", 2))
+	temporalPatchSize := int(c.Uint("vision.temporal_patch_size", 2))
 
 	return ImageProcessor{
 		numChannels:       int(c.Uint("vision.num_channels", 3)), // not set
 		patchSize:         patchSize,
-		temporalPatchSize: 2,
+		temporalPatchSize: temporalPatchSize,
 		mergeSize:         mergeSize,
 		shortestEdge:      int(c.Uint("vision.shortest_edge", 64<<10)),
 		// FIXME(mxyng): the model defined longest edge (16M) is too large for the default
@@ -108,6 +110,8 @@ func (p *ImageProcessor) ProcessImage(ctx ml.Context, img image.Image) (ml.Tenso
 		Width:    resizedWidth / p.patchSize,
 		Temporal: 1, // For single images, temporal dimension is 1
 	}
+
+	slog.Debug("ProcessImage grid calculation", "orig_h", origHeight, "orig_w", origWidth, "resized_h", resizedHeight, "resized_w", resizedWidth, "patch_size", p.patchSize, "grid_h", grid.Height, "grid_w", grid.Width, "total_patches", grid.Height*grid.Width, "divisible_by_4", (grid.Height*grid.Width)%4 == 0)
 
 	patches, err := p.createPatches(normalizedPixels, resizedHeight, resizedWidth, grid)
 	if err != nil {

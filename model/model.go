@@ -16,6 +16,7 @@ import (
 	_ "golang.org/x/image/webp"
 
 	"github.com/ollama/ollama/fs"
+	"github.com/ollama/ollama/fs/ggml"
 	fsggml "github.com/ollama/ollama/fs/ggml"
 	"github.com/ollama/ollama/kvcache"
 	"github.com/ollama/ollama/logutil"
@@ -141,6 +142,75 @@ func NewTextProcessor(s string) (TextProcessor, error) {
 		return nil, ErrUnsupportedTokenizer
 	}
 	return tp, nil
+}
+
+func NewTextProcessorWithProjector(modelPath string, projectors []string, f *ggml.GGML) (TextProcessor, error) {
+	// Special handling for qwen3vl: try qwen3vlsplit  first, then fallback
+	arch := f.KV().Architecture()
+	slog.Info("DEBUG ROUTING", "modelPath", modelPath, "architecture", arch, "projectors_count", len(projectors), "projectors", projectors)
+
+	// For qwen3vl architecture, check if it's a split model by looking for split Conv3D tensors
+	if arch == "qwen3vl" {
+		// Check if this is a split GGUF model by looking for vision.patch_embed.weight.1 tensor
+		// This indicates dual Conv3D weights for split GGUF format
+		// hasSplitConv3D := f.KV().HasKey("vision.patch_embed.weight.1")
+		// slog.Info("DEBUG ROUTING", "checking for split Conv3D tensors", "has_vision.patch_embed.weight.1", hasSplitConv3D)
+		if len(projectors) > 0 && arch == "qwen3vl" {
+			// if hasSplitConv3D {
+			slog.Info("DEBUG ROUTING", "detected split GGUF model with dual Conv3D weights, using qwen3vlsplit")
+			m, err := modelForArchWithOverride(f.KV(), "qwen3vlsplit")
+			if err == nil {
+				slog.Info("DEBUG ROUTING", "qwen3vlsplit loaded successfully", "error", err)
+				tp, ok := m.(TextProcessor)
+				if ok {
+					slog.Info("DEBUG ROUTING", "returning qwen3vlsplit TextProcessor")
+					return tp, nil
+				} else {
+					slog.Info("DEBUG ROUTING", "qwen3vlsplit is not TextProcessor, model type", fmt.Sprintf("%T", m))
+				}
+			} else {
+				slog.Info("DEBUG ROUTING", "qwen3vlsplit failed to load", "error", err)
+			}
+		} else {
+			slog.Info("DEBUG ROUTING", "no split Conv3D tensors found, using regular qwen3vl")
+		}
+		slog.Info("DEBUG ROUTING", "falling back to qwen3vl")
+		arch = "qwen3vl"
+	} else if len(projectors) > 0 {
+		slog.Info("DEBUG ROUTING", "non-qwen3vl with projectors, using qwen3vlsplit")
+		arch = "qwen3vlsplit"
+	} else {
+		slog.Info("DEBUG ROUTING", "no projectors, using default architecture", "arch", arch)
+	}
+
+	slog.Info("DEBUG ROUTING", "final architecture selection", "arch", arch)
+	m, err := modelForArchWithOverride(f.KV(), arch)
+	if err != nil {
+		slog.Info("DEBUG ROUTING", "failed to load final architecture", "arch", arch, "error", err)
+		return nil, err
+	}
+
+	tp, ok := m.(TextProcessor)
+	if !ok {
+		slog.Info("DEBUG ROUTING", "final model is not TextProcessor", "model type", fmt.Sprintf("%T", m))
+		return nil, ErrUnsupportedTokenizer
+	}
+	slog.Info("DEBUG ROUTING", "successfully loaded final model", "arch", arch, "model type", fmt.Sprintf("%T", m))
+	return tp, nil
+}
+
+func modelForArchWithOverride(c fs.Config, overrideArch string) (Model, error) {
+	arch := overrideArch
+	if pooling.Type(c.Uint("pooling_type")) != pooling.TypeNone {
+		arch = arch + "_embed"
+	}
+
+	f, ok := models[arch]
+	if !ok {
+		return nil, ErrUnsupportedModel
+	}
+
+	return f(c)
 }
 
 func modelForArch(c fs.Config) (Model, error) {

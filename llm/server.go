@@ -149,22 +149,35 @@ func NewLlamaServer(systemInfo ml.SystemInfo, gpus []ml.DeviceInfo, modelPath st
 	var llamaModel *llama.Model
 	var textProcessor model.TextProcessor
 	var err error
-	if envconfig.NewEngine() || f.KV().OllamaEngineRequired() {
-		if len(projectors) == 0 {
+	slog.Info("DEBUG SERVER", "NewEngine", envconfig.NewEngine(), "OllamaEngineRequired", f.KV().OllamaEngineRequired(), "Architecture", f.KV().Architecture())
+	if envconfig.NewEngine() || f.KV().OllamaEngineRequired() || f.KV().Architecture() == "qwen3vl" {
+		slog.Info("DEBUG SERVER", "entering Ollama engine path", "projectors_count", len(projectors), "projectors", projectors)
+		if len(projectors) == 0 && f.KV().Architecture() != "qwen3vl" {
+			slog.Info("DEBUG SERVER", "calling NewTextProcessor")
 			textProcessor, err = model.NewTextProcessor(modelPath)
 		} else {
-			err = errors.New("split vision models aren't supported")
+
+			slog.Info("DEBUG SERVER", "calling NewTextProcessorWithProjector")
+			textProcessor, err = model.NewTextProcessorWithProjector(modelPath, projectors, f)
 		}
 		if err != nil {
 			// To prepare for opt-out mode, instead of treating this as an error, we fallback to the old runner
 			slog.Debug("model not yet supported by Ollama engine, switching to compatibility mode", "model", modelPath, "error", err)
 		}
+	} else {
+		slog.Info("DEBUG SERVER", "not entering Ollama engine path")
 	}
-	if textProcessor == nil {
+	// For models with projectors, always use the llama runner (fallback mode) to avoid llama.cpp architecture issues
+	// Also skip llama.cpp loading for qwen3vl models to avoid "unknown architecture" errors
+	slog.Info("DEBUG SERVER", "checking llama fallback", "textProcessor_nil", textProcessor == nil, "projectors_count", len(projectors), "architecture", f.KV().Architecture())
+	if textProcessor == nil && len(projectors) == 0 && f.KV().Architecture() != "qwen3vl" {
+		slog.Info("DEBUG SERVER", "loading llama model")
 		llamaModel, err = llama.LoadModelFromFile(modelPath, llama.ModelParams{VocabOnly: true})
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		slog.Info("DEBUG SERVER", "not loading llama model")
 	}
 
 	// Verify the requested context size is <= the model training size
@@ -191,7 +204,7 @@ func NewLlamaServer(systemInfo ml.SystemInfo, gpus []ml.DeviceInfo, modelPath st
 		loadRequest.MainGPU = opts.MainGPU
 	}
 
-	if len(projectors) > 0 && llamaModel != nil {
+	if len(projectors) > 0 {
 		loadRequest.ProjectorPath = projectors[0]
 	}
 
@@ -270,7 +283,11 @@ func NewLlamaServer(systemInfo ml.SystemInfo, gpus []ml.DeviceInfo, modelPath st
 		err := s.cmd.Wait()
 		// Favor a more detailed message over the process exit status
 		if err != nil && s.status != nil && s.status.LastErrMsg != "" {
-			slog.Error("llama runner terminated", "error", err)
+			runnerType := "llama"
+			if s.textProcessor != nil {
+				runnerType = "ollama"
+			}
+			slog.Error("runner terminated", "runner_type", runnerType, "error", err)
 			if strings.Contains(s.status.LastErrMsg, "unknown model") {
 				s.status.LastErrMsg = "this model is not supported by your version of Ollama. You may need to upgrade"
 			}
@@ -281,8 +298,10 @@ func NewLlamaServer(systemInfo ml.SystemInfo, gpus []ml.DeviceInfo, modelPath st
 	}()
 
 	if textProcessor != nil {
+		slog.Info("DEBUG SERVER", "returning ollamaServer")
 		return &ollamaServer{llmServer: s}, nil
 	} else {
+		slog.Info("DEBUG SERVER", "returning llamaServer")
 		return &llamaServer{llmServer: s, ggml: f}, nil
 	}
 }
@@ -1166,11 +1185,15 @@ func (s *llmServer) getServerStatus(ctx context.Context) (ServerStatus, error) {
 		if s.status != nil && s.status.LastErrMsg != "" {
 			msg = s.status.LastErrMsg
 		}
+		runnerType := "llama"
+		if s.textProcessor != nil {
+			runnerType = "ollama"
+		}
 		if s.cmd.ProcessState.ExitCode() == -1 {
 			// Most likely a signal killed it, log some more details to try to help troubleshoot
-			slog.Warn("llama runner process no longer running", "sys", s.cmd.ProcessState.Sys(), "string", s.cmd.ProcessState)
+			slog.Warn(fmt.Sprintf("%s runner process no longer running", runnerType), "sys", s.cmd.ProcessState.Sys(), "string", s.cmd.ProcessState)
 		}
-		return ServerStatusError, fmt.Errorf("llama runner process no longer running: %d %s", s.cmd.ProcessState.ExitCode(), msg)
+		return ServerStatusError, fmt.Errorf("%s runner process no longer running: %d %s", runnerType, s.cmd.ProcessState.ExitCode(), msg)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d/health", s.port), nil)
@@ -1248,7 +1271,11 @@ func (s *llmServer) WaitUntilRunning(ctx context.Context) error {
 	stallDuration := envconfig.LoadTimeout()    // If no progress happens
 	stallTimer := time.Now().Add(stallDuration) // give up if we stall
 
-	slog.Info("waiting for llama runner to start responding")
+	runnerType := "llama"
+	if s.textProcessor != nil {
+		runnerType = "ollama"
+	}
+	slog.Info(fmt.Sprintf("waiting for %s runner to start responding", runnerType))
 	var lastStatus ServerStatus = -1
 	fullyLoaded := false
 
@@ -1256,9 +1283,9 @@ func (s *llmServer) WaitUntilRunning(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			slog.Warn("client connection closed before server finished loading, aborting load")
-			return fmt.Errorf("timed out waiting for llama runner to start: %w", ctx.Err())
+			return fmt.Errorf("timed out waiting for %s runner to start: %w", runnerType, ctx.Err())
 		case err := <-s.done:
-			return fmt.Errorf("llama runner process has terminated: %w", err)
+			return fmt.Errorf("%s runner process has terminated: %w", runnerType, err)
 		default:
 		}
 		if time.Now().After(stallTimer) {
@@ -1267,14 +1294,14 @@ func (s *llmServer) WaitUntilRunning(ctx context.Context) error {
 			if s.status != nil && s.status.LastErrMsg != "" {
 				msg = s.status.LastErrMsg
 			}
-			return fmt.Errorf("timed out waiting for llama runner to start - progress %0.2f - %s", s.loadProgress, msg)
+			return fmt.Errorf("timed out waiting for %s runner to start - progress %0.2f - %s", runnerType, s.loadProgress, msg)
 		}
 		if s.cmd.ProcessState != nil {
 			msg := ""
 			if s.status != nil && s.status.LastErrMsg != "" {
 				msg = s.status.LastErrMsg
 			}
-			return fmt.Errorf("llama runner process no longer running: %d %s", s.cmd.ProcessState.ExitCode(), msg)
+			return fmt.Errorf("%s runner process no longer running: %d %s", runnerType, s.cmd.ProcessState.ExitCode(), msg)
 		}
 		ctx, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
 		defer cancel()
@@ -1286,7 +1313,7 @@ func (s *llmServer) WaitUntilRunning(ctx context.Context) error {
 		}
 		switch status {
 		case ServerStatusReady:
-			slog.Info(fmt.Sprintf("llama runner started in %0.2f seconds", time.Since(s.loadStart).Seconds()))
+			slog.Info(fmt.Sprintf("%s runner started in %0.2f seconds", runnerType, time.Since(s.loadStart).Seconds()))
 			return nil
 		default:
 			lastStatus = status
@@ -1696,7 +1723,11 @@ func (s *llmServer) Close() error {
 	s.llamaModelLock.Unlock()
 
 	if s.cmd != nil {
-		slog.Debug("stopping llama server", "pid", s.Pid())
+		runnerType := "llama"
+		if s.textProcessor != nil {
+			runnerType = "ollama"
+		}
+		slog.Debug("stopping runner", "runner_type", runnerType, "pid", s.Pid())
 		if err := s.cmd.Process.Kill(); err != nil {
 			return err
 		}
