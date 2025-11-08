@@ -35,6 +35,9 @@ func (sa *VisionAttention) Forward(ctx ml.Context, hiddenStates, cos, sin ml.Ten
 		return hiddenStates
 	}
 	
+	inputShape := hiddenStates.Shape()
+	logutil.Trace("SPLIT GGUF Attention: input", "shape", inputShape, "headDim", opts.headDim(), "numHeads", opts.numHeads)
+	
 	var (
 		query ml.Tensor
 		key   ml.Tensor
@@ -44,7 +47,23 @@ func (sa *VisionAttention) Forward(ctx ml.Context, hiddenStates, cos, sin ml.Ten
 	// Support both separate and fused QKV weights
 	if sa.QKV != nil {
 		// Split GGUF format: fused QKV linear layer
+		if sa.QKV.Weight != nil {
+			qkvWeightShape := sa.QKV.Weight.Shape()
+			logutil.Trace("SPLIT GGUF Attention: QKV weight", "shape", qkvWeightShape, "input_hidden", inputShape[0])
+			
+			// Verify dimension compatibility BEFORE matmul
+			if len(qkvWeightShape) >= 2 && len(inputShape) >= 1 {
+				expectedInput := qkvWeightShape[0]
+				actualInput := inputShape[0]
+				if expectedInput != actualInput {
+					logutil.Trace("SPLIT GGUF Attention: DIMENSION MISMATCH", "qkv_expects", expectedInput, "hidden_has", actualInput, "ERROR", true)
+				}
+			}
+		}
+		
 		qkv := sa.QKV.Forward(ctx, hiddenStates)
+		qkvShape := qkv.Shape()
+		logutil.Trace("SPLIT GGUF Attention: QKV output", "shape", qkvShape)
 		qkv = qkv.Reshape(ctx, 3, opts.headDim(), opts.numHeads, qkv.Dim(1))
 
 		stride := qkv.Stride(0)
@@ -156,22 +175,38 @@ func (m *VisionPatchMerger) Forward(ctx ml.Context, visionOutputs ml.Tensor, pos
 		return visionOutputs
 	}
 	
+	inputShape := visionOutputs.Shape()
+	logutil.Trace("SPLIT GGUF Merger: input", "shape", inputShape, "opts.hiddenSize", opts.hiddenSize, "spatialMergeSize", opts.spatialMergeSize)
+	
 	// Merger uses hiddenSize from opts (1152 for split GGUF after padding)
 	// llama.cpp: embeddings = ggml_reshape_3d(ctx0, embeddings, n_embd * 4, ...)
 	// where n_embd=1152 (config dimension used throughout)
 	hiddenSize := opts.hiddenSize * opts.spatialMergeSize * opts.spatialMergeSize
+	logutil.Trace("SPLIT GGUF Merger: calculated hiddenSize", "hiddenSize", hiddenSize, "formula", "opts.hiddenSize * spatialMergeSize^2")
+	
 	if postshuffleNorm {
 		visionOutputs = visionOutputs.Reshape(ctx, hiddenSize, -1)
+		logutil.Trace("SPLIT GGUF Merger: reshaped for postshuffle", "shape", visionOutputs.Shape())
 	}
 
 	visionOutputs = m.Norm.Forward(ctx, visionOutputs, opts.eps)
+	afterNormShape := visionOutputs.Shape()
+	logutil.Trace("SPLIT GGUF Merger: after norm", "shape", afterNormShape)
+	
 	visionOutputs = visionOutputs.Reshape(ctx, hiddenSize, -1)
+	afterReshapeShape := visionOutputs.Shape()
+	logutil.Trace("SPLIT GGUF Merger: after reshape", "shape", afterReshapeShape)
 	
 	// For split GGUF: if FC1/FC2 are nil, return after norm
 	if m.FC1 == nil || m.FC1.Weight == nil || m.FC2 == nil || m.FC2.Weight == nil {
+		logutil.Trace("SPLIT GGUF Merger: FC1/FC2 nil, returning after norm")
 		return visionOutputs
 	}
-	return m.FC2.Forward(ctx, m.FC1.Forward(ctx, visionOutputs).GELU(ctx))
+	
+	result := m.FC2.Forward(ctx, m.FC1.Forward(ctx, visionOutputs).GELU(ctx))
+	resultShape := result.Shape()
+	logutil.Trace("SPLIT GGUF Merger: final output", "shape", resultShape)
+	return result
 }
 
 type VisionPositionEmbedding struct {
@@ -290,27 +325,39 @@ func (m *VisionModel) positions(ctx ml.Context, grid *Grid) (_, _ ml.Tensor) {
 
 // Forward computes the vision model for an input tensor
 func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid) (ml.Tensor, []ml.Tensor) {
+	inputShape := pixelValues.Shape()
+	logutil.Trace("SPLIT GGUF Vision: input", "shape", inputShape)
+	
 	pixelValues = pixelValues.Reshape(ctx, m.patchSize, m.patchSize, m.temporalPatchSize, -1)
+	reshapedShape := pixelValues.Shape()
+	logutil.Trace("SPLIT GGUF Vision: reshaped for patch embedding", "shape", reshapedShape)
+	
 	hiddenStates := m.PatchEmbedding.Forward(ctx, pixelValues, m.numChannels, m.patchSize, m.patchSize, m.temporalPatchSize, 0, 0, 0, 1, 1, 1)
+	patchOutputShape := hiddenStates.Shape()
+	logutil.Trace("SPLIT GGUF Vision: after PatchEmbedding", "shape", patchOutputShape)
 	
 	// For split GGUF: skip position embedding and pad to expected dimensions
 	// llama.cpp uses dual conv2d + complex spatial merge reshape
 	// We use conv3d which handles temporal dim differently - just pad to match layer expectations
 	actualHiddenSize := hiddenStates.Dim(0)
 	opts := m.VisionOptions
+	logutil.Trace("SPLIT GGUF Vision: dimension check", "actual", actualHiddenSize, "config", opts.hiddenSize, "match", actualHiddenSize == opts.hiddenSize)
+	
 	if actualHiddenSize != opts.hiddenSize {
 		// For split GGUF: Conv3D with dual weights uses ADD (not concat)
 		// This should produce [1152, spatial] directly matching llama.cpp
 		// If dimensions don't match, adjust opts to use actual dimensions
-		logutil.Trace("split GGUF: dimension mismatch after dual-weight ADD", "expected", opts.hiddenSize, "actual", actualHiddenSize)
+		logutil.Trace("SPLIT GGUF Vision: dimension mismatch after dual-weight ADD", "expected", opts.hiddenSize, "actual", actualHiddenSize)
 		
 		// Use actual hidden size for subsequent operations (headDim, merger, etc.)
 		opts.hiddenSize = actualHiddenSize
-		logutil.Trace("split GGUF: adjusted hiddenSize for layers", "hiddenSize", opts.hiddenSize)
+		logutil.Trace("SPLIT GGUF Vision: adjusted hiddenSize", "new_hiddenSize", opts.hiddenSize, "headDim", opts.headDim())
 		
 		// Skip position embedding for split GGUF
 		// Position embeddings are resized in llama.cpp which we don't support yet
+		logutil.Trace("SPLIT GGUF Vision: skipping position embedding")
 	} else {
+		logutil.Trace("SPLIT GGUF Vision: dimensions match, applying position embedding")
 		hiddenStates = m.PositionEmbedding.Forward(ctx, hiddenStates, grid, opts)
 	}
 

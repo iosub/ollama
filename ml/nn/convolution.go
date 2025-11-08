@@ -57,13 +57,28 @@ func (m *Conv3D) Forward(ctx ml.Context, t ml.Tensor, c, s0, s1, s2, p0, p1, p2,
 		// CRITICAL: Use stride=1 in temporal dim (s2) to preserve all channels
 		// Conv3D with stride=s2 divides channels by s2, but we want full channels
 		// llama.cpp: two conv2d operations that each produce full n_embd channels
+		inputShape := t.Shape()
+		logutil.Trace("SPLIT GGUF Conv3D: input", "shape", inputShape, "stride_spatial", []int{s0, s1}, "stride_temporal", 1)
+		
 		t1 := m.Weight.Conv3D(ctx, t, c, s0, s1, 1, p0, p1, p2, d0, d1, d2)  // stride_temporal=1
 		t2 := m.Weight1.Conv3D(ctx, t, c, s0, s1, 1, p0, p1, p2, d0, d1, d2)  // stride_temporal=1
-		logutil.Trace("conv3d dual weight outputs", "t1_shape", t1.Shape(), "t2_shape", t2.Shape())
+		
+		t1Shape := t1.Shape()
+		t2Shape := t2.Shape()
+		logutil.Trace("SPLIT GGUF Conv3D: dual weight outputs", "t1_shape", t1Shape, "t2_shape", t2Shape)
+		
+		if len(t1Shape) > 0 && len(t2Shape) > 0 {
+			logutil.Trace("SPLIT GGUF Conv3D: channel check", "t1_channels", t1Shape[0], "t2_channels", t2Shape[0], "expected", 1152)
+		}
 		
 		// ADD the outputs (match llama.cpp: ggml_add)
 		t = t1.Add(ctx, t2)
-		logutil.Trace("conv3d dual weight strategy", "type", "ADD with stride=1", "output_shape", t.Shape())
+		addShape := t.Shape()
+		logutil.Trace("SPLIT GGUF Conv3D: ADD result", "shape", addShape, "type", "element-wise add")
+		
+		if len(addShape) > 0 {
+			logutil.Trace("SPLIT GGUF Conv3D: final channels after ADD", "channels", addShape[0], "expected", 1152, "match", addShape[0] == 1152)
+		}
 		
 		// Bias will be applied after ADD (standard path below)
 	} else {
