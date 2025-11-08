@@ -10,8 +10,8 @@ type LayerNorm struct {
 }
 
 func (m *LayerNorm) Forward(ctx ml.Context, t ml.Tensor, eps float32) ml.Tensor {
-	// For split GGUF: if Weight is nil, return input unchanged (llama.cpp behavior)
-	if m.Weight == nil {
+	// For split GGUF: if LayerNorm is nil or Weight is nil, return input unchanged (llama.cpp behavior)
+	if m == nil || m.Weight == nil {
 		return t
 	}
 	return t.LayerNorm(ctx, m.Weight, m.Bias, eps)
