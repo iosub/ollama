@@ -129,6 +129,37 @@ if actualHiddenSize != opts.hiddenSize {
 
 ---
 
+### 5. **Deepstack Features Concatenation**
+
+**llama.cpp (clip.cpp:1077):**
+```cpp
+// AFTER vision layers, concatenate deepstack features
+embeddings = ggml_concat(ctx0, embeddings, deepstack_features, 0); 
+// Concat along feature dimension (dim 0)
+```
+
+**Purpose:**
+- Merges main vision output with deepstack layer outputs
+- All features combined into single tensor
+- Shape: `[(n_embd + deepstack_n_embd) * 4, n_pos / 4, batch]`
+
+**Ollama (current):**
+```go
+// Return deepstack features separately
+return hiddenStates, deepstackStates  // NOT concatenated
+
+// In model.go:
+mm := []input.Multimodal{{Tensor: visionOutputs, Data: grid}}
+for i := range deepstackVisualEmbeds {
+    mm = append(mm, input.Multimodal{Tensor: deepstackVisualEmbeds[i]})
+}
+```
+
+**Status:** ❌ **DIFFERENT** - We return as separate multimodal inputs
+**Impact:** Different architecture - may affect how text model processes vision features
+
+---
+
 ## Key Findings
 
 ### **ROOT CAUSE: Spatial Merge Reshape**
@@ -230,6 +261,12 @@ Add the missing spatial merge reshape operations after Conv3D ADD:
    - Low priority (model can work without it)
    - Implement resize_position_embeddings if needed
    - Apply after spatial merge
+
+5. ⏳ **Deepstack concatenation:**
+   - Low-medium priority
+   - llama.cpp concatenates all features into single tensor
+   - We return as separate multimodal inputs
+   - May need architectural change if required
 
 ---
 
