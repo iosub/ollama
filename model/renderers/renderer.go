@@ -50,12 +50,12 @@ func rendererForName(name string) Renderer {
 	case "qwen3-coder":
 		renderer := &Qwen3CoderRenderer{}
 		return renderer
-	case "qwen3-vl-instruct":
-		renderer := &Qwen3VLRenderer{isThinking: false, useImgTags: RenderImgTags}
-		return renderer
-	case "qwen3-vl-thinking":
-		renderer := &Qwen3VLRenderer{isThinking: true, useImgTags: RenderImgTags}
-		return renderer
+	// case "qwen3-vl-instruct":
+	// 	renderer := &Qwen3VLRenderer{isThinking: false, useImgTags: RenderImgTags}
+	// 	return renderer
+	// case "qwen3-vl-thinking":
+	// 	// renderer := &Qwen3VLRenderer{isThinking: true, useImgTags: RenderImgTags}
+	// 	return renderer
 	default:
 		return nil
 	}

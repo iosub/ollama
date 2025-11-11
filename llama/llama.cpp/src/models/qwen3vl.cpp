@@ -21,14 +21,14 @@ llm_build_qwen3vl::llm_build_qwen3vl(const llama_model & model, const llm_graph_
 
     std::vector<ggml_tensor *> deepstack_features(n_deepstack_layers, nullptr);
 
+    ggml_tensor * inpL_main = ggml_view_2d(ctx0, inpL, n_embd, n_tokens, inpL->nb[1], 0);
     if (ubatch.embd) {
         // Image input: split main embd and deepstack embds
-        ggml_tensor * inpL_main = ggml_view_2d(ctx0, inpL, n_embd, n_tokens, inpL->nb[1], 0);
         for (size_t i = 0; i < n_deepstack_layers; i++) {
             deepstack_features[i] = ggml_view_2d(ctx0, inpL, n_embd, n_tokens, inpL->nb[1], (i + 1) * n_embd * sizeof(float));
         }
-        inpL = inpL_main;
     }
+    inpL = inpL_main;
 
     // inp_pos - contains the positions
     ggml_tensor * inp_pos = build_inp_pos();

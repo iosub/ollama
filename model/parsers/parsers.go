@@ -39,15 +39,15 @@ func ParserForName(name string) Parser {
 		return parser()
 	}
 	switch name {
-	case "qwen3-coder":
-		parser := &Qwen3CoderParser{}
-		return parser
-	case "qwen3-vl-instruct":
-		parser := &Qwen3VLParser{hasThinkingSupport: false}
-		return parser
-	case "qwen3-vl-thinking":
-		parser := &Qwen3VLParser{hasThinkingSupport: true}
-		return parser
+	// case "qwen3-coder":
+	// 	parser := &Qwen3CoderParser{}
+	// 	return parser
+	// case "qwen3-vl-instruct":
+	// 	parser := &Qwen3VLParser{hasThinkingSupport: false}
+	// 	return parser
+	// case "qwen3-vl-thinking":
+	// 	parser := &Qwen3VLParser{hasThinkingSupport: true}
+	// 	return parser
 	case "passthrough":
 		return &PassthroughParser{}
 	case "harmony":
