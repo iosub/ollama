@@ -937,6 +937,9 @@ extern "C" {
     // TODO: deprecate in favor of llama_get_embeddings_ith() (ref: https://github.com/ggml-org/llama.cpp/pull/14853#issuecomment-3113143522)
     LLAMA_API float * llama_get_embeddings(struct llama_context * ctx);
 
+    // Number of floats per embedding row in the most recent output buffer
+    LLAMA_API int32_t llama_get_embeddings_stride(struct llama_context * ctx);
+
     // Get the embeddings for the ith token. For positive indices, Equivalent to:
     // llama_get_embeddings(ctx) + ctx->output_ids[i]*n_embd
     // Negative indicies can be used to access embeddings in reverse order, -1 is the last embedding.

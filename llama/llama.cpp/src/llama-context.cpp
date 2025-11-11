@@ -639,7 +639,11 @@ float * llama_context::get_embeddings_ith(int32_t i) {
             throw std::runtime_error(format("corrupt output buffer (j=%" PRId64 ", n_outputs=%d)", j, n_outputs));
         }
 
-        return embd + j*model.hparams.n_embd;
+        if (embd_stride <= 0) {
+            throw std::runtime_error("no embeddings available");
+        }
+
+        return embd + j*embd_stride;
     } catch (const std::exception & err) {
         LLAMA_LOG_ERROR("%s: invalid embeddings id %d, reason: %s\n", __func__, i, err.what());
 #ifndef NDEBUG
@@ -657,6 +661,10 @@ float * llama_context::get_embeddings_seq(llama_seq_id seq_id) {
     }
 
     return it->second.data();
+}
+
+int64_t llama_context::embeddings_stride() const {
+    return embd_stride;
 }
 
 void llama_context::attach_threadpool(
@@ -827,11 +835,11 @@ int llama_context::encode(const llama_batch & batch_inp) {
 
     const auto & hparams = model.hparams;
 
-    const int64_t n_embd  = hparams.n_embd_inp();
+    const int64_t n_embd_cap = hparams.n_embd_inp();
     const int64_t n_vocab = model.vocab.n_tokens();
 
     // note: during encode, we always pass the full sequence starting from pos = 0
-    if (!balloc->init(batch_inp, model.vocab, nullptr, n_embd, cparams.kv_unified ? LLAMA_MAX_SEQ : cparams.n_seq_max, true)) {
+    if (!balloc->init(batch_inp, model.vocab, nullptr, n_embd_cap, cparams.kv_unified ? LLAMA_MAX_SEQ : cparams.n_seq_max, true)) {
         LLAMA_LOG_ERROR("%s: failed to initialize batch\n", __func__);
         return -1;
     }
@@ -904,14 +912,18 @@ int llama_context::encode(const llama_batch & batch_inp) {
         ggml_backend_t backend_embd = ggml_backend_sched_get_tensor_backend(sched.get(), t_embd);
         GGML_ASSERT(backend_embd != nullptr);
 
+        const int64_t embd_cols = t_embd->ne[0];
+        GGML_ASSERT(embd_cols <= n_embd_cap);
+
         switch (cparams.pooling_type) {
             case LLAMA_POOLING_TYPE_NONE:
                 {
                     // extract token embeddings
                     GGML_ASSERT(embd != nullptr);
 
-                    GGML_ASSERT(n_tokens*n_embd <= (int64_t) embd_size);
-                    ggml_backend_tensor_get_async(backend_embd, t_embd, embd, 0, n_tokens*n_embd*sizeof(float));
+                    GGML_ASSERT(n_tokens*embd_cols <= (int64_t) embd_size);
+                    ggml_backend_tensor_get_async(backend_embd, t_embd, embd, 0, n_tokens*embd_cols*sizeof(float));
+                    embd_stride = embd_cols;
                 } break;
             case LLAMA_POOLING_TYPE_MEAN:
             case LLAMA_POOLING_TYPE_CLS:
@@ -924,8 +936,8 @@ int llama_context::encode(const llama_batch & batch_inp) {
                         const llama_seq_id seq_id  = ubatch.seq_id_unq[s];
                         const int32_t      seq_idx = ubatch.seq_idx[seq_id];
 
-                        embd_seq_out[seq_id].resize(n_embd);
-                        ggml_backend_tensor_get_async(backend_embd, t_embd, embd_seq_out[seq_id].data(), (n_embd*seq_idx)*sizeof(float), n_embd*sizeof(float));
+                        embd_seq_out[seq_id].resize(embd_cols);
+                        ggml_backend_tensor_get_async(backend_embd, t_embd, embd_seq_out[seq_id].data(), (embd_cols*seq_idx)*sizeof(float), embd_cols*sizeof(float));
                     }
                 } break;
             case LLAMA_POOLING_TYPE_RANK:
@@ -995,12 +1007,12 @@ int llama_context::decode(const llama_batch & batch_inp) {
     const auto & vocab   = model.vocab;
     const auto & hparams = model.hparams;
 
-    const int64_t n_vocab = vocab.n_tokens();
-    const int64_t n_embd  = hparams.n_embd_inp();
+    const int64_t n_vocab     = vocab.n_tokens();
+    const int64_t n_embd_cap  = hparams.n_embd_inp();
 
     const bool output_all = false;
 
-    if (!balloc->init(batch_inp, vocab, memory.get(), n_embd, cparams.kv_unified ? LLAMA_MAX_SEQ : cparams.n_seq_max, output_all)) {
+    if (!balloc->init(batch_inp, vocab, memory.get(), n_embd_cap, cparams.kv_unified ? LLAMA_MAX_SEQ : cparams.n_seq_max, output_all)) {
         LLAMA_LOG_ERROR("%s: failed to initialize batch\n", __func__);
         return -1;
     }
@@ -1173,18 +1185,24 @@ int llama_context::decode(const llama_batch & batch_inp) {
             ggml_backend_t backend_embd = ggml_backend_sched_get_tensor_backend(sched.get(), t_embd);
             GGML_ASSERT(backend_embd != nullptr);
 
+            const int64_t embd_cols = t_embd->ne[0];
+            GGML_ASSERT(embd_cols <= n_embd_cap);
+
             switch (cparams.pooling_type) {
                 case LLAMA_POOLING_TYPE_NONE:
                     {
                         // extract token embeddings
                         GGML_ASSERT(embd != nullptr);
-                        float * embd_out = embd + n_outputs_prev*n_embd;
+                        GGML_ASSERT(embd_stride == 0 || embd_stride == embd_cols);
+                        float * embd_out = embd + n_outputs_prev*embd_cols;
 
                         if (n_outputs) {
                             GGML_ASSERT( n_outputs_prev + n_outputs <= n_outputs_all);
-                            GGML_ASSERT((n_outputs_prev + n_outputs)*n_embd <= (int64_t) embd_size);
-                            ggml_backend_tensor_get_async(backend_embd, t_embd, embd_out, 0, n_outputs*n_embd*sizeof(float));
+                            GGML_ASSERT((n_outputs_prev + n_outputs)*embd_cols <= (int64_t) embd_size);
+                            ggml_backend_tensor_get_async(backend_embd, t_embd, embd_out, 0, n_outputs*embd_cols*sizeof(float));
                         }
+
+                        embd_stride = embd_cols;
                     } break;
                 case LLAMA_POOLING_TYPE_MEAN:
                 case LLAMA_POOLING_TYPE_CLS:
@@ -1197,8 +1215,8 @@ int llama_context::decode(const llama_batch & batch_inp) {
                             const llama_seq_id seq_id  = ubatch.seq_id_unq[s];
                             const int32_t      seq_idx = ubatch.seq_idx[seq_id];
 
-                            embd_seq_out[seq_id].resize(n_embd);
-                            ggml_backend_tensor_get_async(backend_embd, t_embd, embd_seq_out[seq_id].data(), (n_embd*seq_idx)*sizeof(float), n_embd*sizeof(float));
+                            embd_seq_out[seq_id].resize(embd_cols);
+                            ggml_backend_tensor_get_async(backend_embd, t_embd, embd_seq_out[seq_id].data(), (embd_cols*seq_idx)*sizeof(float), embd_cols*sizeof(float));
                         }
                     } break;
                 case LLAMA_POOLING_TYPE_RANK:
@@ -1294,7 +1312,7 @@ uint32_t llama_context::output_reserve(int32_t n_outputs) {
 
     const auto n_batch = cparams.n_batch;
     const auto n_vocab = vocab.n_tokens();
-    const auto n_embd  = hparams.n_embd;
+    const auto n_embd  = hparams.n_embd_inp();
 
     bool has_logits = true;
     bool has_embd   = cparams.embeddings;
@@ -1347,6 +1365,7 @@ uint32_t llama_context::output_reserve(int32_t n_outputs) {
 
     logits = has_logits ? output_base               : nullptr;
     embd   = has_embd   ? output_base + logits_size : nullptr;
+    embd_stride = 0;
 
     // set all ids as invalid (negative)
     std::fill(output_ids.begin(), output_ids.end(), -1);
@@ -1358,7 +1377,7 @@ uint32_t llama_context::output_reserve(int32_t n_outputs) {
 
 void llama_context::output_reorder() {
     const uint64_t n_vocab = model.vocab.n_tokens();
-    const uint64_t n_embd  = model.hparams.n_embd;
+    const uint64_t n_embd  = embd_stride > 0 ? (uint64_t) embd_stride : 0;
 
     for (size_t s = 0; s < output_swaps.size(); ++s) {
         const uint64_t i0 = output_swaps[s].i0;
@@ -1370,7 +1389,7 @@ void llama_context::output_reorder() {
             }
         }
 
-        if (embd_size > 0) {
+        if (embd_size > 0 && n_embd > 0) {
             for (uint64_t k = 0; k < n_embd; k++) {
                 std::swap(embd[i0*n_embd + k], embd[i1*n_embd + k]);
             }
@@ -1901,7 +1920,10 @@ size_t llama_context::state_write_data(llama_io_write_i & io) {
     {
         LLAMA_LOG_DEBUG("%s: - writing embeddings\n", __func__);
 
-        const uint64_t embd_size = std::min((uint64_t) this->embd_size, (uint64_t) n_outputs * model.hparams.n_embd);
+        const uint64_t embd_stride_cur = embd_stride > 0 ? (uint64_t) embd_stride : 0;
+        const uint64_t embd_size = embd_stride_cur > 0
+            ? std::min((uint64_t) this->embd_size, (uint64_t) n_outputs * embd_stride_cur)
+            : 0;
 
         io.write(&embd_size, sizeof(embd_size));
 
@@ -1993,6 +2015,17 @@ size_t llama_context::state_read_data(llama_io_read_i & io) {
 
         if (embd_size) {
             io.read_to(this->embd, embd_size * sizeof(float));
+
+            if (this->n_outputs > 0) {
+                if (embd_size % this->n_outputs != 0) {
+                    throw std::runtime_error("invalid embeddings size in state");
+                }
+                this->embd_stride = static_cast<int64_t>(embd_size / this->n_outputs);
+            } else {
+                this->embd_stride = 0;
+            }
+        } else {
+            this->embd_stride = 0;
         }
     }
 
@@ -2484,6 +2517,21 @@ float * llama_get_embeddings(llama_context * ctx) {
     ctx->synchronize();
 
     return ctx->get_embeddings();
+}
+
+int32_t llama_get_embeddings_stride(llama_context * ctx) {
+    ctx->synchronize();
+
+    const int64_t stride = ctx->embeddings_stride();
+    if (stride <= 0) {
+        return 0;
+    }
+
+    if (stride > std::numeric_limits<int32_t>::max()) {
+        return std::numeric_limits<int32_t>::max();
+    }
+
+    return static_cast<int32_t>(stride);
 }
 
 float * llama_get_embeddings_ith(llama_context * ctx, int32_t i) {

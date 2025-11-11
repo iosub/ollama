@@ -201,8 +201,13 @@ func (c *Context) GetEmbeddingsSeq(seqId int) []float32 {
 		return nil
 	}
 
-	embeddings := make([]float32, c.Model().NEmbd())
-	_ = copy(embeddings, unsafe.Slice((*float32)(e), c.Model().NEmbd()))
+	stride := int(C.llama_get_embeddings_stride(c.c))
+	if stride <= 0 {
+		return nil
+	}
+
+	embeddings := make([]float32, stride)
+	_ = copy(embeddings, unsafe.Slice((*float32)(e), stride))
 	return embeddings
 }
 
@@ -212,8 +217,13 @@ func (c *Context) GetEmbeddingsIth(i int) []float32 {
 		return nil
 	}
 
-	embeddings := make([]float32, c.Model().NEmbd())
-	_ = copy(embeddings, unsafe.Slice((*float32)(e), c.Model().NEmbd()))
+	stride := int(C.llama_get_embeddings_stride(c.c))
+	if stride <= 0 {
+		return nil
+	}
+
+	embeddings := make([]float32, stride)
+	_ = copy(embeddings, unsafe.Slice((*float32)(e), stride))
 	return embeddings
 }
 
@@ -479,7 +489,7 @@ func (m *Model) Tokenize(text string, addSpecial bool, parseSpecial bool) ([]int
 }
 
 func (m *Model) NEmbd() int {
-	return int(C.llama_model_n_embd(m.c))
+	return int(C.llama_model_n_embd_inp(m.c))
 }
 
 // vision processing
