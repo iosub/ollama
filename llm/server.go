@@ -176,7 +176,7 @@ func NewLlamaServer(systemInfo ml.SystemInfo, gpus []ml.DeviceInfo, modelPath st
 
 	opts.NumBatch = min(opts.NumBatch, opts.NumCtx)
 
-	loadRequest := LoadRequest{LoraPath: adapters, KvSize: opts.NumCtx * numParallel, BatchSize: opts.NumBatch, Parallel: numParallel, MultiUserCache: envconfig.MultiUserCache()}
+	loadRequest := LoadRequest{LoraPath: adapters, KvSize: opts.NumCtx * numParallel, BatchSize: opts.NumBatch, Parallel: numParallel, MultiUserCache: envconfig.MultiUserCache(), ImageMinTokens: opts.ImageMinTokens}
 
 	defaultThreads := systemInfo.ThreadCount
 	if opts.NumThread > 0 {
@@ -449,6 +449,7 @@ type LoadRequest struct {
 	NumThreads     int
 	GPULayers      ml.GPULayersList
 	MultiUserCache bool
+	ImageMinTokens int
 
 	// Legacy fields - not used with the Ollama engine
 	ProjectorPath string
@@ -1514,6 +1515,12 @@ func (s *llmServer) Completion(ctx context.Context, req CompletionRequest, fn fu
 			if err := json.Unmarshal(evt, &c); err != nil {
 				return fmt.Errorf("error unmarshalling llm prediction response: %v", err)
 			}
+
+			chunkPreview := c.Content
+			if len(chunkPreview) > 120 {
+				chunkPreview = chunkPreview[:120] + "..."
+			}
+			logutil.Trace("llm completion chunk", "done", c.Done, "content_len", len(c.Content), "preview", chunkPreview)
 			switch {
 			case strings.TrimSpace(c.Content) == lastToken:
 				tokenRepeat++

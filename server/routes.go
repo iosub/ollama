@@ -2284,6 +2284,12 @@ func (s *Server) ChatHandler(c *gin.Context) {
 		resp.Message.Content = sbContent.String()
 		resp.Message.Thinking = sbThinking.String()
 
+		aggregatePreview := resp.Message.Content
+		if len(aggregatePreview) > 200 {
+			aggregatePreview = aggregatePreview[:200] + "..."
+		}
+		logutil.Trace("chat aggregate response", "content_len", len(resp.Message.Content), "thinking_len", len(resp.Message.Thinking), "preview", aggregatePreview)
+
 		if len(toolCalls) > 0 {
 			resp.Message.ToolCalls = toolCalls
 		}
