@@ -21,6 +21,9 @@ type InputCache struct {
 	multiUserCache bool
 
 	lc *llama.Context
+
+	// track if the underlying model supports safe KV shifting
+	canShift bool
 }
 
 func NewInputCache(lc *llama.Context, kvSize int, numSlots int, multiUserCache bool) (*InputCache, error) {
@@ -37,11 +40,26 @@ func NewInputCache(lc *llama.Context, kvSize int, numSlots int, multiUserCache b
 		}
 	}
 
+	var canShift bool
+	if lc != nil {
+		canShift = lc.KvCacheCanShift()
+		if canShift {
+			if model := lc.Model(); model != nil {
+				nPos := model.NPosPerEmbedding()
+				if nPos != 1 {
+					slog.Debug("kv cache shift disabled for multi-position embeddings", "n_pos_per_embd", nPos)
+					canShift = false
+				}
+			}
+		}
+	}
+
 	return &InputCache{
 		numCtx:         kvSize / numSlots,
 		slots:          slots,
 		multiUserCache: multiUserCache,
 		lc:             lc,
+		canShift:       canShift,
 	}, nil
 }
 
@@ -237,7 +255,7 @@ func (c *InputCache) ShiftCacheSlot(slot *InputCacheSlot, numKeep int) error {
 
 	var shiftFailed bool
 
-	if c.lc.KvCacheCanShift() {
+	if c.canShift {
 		// For models that support shifting, attempt to shift the KV cache
 		if !c.lc.KvCacheSeqRm(slot.Id, numKeep, numKeep+discard) {
 			shiftFailed = true

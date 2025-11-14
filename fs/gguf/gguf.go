@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"iter"
+	"math"
 	"os"
 	"slices"
 	"strings"
@@ -191,11 +192,19 @@ func readString(f *File) (string, error) {
 		return "", err
 	}
 
-	if int(n) > len(f.bts) {
-		f.bts = make([]byte, n)
+	if n > uint64(math.MaxInt) {
+		return "", fmt.Errorf("string length %d exceeds host limits", n)
 	}
 
-	bts := f.bts[:n]
+	if int(n) > len(f.bts) {
+		if n > 1<<30 { // guard against corrupted metadata requesting huge buffers
+			return "", fmt.Errorf("string length %d exceeds maximum allowed", n)
+		}
+
+		f.bts = make([]byte, int(n))
+	}
+
+	bts := f.bts[:int(n)]
 	if _, err := io.ReadFull(f.reader, bts); err != nil {
 		return "", err
 	}

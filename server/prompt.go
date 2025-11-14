@@ -101,6 +101,8 @@ func chatPrompt(ctx context.Context, m *Model, tokenize tokenizeFunc, opts *api.
 		return "", nil, err
 	}
 
+	slog.Debug("rendered chat prompt", "model", m.Name, "prompt", p, "image_count", len(images), "messages", len(msgs[currMsgIdx:]))
+
 	return p, images, nil
 }
 

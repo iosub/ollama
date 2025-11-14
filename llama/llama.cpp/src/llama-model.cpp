@@ -7434,6 +7434,10 @@ int32_t llama_model_n_swa(const llama_model * model) {
     return model->hparams.n_swa;
 }
 
+uint32_t llama_model_n_pos_per_embd(const struct llama_model * model) {
+    return model->hparams.n_pos_per_embd();
+}
+
 uint32_t llama_model_n_cls_out(const struct llama_model * model) {
     return model->hparams.n_cls_out;
 }

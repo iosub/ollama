@@ -24,7 +24,7 @@ type ImageContext struct {
 	imageHash maphash.Hash
 }
 
-func NewImageContext(llamaContext *llama.Context, modelPath string) (*ImageContext, error) {
+func NewImageContext(llamaContext *llama.Context, modelPath string, imageMinTokens int) (*ImageContext, error) {
 	arch, err := llama.GetModelArch(modelPath)
 	if err != nil {
 		return nil, fmt.Errorf("unable to determine vision architecture: %w (%s)", err, modelPath)
@@ -32,7 +32,7 @@ func NewImageContext(llamaContext *llama.Context, modelPath string) (*ImageConte
 
 	var c ImageContext
 	if arch == "clip" {
-		c.mtmd, err = llama.NewMtmdContext(llamaContext, modelPath)
+		c.mtmd, err = llama.NewMtmdContext(llamaContext, modelPath, imageMinTokens)
 	} else {
 		return nil, fmt.Errorf("unknown vision model architecture: %s", arch)
 	}
@@ -97,7 +97,7 @@ func (c *ImageContext) BatchSize(configuredBatchSize int) int {
 }
 
 func (c *ImageContext) EmbedSize(llamaContext *llama.Context) int {
-	return llamaContext.Model().NEmbd()
+	return llamaContext.Model().NEmbdInput()
 }
 
 type imageCache struct {
