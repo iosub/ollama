@@ -1,0 +1,26 @@
+commit fcd2d784b8edc21f950e520c1093869666408f58
+Author: iosub <iosub@gabiges.com>
+Date:   Thu Nov 13 19:26:08 2025 -0500
+
+    Backup snapshot 2025-11-12
+
+diff --git a/llama/llama.cpp/src/llama-context.h b/llama/llama.cpp/src/llama-context.h
+index 6b5b6c85..20cbd789 100644
+--- a/llama/llama.cpp/src/llama-context.h
++++ b/llama/llama.cpp/src/llama-context.h
+@@ -65,7 +65,6 @@ struct llama_context {
+     float * get_embeddings();
+     float * get_embeddings_ith(int32_t i);
+     float * get_embeddings_seq(llama_seq_id seq_id);
+-        int64_t embeddings_stride() const;
+ 
+     void attach_threadpool(
+             ggml_threadpool_t threadpool,
+@@ -247,7 +246,6 @@ private:
+     // populated only when pooling_type == LLAMA_POOLING_TYPE_NONE
+     size_t  embd_size = 0; // capacity (of floats) for embeddings
+     float * embd      = nullptr;
+-        int64_t embd_stride = 0; // number of floats per embedding row
+ 
+     // sequence embeddings output (map of [n_embd] vectors)
+     // populated only when pooling_type != LLAMA_POOLING_TYPE_NONE

@@ -1,0 +1,28 @@
+commit fcd2d784b8edc21f950e520c1093869666408f58
+Author: iosub <iosub@gabiges.com>
+Date:   Thu Nov 13 19:26:08 2025 -0500
+
+    Backup snapshot 2025-11-12
+
+diff --git a/Z_Iosu/docs/0 GIT.MD b/Z_Iosu/docs/0 GIT.MD
+new file mode 100644
+index 00000000..219a6dcb
+--- /dev/null
++++ b/Z_Iosu/docs/0 GIT.MD	
+@@ -0,0 +1,15 @@
++
++Guarda el estado actual en un stash con todo incluido, crea una rama de respaldo desde ah??, aplica el stash y s??belo al remoto:
++
++
++git stash push --include-untracked --message "snapshot-2025-11-11"
++git switch -c backup-2025-11-11
++git stash pop
++git add -A
++git commit -m "Backup snapshot 2025-11-11"
++git push origin backup-2025-11-11
++
++Regresa a tu rama habitual y vuelve a dejar los cambios como pendientes (sin commit):
++git switch 12-11
++git cherry-pick --no-commit backup-2025-11-11
++git reset
+\ No newline at end of file
