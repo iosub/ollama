@@ -1,9 +1,0 @@
-**Contexto de las representaciones:**
-
-### En resumen, con respecto a lo que aparezca en la imagen:
-
-### Observaciones finales:
-- Lo que aparezca en la imagen.
-- Se entiende el contexto.
-- No se entiende el contexto.
-- La imagen se convierte en una **representación** del conocimiento.
