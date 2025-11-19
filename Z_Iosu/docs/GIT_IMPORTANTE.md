@@ -6,6 +6,9 @@ origin → tu fork en GitHub (iosub/ollama).
 upstream → repo oficial (ollama/ollama).
 Comprueba una sola vez: git remote -v debe mostrar ambos.
 Actualizar desde upstream (sin PR):
+no push
+git remote set-url --push upstream https://github.com/ollama/ollama.git no_push
+git remote set-url --push dhiltgen no_push
 
 git fetch upstream
 git checkout main
