@@ -61,10 +61,18 @@ type VisionEncoderLayer struct {
 }
 
 func (e *VisionEncoderLayer) Forward(ctx ml.Context, hiddenStates, cos, sin ml.Tensor, opts VisionOptions) ml.Tensor {
+	if e.Norm1 == nil || e.Attention == nil {
+		return hiddenStates
+	}
+
 	residual := hiddenStates
 	hiddenStates = e.Norm1.Forward(ctx, hiddenStates, opts.eps)
 	hiddenStates = e.Attention.Forward(ctx, hiddenStates, cos, sin, opts)
 	hiddenStates = hiddenStates.Add(ctx, residual)
+
+	if e.Norm2 == nil || e.MLP == nil {
+		return hiddenStates
+	}
 
 	residual = hiddenStates
 	hiddenStates = e.Norm2.Forward(ctx, hiddenStates, opts.eps)
@@ -110,7 +118,7 @@ func (m *VisionPatchMerger) Forward(ctx ml.Context, visionOutputs ml.Tensor, pos
 }
 
 type VisionPositionEmbedding struct {
-	PositionEmbedding *nn.Embedding `gguf:"pos_embed"`
+	PositionEmbedding *nn.Embedding `gguf:"position_embd,alt:pos_embed"`
 }
 
 func makeSlice2D[T int32 | float32](n0, n1 int) iter.Seq[[]T] {
@@ -172,7 +180,7 @@ func (m *VisionPositionEmbedding) Forward(ctx ml.Context, hiddenStates ml.Tensor
 }
 
 type VisionModel struct {
-	PatchEmbedding    *nn.Conv3D `gguf:"patch_embed"`
+	PatchEmbedding    *nn.Conv3D `gguf:"patch_embed,alt:patch_embd"`
 	PositionEmbedding *VisionPositionEmbedding
 	Layers            []VisionEncoderLayer `gguf:"blk"`
 	PatchMerger       *VisionPatchMerger   `gguf:"merger"`
@@ -242,8 +250,9 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 func newVisionModel(c fs.Config) *VisionModel {
 	deepstackVisualIndexes := c.Ints("vision.deepstack_visual_indexes")
 	model := &VisionModel{
-		Layers:          make([]VisionEncoderLayer, c.Uint("vision.block_count", 32)),
-		DeepstackMerger: make([]*VisionPatchMerger, len(deepstackVisualIndexes)),
+		Layers:            make([]VisionEncoderLayer, c.Uint("vision.block_count", 32)),
+		DeepstackMerger:   make([]*VisionPatchMerger, len(deepstackVisualIndexes)),
+		PositionEmbedding: &VisionPositionEmbedding{},
 		VisionOptions: VisionOptions{
 			hiddenSize:        int(c.Uint("vision.embedding_length", 1280)),
 			numHeads:          int(c.Uint("vision.attention.head_count", 16)),

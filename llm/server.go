@@ -144,11 +144,7 @@ func NewLlamaServer(systemInfo ml.SystemInfo, gpus []ml.DeviceInfo, modelPath st
 	var textProcessor model.TextProcessor
 	var err error
 	if envconfig.NewEngine() || f.KV().OllamaEngineRequired() {
-		if len(projectors) == 0 {
-			textProcessor, err = model.NewTextProcessor(modelPath)
-		} else {
-			err = errors.New("split vision models aren't supported")
-		}
+		textProcessor, err = model.NewTextProcessor(modelPath)
 		if err != nil {
 			// To prepare for opt-out mode, instead of treating this as an error, we fallback to the old runner
 			slog.Debug("model not yet supported by Ollama engine, switching to compatibility mode", "model", modelPath, "error", err)
@@ -170,7 +166,14 @@ func NewLlamaServer(systemInfo ml.SystemInfo, gpus []ml.DeviceInfo, modelPath st
 
 	opts.NumBatch = min(opts.NumBatch, opts.NumCtx)
 
-	loadRequest := LoadRequest{LoraPath: adapters, KvSize: opts.NumCtx * numParallel, BatchSize: opts.NumBatch, Parallel: numParallel, MultiUserCache: envconfig.MultiUserCache()}
+	loadRequest := LoadRequest{
+		LoraPath:       adapters,
+		ProjectorPaths: projectors,
+		KvSize:         opts.NumCtx * numParallel,
+		BatchSize:      opts.NumBatch,
+		Parallel:       numParallel,
+		MultiUserCache: envconfig.MultiUserCache(),
+	}
 
 	defaultThreads := systemInfo.ThreadCount
 	if opts.NumThread > 0 {
@@ -433,6 +436,7 @@ type LoadRequest struct {
 	Operation LoadOperation
 
 	LoraPath       []string
+	ProjectorPaths []string
 	Parallel       int
 	BatchSize      int
 	FlashAttention bool

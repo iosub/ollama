@@ -24,7 +24,11 @@ type Conv3D struct {
 func (m *Conv3D) Forward(ctx ml.Context, t ml.Tensor, c, s0, s1, s2, p0, p1, p2, d0, d1, d2 int) ml.Tensor {
 	t = m.Weight.Conv3D(ctx, t, c, s0, s1, s2, p0, p1, p2, d0, d1, d2)
 	if m.Bias != nil {
-		t = t.Add(ctx, m.Bias)
+		// Bias shape is (out_channels,) while t shape is (width, height, depth, out_channels, batch)
+		// Check if bias can be broadcasted to t
+		if m.Bias.Elements() == uint64(t.Dim(3)) {
+			t = t.Add(ctx, m.Bias)
+		}
 	}
 	return t
 }

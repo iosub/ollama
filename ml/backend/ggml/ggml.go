@@ -73,6 +73,12 @@ type layerDevice struct {
 	bt C.ggml_backend_buffer_type_t
 }
 
+type tensorFile struct {
+	path       string
+	offsetBase uint64
+	tensors    []*fsggml.Tensor
+}
+
 type Backend struct {
 	// modelPath is the location of the model data
 	modelPath string
@@ -116,6 +122,8 @@ type Backend struct {
 
 	// weightBuffers are the GGML contexts and buffers for allocating weights
 	weightBuffers map[*C.struct_ggml_context]C.ggml_backend_buffer_t
+
+	tensorFiles []tensorFile
 }
 
 var once sync.Once
@@ -130,6 +138,29 @@ func New(modelPath string, params ml.BackendParams) (ml.Backend, error) {
 	meta, err := fsggml.Decode(r, -1)
 	if err != nil {
 		return nil, err
+	}
+
+	for _, path := range params.ProjectorPaths {
+		func() {
+			f, err := os.Open(path)
+			if err != nil {
+				slog.Warn("failed to open projector for metadata", "path", path, "error", err)
+				return
+			}
+			defer f.Close()
+
+			pmeta, err := fsggml.Decode(f, -1)
+			if err != nil {
+				slog.Warn("failed to decode projector metadata", "path", path, "error", err)
+				return
+			}
+
+			for k, v := range pmeta.KV() {
+				if _, ok := meta.KV()[k]; !ok {
+					meta.KV()[k] = v
+				}
+			}
+		}()
 	}
 
 	once.Do(func() {
@@ -227,7 +258,36 @@ func New(modelPath string, params ml.BackendParams) (ml.Backend, error) {
 	// outputs are assigned iff allowed by splits and configured number of gpu layers
 	output := assignLayer(blocks)
 
-	maxTensors := len(meta.Tensors().Items())
+	var tensorFiles []tensorFile
+	tensorFiles = append(tensorFiles, tensorFile{
+		path:       modelPath,
+		offsetBase: meta.Tensors().Offset,
+		tensors:    meta.Tensors().Items(),
+	})
+
+	for _, projPath := range params.ProjectorPaths {
+		f, err := os.Open(projPath)
+		if err != nil {
+			return nil, err
+		}
+		defer f.Close()
+
+		proj, err := fsggml.Decode(f, -1)
+		if err != nil {
+			return nil, err
+		}
+
+		tensorFiles = append(tensorFiles, tensorFile{
+			path:       projPath,
+			offsetBase: proj.Tensors().Offset,
+			tensors:    proj.Tensors().Items(),
+		})
+	}
+
+	maxTensors := 0
+	for _, tf := range tensorFiles {
+		maxTensors += len(tf.tensors)
+	}
 	maxTensors += 1
 	// each layer has at most 2 extra tensors for rope operations
 	maxTensors += blocks * 2
@@ -303,41 +363,56 @@ func New(modelPath string, params ml.BackendParams) (ml.Backend, error) {
 		return false
 	}
 
-	for _, t := range meta.Tensors().Items() {
-		switch {
-		case contains(t.Name, "position_embd", "token_embd", "token_norm_embd", "token_types"):
-			createTensor(tensor{source: t}, input.bts, -1)
-			if _, ok := meta.Tensors().GroupLayers()["output"]; !ok && t.Name == "token_embd.weight" {
-				createTensor(tensor{source: t, target: "output.weight"}, output.bts, blocks)
-			}
-		case contains(t.Name, "cls", "output", "output_norm",
-			"altup_proj", "altup_unembd_proj",
-			"per_layer_token_embd", "per_layer_model_proj", "per_layer_proj_norm"):
-			createTensor(tensor{source: t}, output.bts, blocks)
-		case strings.HasPrefix(t.Name, "v.") || strings.HasPrefix(t.Name, "mm.") || strings.HasPrefix(t.Name, "s."):
-			// TODO: assign vision tensors to the gpu if possible
-			createTensor(tensor{source: t}, output.bts, blocks)
-		case contains(t.Name, "rope_freqs", "rope_factors_long", "rope_factors_short"):
-			// these tensors should be repeated per layer
-			for i, layer := range layers {
-				createTensor(tensor{
-					source: t,
-					target: "blk." + strconv.Itoa(i) + "." + t.Name,
-				}, layer.bts, i)
-			}
-		default:
-			layerIndex := -1
-			if fields := strings.FieldsFunc(t.Name, func(r rune) bool { return !unicode.IsNumber(r) }); len(fields) > 0 {
-				if i, err := strconv.Atoi(fields[0]); err == nil {
-					layerIndex = i
+	for _, tf := range tensorFiles {
+		isProjector := slices.Contains(params.ProjectorPaths, tf.path)
+		for _, t := range tf.tensors {
+			switch {
+			case isProjector:
+				target := t.Name
+				if strings.HasPrefix(t.Name, "mm.") {
+					target = strings.Replace(t.Name, "mm.", "v.", 1)
+				} else if !strings.HasPrefix(t.Name, "v.") {
+					target = "v." + t.Name
 				}
-			}
-
-			if layerIndex >= 0 {
-				createTensor(tensor{source: t}, layers[layerIndex].bts, layerIndex)
-			} else {
-				// load all other tensors on the cpu
+				createTensor(tensor{source: t, target: target}, output.bts, blocks)
+			case contains(t.Name, "position_embd", "token_embd", "token_norm_embd", "token_types"):
 				createTensor(tensor{source: t}, input.bts, -1)
+				if _, ok := meta.Tensors().GroupLayers()["output"]; !ok && t.Name == "token_embd.weight" {
+					createTensor(tensor{source: t, target: "output.weight"}, output.bts, blocks)
+				}
+			case contains(t.Name, "cls", "output", "output_norm",
+				"altup_proj", "altup_unembd_proj",
+				"per_layer_token_embd", "per_layer_model_proj", "per_layer_proj_norm"):
+				createTensor(tensor{source: t}, output.bts, blocks)
+			case strings.HasPrefix(t.Name, "v.") || strings.HasPrefix(t.Name, "mm.") || strings.HasPrefix(t.Name, "s."):
+				// TODO: assign vision tensors to the gpu if possible
+				target := t.Name
+				if strings.HasPrefix(t.Name, "mm.") {
+					target = strings.Replace(t.Name, "mm.", "v.", 1)
+				}
+				createTensor(tensor{source: t, target: target}, output.bts, blocks)
+			case contains(t.Name, "rope_freqs", "rope_factors_long", "rope_factors_short"):
+				// these tensors should be repeated per layer
+				for i, layer := range layers {
+					createTensor(tensor{
+						source: t,
+						target: "blk." + strconv.Itoa(i) + "." + t.Name,
+					}, layer.bts, i)
+				}
+			default:
+				layerIndex := -1
+				if fields := strings.FieldsFunc(t.Name, func(r rune) bool { return !unicode.IsNumber(r) }); len(fields) > 0 {
+					if i, err := strconv.Atoi(fields[0]); err == nil {
+						layerIndex = i
+					}
+				}
+
+				if layerIndex >= 0 {
+					createTensor(tensor{source: t}, layers[layerIndex].bts, layerIndex)
+				} else {
+					// load all other tensors on the cpu
+					createTensor(tensor{source: t}, input.bts, -1)
+				}
 			}
 		}
 	}
@@ -378,7 +453,7 @@ func New(modelPath string, params ml.BackendParams) (ml.Backend, error) {
 		}
 	}
 
-	maxGraphNodes := max(1024, len(meta.Tensors().Items())*8)
+	maxGraphNodes := max(1024, maxTensors*8)
 
 	sched := C.ggml_backend_sched_new_ext(
 		(*C.ggml_backend_t)(unsafe.Pointer(&schedBackends[0])),
@@ -424,6 +499,7 @@ func New(modelPath string, params ml.BackendParams) (ml.Backend, error) {
 		allocMemory:       params.AllocMemory,
 		flashAttention:    params.FlashAttention,
 		meta:              meta,
+		tensorFiles:       tensorFiles,
 		tensorLoadTargets: targets,
 		tensors:           tensors,
 		sched:             sched,
@@ -498,32 +574,35 @@ func (b *Backend) Load(ctx context.Context, progress func(float32)) error {
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(runtime.GOMAXPROCS(0))
-	for _, t := range b.meta.Tensors().Items() {
-		g.Go(func() error {
-			tts := make([]*C.struct_ggml_tensor, max(1, len(b.tensorLoadTargets[t.Name])))
-			for i := range tts {
-				target := b.tensorLoadTargets[t.Name][i]
-				if target == "" {
-					target = t.Name
+	for _, tf := range b.tensorFiles {
+		for _, t := range tf.tensors {
+			tf := tf
+			t := t
+			g.Go(func() error {
+				tts := make([]*C.struct_ggml_tensor, max(1, len(b.tensorLoadTargets[t.Name])))
+				for i := range tts {
+					target := b.tensorLoadTargets[t.Name][i]
+					if target == "" {
+						target = t.Name
+					}
+
+					tt, ok := b.tensors[target]
+					if !ok {
+						return fmt.Errorf("unassigned tensor: %s", t.Name)
+					}
+
+					tts[i] = tt
 				}
 
-				tt, ok := b.tensors[target]
-				if !ok {
-					return fmt.Errorf("unassigned tensor: %s", t.Name)
+				// Create a new FD for each goroutine so that each FD is read sequentially, rather than
+				// seeking around within an FD shared between all goroutines.
+				file, err := os.Open(tf.path)
+				if err != nil {
+					slog.Warn("file open error", "file", tf.path, "error", err)
+					return err
 				}
-
-				tts[i] = tt
-			}
-
-			// Create a new FD for each goroutine so that each FD is read sequentially, rather than
-			// seeking around within an FD shared between all goroutines.
-			file, err := os.Open(b.modelPath)
-			if err != nil {
-				slog.Warn("file open error", "file", b.modelPath, "error", err)
-				return err
-			}
-			defer file.Close()
-			sr := io.NewSectionReader(file, int64(b.meta.Tensors().Offset+t.Offset), int64(t.Size()))
+				defer file.Close()
+				sr := io.NewSectionReader(file, int64(tf.offsetBase+t.Offset), int64(t.Size()))
 
 			if t.Kind == 4 && tts[0]._type == 39 {
 				// source is mxfp4, target is ggml mxfp4
@@ -623,6 +702,7 @@ func (b *Backend) Load(ctx context.Context, progress func(float32)) error {
 
 			return nil
 		})
+		}
 	}
 
 	// Cleanup any backend state from devices that we didn't end up using
@@ -1697,6 +1777,10 @@ func (t *Tensor) Duplicate(ctx ml.Context) ml.Tensor {
 		b: t.b,
 		t: C.ggml_dup(ctx.(*Context).ctx, t.t),
 	}
+}
+
+func (t *Tensor) Elements() uint64 {
+	return uint64(C.ggml_nelements(t.t))
 }
 
 func (t *Tensor) TopK(ctx ml.Context, k int) ml.Tensor {

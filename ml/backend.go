@@ -75,6 +75,9 @@ type BackendParams struct {
 
 	// FlashAttention indicates that we should use a fused flash attention kernel
 	FlashAttention bool
+
+	// ProjectorPaths is the list of projector files to load
+	ProjectorPaths []string
 }
 
 var backends = make(map[string]func(string, BackendParams) (Backend, error))
@@ -201,6 +204,8 @@ type Tensor interface {
 	Slice(ctx Context, dim, low, high, step int) Tensor
 	Chunk(ctx Context, dim int, size int) []Tensor
 	ChunkSections(ctx Context, dim int, sections ...int) []Tensor
+
+	Elements() uint64
 
 	TopK(ctx Context, k int) Tensor
 	Argsort(ctx Context) Tensor
