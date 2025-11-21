@@ -1,3 +1,10 @@
+git fetch dhiltgen
+ git merge -X theirs dhiltgen/ggml_bump
+ git checkout --theirs .
+git add .
+git commit -m "Merge dhiltgen/ggml_bump into 13-00 with strategy theirs"
+
+
 reset
 git reset --hard upstream/main
 Remove-Item -Recurse -Force .git/rebase-merge
