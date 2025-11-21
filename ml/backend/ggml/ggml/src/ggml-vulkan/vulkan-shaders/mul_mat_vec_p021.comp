@@ -12,8 +12,6 @@ layout(local_size_x_id = 0, local_size_y = 1, local_size_z = 1) in;
 
 #include "mul_mat_vec_iface.glsl"
 
-layout (binding = 3) readonly buffer Bias {D_TYPE data_bias[];};
-
 layout(constant_id = 0) const int BLOCK_SIZE = 32;
 // gqa_ratio is in the range [1,8]
 layout(constant_id = 1) const uint gqa_ratio = 1;

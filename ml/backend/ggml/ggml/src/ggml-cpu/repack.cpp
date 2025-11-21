@@ -1747,38 +1747,6 @@ template <typename BLOC_TYPE, int64_t INTER_SIZE, int64_t NB_COLS, ggml_type PAR
             ggml_threadpool_chunk_set(params->threadpool, nth);
         }
 
-        // disable for NUMA
-        const bool disable_chunking = ggml_is_numa();
-
-        // 4x chunks per thread
-        int64_t nr = ggml_nrows(op->src[0]);
-        int nth_scaled = nth * 4;
-        int64_t chunk_size = (nr + nth_scaled - 1) / nth_scaled;
-        int64_t nchunk     = (nr + chunk_size - 1) / chunk_size;
-
-        // Ensure minimum chunk size to avoid alignment issues with high thread counts
-        // Minimum chunk size should be at least NB_COLS to prevent overlapping chunks after alignment
-        const int64_t min_chunk_size = NB_COLS;
-        if (nchunk > 0 && (nr / nchunk) < min_chunk_size && nr >= min_chunk_size) {
-            nchunk = (nr + min_chunk_size - 1) / min_chunk_size;
-        }
-
-        if (nth == 1 || nchunk < nth || disable_chunking) {
-            nchunk = nth;
-        }
-
-        // Ensure nchunk doesn't exceed the number of rows divided by minimum chunk size
-        // This prevents creating too many tiny chunks that could overlap after alignment
-        const int64_t max_nchunk = (nr + min_chunk_size - 1) / min_chunk_size;
-        if (nchunk > max_nchunk) {
-            nchunk = max_nchunk;
-        }
-
-        if (ith == 0) {
-            // Every thread starts at ith, so the first unprocessed chunk is nth.  This save a bit of coordination right at the start.
-            ggml_threadpool_chunk_set(params->threadpool, nth);
-        }
-
         ggml_barrier(params->threadpool);
 
         // The first chunk comes from our thread_id, the rest will get auto-assigned.

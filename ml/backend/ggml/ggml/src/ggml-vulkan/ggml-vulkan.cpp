@@ -7058,30 +7058,6 @@ static void ggml_vk_mul_mat_vec_p021_f16_f32(ggml_backend_vk_context * ctx, vk_c
         fusion_flags |= MAT_VEC_FUSION_FLAGS_BIAS1;
     }
 
-    uint32_t enable_bias = ctx->num_additional_fused_ops > 0;
-
-    vk_buffer d_B = d_D;
-    size_t b_buf_offset = 0;
-    uint64_t b_sz = 0;
-
-    if (enable_bias) {
-        const ggml_tensor * add = cgraph->nodes[node_idx + 1];
-        const ggml_tensor * bias = add->src[0] == dst ? add->src[1] : add->src[0];
-
-        bool b_uma = false;
-        if (ctx->device->uma) {
-            ggml_vk_host_get(ctx->device, bias->data, d_B, b_buf_offset);
-            b_uma = d_B != nullptr;
-        }
-        if(!b_uma) {
-            ggml_backend_vk_buffer_context * bias_buf_ctx = (ggml_backend_vk_buffer_context *)bias->buffer->context;
-            d_B = bias_buf_ctx->dev_buffer;
-            b_buf_offset = vk_tensor_offset(bias) + bias->view_offs;
-            GGML_ASSERT(d_B != nullptr);
-            b_sz = ggml_nbytes(bias);
-        }
-    }
-
     // compute
 
     vk_mat_vec_p021_push_constants pc = {
@@ -7173,30 +7149,6 @@ static void ggml_vk_mul_mat_vec_nc_f16_f32(ggml_backend_vk_context * ctx, vk_con
 
         d_F1 = ggml_vk_tensor_subbuffer(ctx, bias);
         fusion_flags |= MAT_VEC_FUSION_FLAGS_BIAS1;
-    }
-
-    uint32_t enable_bias = ctx->num_additional_fused_ops > 0;
-
-    vk_buffer d_B = d_D;
-    size_t b_buf_offset = 0;
-    uint64_t b_sz = 0;
-
-    if (enable_bias) {
-        const ggml_tensor * add = cgraph->nodes[node_idx + 1];
-        const ggml_tensor * bias = add->src[0] == dst ? add->src[1] : add->src[0];
-
-        bool b_uma = false;
-        if (ctx->device->uma) {
-            ggml_vk_host_get(ctx->device, bias->data, d_B, b_buf_offset);
-            b_uma = d_B != nullptr;
-        }
-        if(!b_uma) {
-            ggml_backend_vk_buffer_context * bias_buf_ctx = (ggml_backend_vk_buffer_context *)bias->buffer->context;
-            d_B = bias_buf_ctx->dev_buffer;
-            b_buf_offset = vk_tensor_offset(bias) + bias->view_offs;
-            GGML_ASSERT(d_B != nullptr);
-            b_sz = ggml_nbytes(bias);
-        }
     }
 
     // compute
