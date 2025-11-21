@@ -126,7 +126,8 @@ Respecto a “otras conexiones”: revisa con
 git remote -v. Deberías ver solo:
 
 
-origin   https://github.com/iosub/ollama.gitupstream 
+origin   https://github.com/iosub/ollama.git
+upstream 
 https://github.com/ollama/ollama.git
 Si aparece algo más que no reconozcas, puedes quitarlo con git remote remove <nombre>, pero con esos dos remotos ya tienes todo lo necesario para mantener tu fork al día sin interactuar directamente con upstream.
 
