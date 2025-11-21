@@ -1,0 +1,29 @@
+﻿=== CHECKLIST FINAL SPLIT GGUF ===
+
+1. Pipeline conectado:
+    llm/server.go pasa ProjectorPath en LoadRequest
+    runner/ollamarunner almacena projectorPath
+    allocModel usa NewWithProjector cuando hay projector
+
+2. Dual-backend implementado:
+    Base.projectorBackend field agregado
+    NewWithProjector crea ambos backends
+    Base.HasProjector() método público
+
+3. Búsqueda de tensors completa:
+    Base.GetTensor() busca en main + projector
+    populateFields busca en projector para gguf tags
+    ensureVisionReady usa GetTensor() para TODOS los tensors
+
+4. Logging comprehensive:
+    NewWithProjector: inicio, progreso, éxito
+    GetTensor: tensors de projector con shape
+    populateFields: tensors gguf de projector
+    ensureVisionReady: inicio y completado
+
+5. Non-split preservado:
+   ✓ projectorBackend==nil para non-split
+    GetTensor solo busca main si no hay projector
+    populateFields solo busca main si no hay projector
+
+TODO LISTO PARA COMPILAR
