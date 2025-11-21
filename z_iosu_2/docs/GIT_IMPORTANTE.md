@@ -53,6 +53,7 @@ git remote set-url --push dhiltgen no_push
 # main
 # ==============================================
 git fetch upstream
+git stash push --include-untracked -m "temp-backup-before-checkout"
 git checkout main
 git merge upstream/main (o git rebase upstream/main si prefieres historial lineal).
 Así tu main local queda al día con el oficial, pero sin tocar upstream.
