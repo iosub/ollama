@@ -1229,7 +1229,7 @@ func (s *Server) closeModel() {
 	s.cache.Close()
 	s.cache = nil
 	if s.model != nil {
-		s.model.Close()
+		s.model.Backend().Close()
 		s.model = nil
 	}
 }

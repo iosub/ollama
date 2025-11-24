@@ -37,7 +37,6 @@ type Model interface {
 
 	Backend() ml.Backend
 	Config() config
-	Close()
 }
 
 // MultimodalProcessor must be implemented by multimodal models.
@@ -106,7 +105,13 @@ func (m *Base) GetTensor(name string) ml.Tensor {
 		return t
 	}
 	if m.pb != nil {
-		return m.pb.Get(name)
+		t := m.pb.Get(name)
+		if t != nil {
+			slog.Info("found tensor in projector", "name", name)
+		} else {
+			slog.Debug("tensor not found in projector", "name", name)
+		}
+		return t
 	}
 	return nil
 }
@@ -131,10 +136,13 @@ func New(modelPath string, params ml.BackendParams) (Model, error) {
 
 	var pb ml.Backend
 	if len(params.ProjectorPaths) > 0 {
+		slog.Info("loading projector", "path", params.ProjectorPaths[0])
 		pb, err = ml.NewBackend(params.ProjectorPaths[0], params)
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		slog.Info("no projector paths provided")
 	}
 
 	m, err := modelForArch(b.Config())

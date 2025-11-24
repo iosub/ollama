@@ -32,7 +32,7 @@ func newImageProcessor(c fs.Config) ImageProcessor {
 	return ImageProcessor{
 		numChannels:       int(c.Uint("vision.num_channels", 3)), // not set
 		patchSize:         patchSize,
-		temporalPatchSize: int(c.Uint("vision.temporal_patch_size", 2)),
+		temporalPatchSize: 2,
 		mergeSize:         mergeSize,
 		shortestEdge:      int(c.Uint("vision.shortest_edge", 64<<10)),
 		// FIXME(mxyng): the model defined longest edge (16M) is too large for the default
