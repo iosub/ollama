@@ -559,6 +559,9 @@ func (c *MtmdContext) MultimodalTokenize(llamaContext *Context, data []byte) ([]
 
 	// Initialize a bitmap with the image data
 	bm := C.mtmd_helper_bitmap_init_from_buf(c.c, (*C.uchar)(unsafe.Pointer(&data[0])), C.size_t(len(data)))
+	if bm == nil {
+		return nil, errors.New("failed to decode image")
+	}
 	defer C.mtmd_bitmap_free(bm)
 
 	// Tokenize the image
@@ -571,7 +574,6 @@ func (c *MtmdContext) MultimodalTokenize(llamaContext *Context, data []byte) ([]
 	for i := range int(nChunks) {
 		chunk := C.mtmd_input_chunks_get(ic, C.size_t(i))
 		numTokens := int(C.mtmd_input_chunk_get_n_tokens(chunk))
-		slog.Debug("chunk tokens", "index", i, "numTokens", numTokens)
 
 		if C.mtmd_input_chunk_get_type(chunk) == C.MTMD_INPUT_CHUNK_TYPE_TEXT {
 			// If this is a text chunk, add the tokens
@@ -610,7 +612,6 @@ func (c *MtmdContext) MultimodalTokenize(llamaContext *Context, data []byte) ([]
 			}
 		}
 	}
-	slog.Debug("image tokenization chunks", "totalChunks", len(outChunks))
 	return outChunks, nil
 }
 

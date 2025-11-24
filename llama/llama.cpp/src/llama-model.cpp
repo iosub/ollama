@@ -7035,7 +7035,11 @@ ggml_cgraph * llama_model::build_graph(const llm_graph_params & params) const {
     switch (arch) {
         case LLM_ARCH_LLAMA:
             {
-                llm = std::make_unique<llm_build_llama>(*this, params);
+                if (hparams.n_deepstack_layers > 0) {
+                    llm = std::make_unique<llm_build_qwen3vl>(*this, params);
+                } else {
+                    llm = std::make_unique<llm_build_llama>(*this, params);
+                }
             } break;
         case LLM_ARCH_LLAMA4:
             {
