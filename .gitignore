@@ -20,4 +20,5 @@ llama.rar
 /logs
 *.gguf
 *.safetensors
-z_iosu_2/logs3/
+z_iosu_2/log
+z_iosu_2/logs3/viejos/
