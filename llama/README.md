@@ -31,7 +31,7 @@ If there are conflicts, you will see an error message. Resolve the conflicts in 
 Once all patches are applied, commit the changes to the tracking repository.
 
 ```shell
-make -f Makefile.sync format-patches sync
+
 ```
 
 ### Generating Patches
@@ -43,7 +43,7 @@ make -f Makefile.sync clean apply-patches
 ```
 
 Iterate until you're ready to submit PRs. Once your code is ready, commit a change in the `./vendor/` directory, then generate the patches for ollama with
-
+make -f Makefile.sync format-patches sync
 ```shell
 make -f Makefile.sync format-patches
 ```
