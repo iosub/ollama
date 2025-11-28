@@ -146,9 +146,10 @@ func NewLlamaServer(systemInfo ml.SystemInfo, gpus []ml.DeviceInfo, modelPath st
 	if envconfig.NewEngine() || f.KV().OllamaEngineRequired() {
 		if len(projectors) == 0 {
 			textProcessor, err = model.NewTextProcessor(modelPath)
-		} else {
-			err = errors.New("split vision models aren't supported")
 		}
+		// For vision models (len(projectors) > 0), skip Ollama engine
+		//  because it expects vision tensors in the same file as text model
+		// We'll fall through to llama.cpp below which handles separate projector files
 		if err != nil {
 			// To prepare for opt-out mode, instead of treating this as an error, we fallback to the old runner
 			slog.Debug("model not yet supported by Ollama engine, switching to compatibility mode", "model", modelPath, "error", err)
@@ -630,10 +631,14 @@ func (s *llamaServer) Load(ctx context.Context, systemInfo ml.SystemInfo, system
 	// Windows CUDA should not use mmap for best performance
 	// Linux  with a model larger than free space, mmap leads to thrashing
 	// For CPU loads we want the memory to be allocated, not FS cache
+	// CRITICAL: Vision models with split GGUF crash during image embedding decode if mmap is enabled
+	// The crash happens in llama_decode when processing embd_ptr with split file memory mapping
+	hasProjector := s.loadRequest.ProjectorPath != ""
 	if (runtime.GOOS == "windows" && len(gpus) > 0 && gpus[0].Library == "CUDA" && s.options.UseMMap == nil) ||
 		(runtime.GOOS == "linux" && systemInfo.FreeMemory < s.TotalSize() && s.options.UseMMap == nil) ||
 		(len(gpus) == 0 && s.options.UseMMap == nil) ||
 		(len(gpus) > 0 && gpus[0].Library == "Vulkan" && s.options.UseMMap == nil) ||
+		(hasProjector && s.options.UseMMap == nil) || // FORCE disable for vision to prevent crash
 		(s.options.UseMMap != nil && !*s.options.UseMMap) {
 		s.loadRequest.UseMmap = false
 	}

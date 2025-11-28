@@ -165,6 +165,16 @@ func (c *Context) Decode(batch *Batch) error {
 	//   0 - success
 	//   1 - could not find a KV slot for the batch (try reducing the size of the batch or increase the context)
 	// < 0 - error
+
+	// DEBUG: Log batch details before decode to compare split vs non-split
+	slog.Debug("llama_decode BEFORE",
+		"n_tokens", batch.c.n_tokens,
+		"token_ptr", fmt.Sprintf("%p", batch.c.token),
+		"embd_ptr", fmt.Sprintf("%p", batch.c.embd),
+		"pos_ptr", fmt.Sprintf("%p", batch.c.pos),
+		"logits_ptr", fmt.Sprintf("%p", batch.c.logits),
+	)
+
 	code := int(C.llama_decode(c.c, batch.c))
 
 	if code < 0 {

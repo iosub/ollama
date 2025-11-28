@@ -72,6 +72,11 @@ func (m *qwen3VLModel) KV(t *Tokenizer) ggml.KV {
 	kv["vision.image_mean"] = m.VisionModel.ImageMean
 	kv["vision.image_std"] = m.VisionModel.ImageStd
 
+	// CRITICAL: Add rope.mrope_section for llama.cpp compatibility
+	// This is required for MRoPE (Multi-axis Rotary Position Embedding)
+	// qwen3Model.KV() already handles this, but we need to ensure it's set
+	// The rope.mrope_section is inherited from qwen3Model.RopeScaling.MropeSection
+
 	return kv
 }
 

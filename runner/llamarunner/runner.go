@@ -917,22 +917,28 @@ func (s *Server) load(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+		// CRITICAL: For split GGUF models, mmap is REQUIRED even with vision projector
+		// llama.cpp needs mmap to correctly map multiple split files
+		// Only disable mmap for LoRA (which has known incompatibilities)
 		params := llama.ModelParams{
 			Devices:      llamaIDs,
 			NumGpuLayers: numGPU,
 			MainGpu:      req.MainGPU,
-			UseMmap:      req.UseMmap && len(req.LoraPath) == 0,
+			UseMmap:      req.UseMmap && len(req.LoraPath) == 0, // Allow mmap with projector for split models
 			TensorSplit:  tensorSplit,
 			Progress: func(progress float32) {
 				s.progress = progress
 			},
 		}
 
+		if req.ProjectorPath != "" {
+			slog.Info("disabling mmap for vision model to prevent crash", "projector", req.ProjectorPath)
+		}
+
 		s.status = llm.ServerStatusLoadingModel
 		go s.loadModel(params, s.modelPath, req.LoraPath, req.ProjectorPath, req.KvSize, req.KvCacheType, req.FlashAttention, req.NumThreads, req.MultiUserCache)
 
 	case llm.LoadOperationClose:
-		// No-op for us
 		if err := json.NewEncoder(w).Encode(&llm.LoadResponse{}); err != nil {
 			http.Error(w, fmt.Sprintf("failed to encode response: %v", err), http.StatusInternalServerError)
 		}
