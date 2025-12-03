@@ -65,6 +65,7 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 		}
 
 		slog.Info("discovering available GPUs...")
+		detectIncompatibleLibraries()
 
 		// Warn if any user-overrides are set which could lead to incorrect GPU discovery
 		overrideWarnings()
@@ -98,6 +99,9 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 					continue
 				} else if jetpack != "" && filepath.Base(dir) != "cuda_"+jetpack {
 					continue
+				} else if jetpack == "" && strings.Contains(filepath.Base(dir), "cuda_jetpack") {
+					slog.Debug("jetpack not detected (set JETSON_JETPACK or OLLAMA_LLM_LIBRARY to override), skipping", "libDir", dir)
+					continue
 				} else if !envconfig.EnableVulkan() && strings.Contains(filepath.Base(dir), "vulkan") {
 					slog.Info("experimental Vulkan support disabled.  To enable, set OLLAMA_VULKAN=1")
 					continue
@@ -125,10 +129,20 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 		supportedMu := sync.Mutex{}
 		supported := make(map[string]map[string]map[string]int) // [Library][libDir][ID] = pre-deletion devices index
 		for i := range devices {
+			libDir := devices[i].LibraryPath[len(devices[i].LibraryPath)-1]
 			if !devices[i].NeedsInitValidation() {
+				// No need to validate, add to the supported map
+				supportedMu.Lock()
+				if _, ok := supported[devices[i].Library]; !ok {
+					supported[devices[i].Library] = make(map[string]map[string]int)
+				}
+				if _, ok := supported[devices[i].Library][libDir]; !ok {
+					supported[devices[i].Library][libDir] = make(map[string]int)
+				}
+				supported[devices[i].Library][libDir][devices[i].ID] = i
+				supportedMu.Unlock()
 				continue
 			}
-			libDir := devices[i].LibraryPath[len(devices[i].LibraryPath)-1]
 			slog.Debug("verifying if device is supported", "library", libDir, "description", devices[i].Description, "compute", devices[i].Compute(), "id", devices[i].ID, "pci_id", devices[i].PCIID)
 			wg.Add(1)
 			go func(i int) {
@@ -472,5 +486,18 @@ func overrideWarnings() {
 	}
 	if anyFound {
 		slog.Warn("if GPUs are not correctly discovered, unset and try again")
+	}
+}
+
+func detectIncompatibleLibraries() {
+	if runtime.GOOS != "windows" {
+		return
+	}
+	basePath, err := exec.LookPath("ggml-base.dll")
+	if err != nil || basePath == "" {
+		return
+	}
+	if !strings.HasPrefix(basePath, ml.LibOllamaPath) {
+		slog.Warn("potentially incompatible library detected in PATH", "location", basePath)
 	}
 }
