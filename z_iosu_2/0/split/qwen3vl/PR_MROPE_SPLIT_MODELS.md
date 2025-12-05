@@ -117,7 +117,7 @@ None. Non-split models and non-M-RoPE models continue to work as before.
 
 ## Related
 
-- Based on PR #12992 (dhiltgen/ggml_bump) which adds qwen3vl architecture to llama.cpp
+- Based on PR #13259 for split GGUF file support
 - References `llama.cpp/tools/mtmd/mtmd-helper.cpp` for M-RoPE implementation
 - llama.cpp function `mtmd_decode_use_mrope()` for model detection
 

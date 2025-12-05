@@ -301,7 +301,7 @@ https://github.com/ollama/ollama/pull/12931
 
 ```powershell
 $env:VERSION = "0.12.10.99"
-powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\build_windows.ps1 buildCPU buildCUDA13 buildVulkan gatherDependencies buildOllama buildApp buildInstaller
+powershell -ExecutionPolicy Bypass -File Z_Iosu_2\scripts\build_windows.ps1 buildCPU buildCUDA13 buildVulkan gatherDependencies buildOllama buildApp buildInstaller
 ```
 $env:VERSION = "0.12.10.99"; powershell -ExecutionPolicy Bypass -File Z_Iosu\scripts\smart_build.ps1 -Verbose
 
