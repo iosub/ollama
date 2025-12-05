@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: iosub <iosub@users.noreply.github.com>
+Date: Thu, 28 Nov 2025 18:30:00 -0500
+Subject: [PATCH] fix multimodal embd_size calculation for vision models
+
+Fixes GGML_ASSERT failure when generating with multimodal models that
+have vision projectors (e.g., qwen3vl, mllama). The embd_size buffer
+was calculated using only the text model's n_embd, not accounting for
+the additional embedding dimensions from vision projectors.
+
+This caused buffer overflow when both text and vision embeddings needed
+to be stored during generation, resulting in:
+  GGML_ASSERT((n_outputs_prev + n_outputs)*n_embd <= embd_size) failed
+
+Solution: Use maximum embedding dimension between text and vision when
+calculating buffer size for multimodal models.
+---
+ src/llama-context.cpp | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/src/llama-context.cpp b/src/llama-context.cpp
+index 7d77f0732..8a9c7b42e 100644
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -1306,7 +1306,16 @@ uint32_t llama_context::output_reserve(uint32_t n_outputs_max) {
+     }
+ 
+     logits_size = has_logits ? n_vocab*n_outputs_max : 0;
+-    embd_size   = has_embd   ?  n_embd*n_outputs_max : 0;
++    
++    // For multimodal models with vision projectors, we need to account for
++    // the larger embedding dimension. Vision projectors (e.g., qwen3vl's
++    // qwen3vl_merger) may have different n_embd than the text model.
++    // Use n_embd_inp which represents the maximum input embedding dimension.
++    uint32_t n_embd_total = n_embd;
++    if (model.hparams.n_embd_inp() > n_embd) {
++        n_embd_total = model.hparams.n_embd_inp();
++    }
++    embd_size   = has_embd   ?  n_embd_total*n_outputs_max : 0;
+ 
+     if (output_ids.empty()) {
+         // init, never resized afterwards
+-- 
+2.47.1
+

@@ -1,0 +1,30 @@
+commit fcd2d784b8edc21f950e520c1093869666408f58
+Author: iosub <iosub@gabiges.com>
+Date:   Thu Nov 13 19:26:08 2025 -0500
+
+    Backup snapshot 2025-11-12
+
+diff --git a/api/types.go b/api/types.go
+index 1615fce6..b40e8d6a 100644
+--- a/api/types.go
++++ b/api/types.go
+@@ -410,12 +410,13 @@ type Options struct {
+ 
+ // Runner options which must be set when the model is loaded into memory
+ type Runner struct {
+-	NumCtx    int   `json:"num_ctx,omitempty"`
+-	NumBatch  int   `json:"num_batch,omitempty"`
+-	NumGPU    int   `json:"num_gpu,omitempty"`
+-	MainGPU   int   `json:"main_gpu,omitempty"`
+-	UseMMap   *bool `json:"use_mmap,omitempty"`
+-	NumThread int   `json:"num_thread,omitempty"`
++	NumCtx         int   `json:"num_ctx,omitempty"`
++	NumBatch       int   `json:"num_batch,omitempty"`
++	NumGPU         int   `json:"num_gpu,omitempty"`
++	MainGPU        int   `json:"main_gpu,omitempty"`
++	UseMMap        *bool `json:"use_mmap,omitempty"`
++	NumThread      int   `json:"num_thread,omitempty"`
++	ImageMinTokens int   `json:"image_min_tokens,omitempty"`
+ }
+ 
+ // EmbedRequest is the request passed to [Client.Embed].

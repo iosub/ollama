@@ -1,0 +1,62 @@
+{
+  "GGUF.kv_count": 22,
+  "GGUF.tensor_count": 316,
+  "GGUF.version": 3,
+  "clip.has_vision_encoder": true,
+  "clip.projector_type": "qwen3vl_merger",
+  "clip.use_gelu": true,
+  "clip.vision.attention.head_count": 16,
+  "clip.vision.attention.layer_norm_epsilon": 9.999999974752427e-07,
+  "clip.vision.block_count": 24,
+  "clip.vision.embedding_length": 1024,
+  "clip.vision.feed_forward_length": 4096,
+  "clip.vision.image_mean": [
+    0.5,
+    0.5,
+    0.5
+  ],
+  "clip.vision.image_size": 768,
+  "clip.vision.image_std": [
+    0.5,
+    0.5,
+    0.5
+  ],
+  "clip.vision.is_deepstack_layers": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "clip.vision.patch_size": 16,
+  "clip.vision.projection_dim": 2048,
+  "clip.vision.spatial_merge_size": 2,
+  "general.architecture": "clip",
+  "general.file_type": 7,
+  "general.license": "apache-2.0",
+  "general.quantization_version": 2,
+  "general.size_label": "407M",
+  "general.tags": [
+    "image-text-to-text"
+  ],
+  "general.type": "mmproj"
+}
