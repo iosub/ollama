@@ -1,0 +1,294 @@
+commit fcd2d784b8edc21f950e520c1093869666408f58
+Author: iosub <iosub@gabiges.com>
+Date:   Thu Nov 13 19:26:08 2025 -0500
+
+    Backup snapshot 2025-11-12
+
+diff --git a/runner/llamarunner/runner.go b/runner/llamarunner/runner.go
+index 87b43256..61518a20 100644
+--- a/runner/llamarunner/runner.go
++++ b/runner/llamarunner/runner.go
+@@ -28,6 +28,25 @@ import (
+ 	"github.com/ollama/ollama/runner/common"
+ )
+ 
++const (
++	assistantPreface        = "assistant\n"
++	prefacePreviewRuneLimit = 64
++	maxIgnoredLeadingEOG    = 3
++)
++
++func previewForPrefaceLog(s string) string {
++	if s == "" {
++		return s
++	}
++
++	runes := []rune(s)
++	if len(runes) <= prefacePreviewRuneLimit {
++		return s
++	}
++
++	return string(runes[:prefacePreviewRuneLimit]) + "..."
++}
++
+ // input is an element of the prompt to process, either
+ // a token or an image embedding (generated from a vision projector)
+ type input struct {
+@@ -44,6 +63,9 @@ type Sequence struct {
+ 	// number of tokens predicted so far
+ 	numPredicted int
+ 
++	// number of leading end-of-generation tokens ignored before emitting text
++	ignoredEOG int
++
+ 	// prompt inputs left to evaluate
+ 	inputs []input
+ 
+@@ -53,6 +75,18 @@ type Sequence struct {
+ 	// tokens that have been generated but not returned yet (e.g. for stop sequences)
+ 	pendingResponses []string
+ 
++	// true once we have emitted at least one chunk of assistant text
++	textEmitted bool
++
++	// buffer to strip the ChatML assistant preface before surfacing text
++	prefaceBuffer string
++
++	// prevent duplicate logging before first visible token
++	prefaceLogged bool
++
++	// true once the ChatML assistant preface has been trimmed
++	trimmedAssistantPreface bool
++
+ 	// input cache being used by this sequence
+ 	cache *InputCacheSlot
+ 
+@@ -73,6 +107,9 @@ type Sequence struct {
+ 	// stop sequences
+ 	stop []string
+ 
++	// stops temporarily disabled until first user-visible token is emitted
++	deferredStops []string
++
+ 	// number of inputs to keep at the beginning when shifting context window
+ 	numKeep int
+ 
+@@ -306,18 +343,116 @@ func flushPending(seq *Sequence) bool {
+ 		joined = joined[:len(joined)-1]
+ 	}
+ 
++	prefaceBufferBefore := seq.prefaceBuffer
++	raw := joined
++	joined = trimAssistantPreface(seq, joined)
++
++	if !seq.textEmitted && !seq.prefaceLogged {
++		slog.Debug("assistant preface flush", "raw_len", len(raw), "raw_preview", previewForPrefaceLog(raw), "trimmed_len", len(joined), "trimmed_preview", previewForPrefaceLog(joined), "preface_buffer_before_len", len(prefaceBufferBefore), "preface_buffer_after_len", len(seq.prefaceBuffer), "trimmed_preface", seq.trimmedAssistantPreface, "deferred_stops", len(seq.deferredStops))
++		seq.prefaceLogged = true
++	}
++
+ 	if len(joined) == 0 {
+ 		return true
+ 	}
+ 
++	if !seq.textEmitted {
++		seq.restoreDeferredStops()
++	}
++
+ 	select {
+ 	case seq.responses <- joined:
++		seq.textEmitted = true
+ 		return true
+ 	case <-seq.quit:
+ 		return false
+ 	}
+ }
+ 
++func (seq *Sequence) deferStop(stop string) {
++	if len(seq.stop) == 0 {
++		return
++	}
++
++	filtered := seq.stop[:0]
++	for _, candidate := range seq.stop {
++		if candidate == stop {
++			seq.deferredStops = append(seq.deferredStops, candidate)
++			continue
++		}
++		filtered = append(filtered, candidate)
++	}
++
++	seq.stop = filtered
++}
++
++func (seq *Sequence) restoreDeferredStops() {
++	if len(seq.deferredStops) == 0 {
++		return
++	}
++
++	seq.stop = append(seq.stop, seq.deferredStops...)
++	seq.deferredStops = nil
++}
++
++func trimAssistantPreface(seq *Sequence, chunk string) string {
++	if seq.trimmedAssistantPreface {
++		return chunk
++	}
++
++	if chunk == "" && seq.prefaceBuffer == "" {
++		return ""
++	}
++
++	combined := seq.prefaceBuffer + chunk
++	match := assistantPrefaceMatchLen(combined)
++
++	if len(combined) < len(assistantPreface) && match == len(combined) {
++		seq.prefaceBuffer = combined
++		return ""
++	}
++
++	if strings.HasPrefix(combined, assistantPreface) {
++		seq.trimmedAssistantPreface = true
++		seq.prefaceBuffer = ""
++		return combined[len(assistantPreface):]
++	}
++
++	// If the generated text diverges from the expected preface, flush everything as-is.
++	seq.trimmedAssistantPreface = true
++	seq.prefaceBuffer = ""
++	return combined
++}
++
++func assistantPrefaceMatchLen(s string) int {
++	max := len(assistantPreface)
++	if len(s) < max {
++		max = len(s)
++	}
++
++	for i := 0; i < max; i++ {
++		if s[i] != assistantPreface[i] {
++			return i
++		}
++	}
++
++	return max
++}
++
++func hasOnlyAssistantPreface(seq *Sequence) bool {
++	if seq.trimmedAssistantPreface {
++		return false
++	}
++
++	combined := seq.prefaceBuffer + strings.Join(seq.pendingResponses, "")
++	if combined == "" {
++		return false
++	}
++
++	match := assistantPrefaceMatchLen(combined)
++	return match == len(combined) && len(combined) <= len(assistantPreface)
++}
++
+ func (s *Server) removeSequence(seqIndex int, reason llm.DoneReason) {
+ 	seq := s.seqs[seqIndex]
+ 
+@@ -509,12 +644,18 @@ func (s *Server) processBatch(tokenBatch *llama.Batch, embedBatch *llama.Batch)
+ 			continue
+ 		}
+ 
+-		// sample a token
+-		token := seq.samplingCtx.Sample(s.lc, seq.iBatch)
+-		seq.samplingCtx.Accept(token, true)
+-		piece := s.model.TokenToPiece(token)
+-
+-		seq.numPredicted++
++		// sample a token but only accept once we know it will be kept
++		var token int
++		for {
++			token = seq.samplingCtx.Sample(s.lc, seq.iBatch)
++			if s.model.TokenIsEog(token) && !seq.textEmitted && seq.ignoredEOG < maxIgnoredLeadingEOG {
++				seq.ignoredEOG++
++				slog.Debug("ignoring leading eog", "count", seq.ignoredEOG)
++				continue
++			}
++			break
++		}
++		seq.inputs = []input{{token: token}}
+ 
+ 		// if it's an end of sequence token, break
+ 		if s.model.TokenIsEog(token) {
+@@ -526,8 +667,9 @@ func (s *Server) processBatch(tokenBatch *llama.Batch, embedBatch *llama.Batch)
+ 			continue
+ 		}
+ 
+-		seq.inputs = []input{{token: token}}
+-
++		seq.samplingCtx.Accept(token, true)
++		seq.numPredicted++
++		piece := s.model.TokenToPiece(token)
+ 		seq.pendingResponses = append(seq.pendingResponses, piece)
+ 		sequence := strings.Join(seq.pendingResponses, "")
+ 
+@@ -538,6 +680,7 @@ func (s *Server) processBatch(tokenBatch *llama.Batch, embedBatch *llama.Batch)
+ 			origLen := len(seq.pendingResponses)
+ 			seq.pendingResponses, tokenTruncated = common.TruncateStop(seq.pendingResponses, stop)
+ 			newLen := len(seq.pendingResponses)
++			truncatedSequenceEmpty := len(seq.pendingResponses) == 0 || hasOnlyAssistantPreface(seq)
+ 
+ 			// Update the cache based on the tokens that will be returned:
+ 			// - We have 1 token more than is currently in the cache because
+@@ -553,6 +696,13 @@ func (s *Server) processBatch(tokenBatch *llama.Batch, embedBatch *llama.Batch)
+ 			}
+ 			seq.cache.Inputs = seq.cache.Inputs[:tokenLen]
+ 
++			if truncatedSequenceEmpty && !seq.textEmitted {
++				// Skip treating a leading stop sequence as completion so generation can continue.
++				slog.Debug("skipping leading stop", "stop", stop)
++				seq.deferStop(stop)
++				continue
++			}
++
+ 			s.removeSequence(i, llm.DoneReasonStop)
+ 			continue
+ 		}
+@@ -692,6 +842,8 @@ func (s *Server) completion(w http.ResponseWriter, r *http.Request) {
+ 					http.Error(w, fmt.Sprintf("failed to encode final response: %v", err), http.StatusInternalServerError)
+ 				}
+ 
++				flusher.Flush()
++
+ 				return
+ 			}
+ 		}
+@@ -786,6 +938,7 @@ func (s *Server) loadModel(
+ 	flashAttention bool,
+ 	threads int,
+ 	multiUserCache bool,
++	imageMinTokens int,
+ ) {
+ 	var err error
+ 	s.model, err = llama.LoadModelFromFile(mpath, params)
+@@ -795,6 +948,7 @@ func (s *Server) loadModel(
+ 
+ 	ctxParams := llama.NewContextParams(kvSize, s.batchSize*s.parallel, s.parallel, threads, flashAttention, kvCacheType)
+ 	s.lc, err = llama.NewContextWithModel(s.model, ctxParams)
++
+ 	if err != nil {
+ 		panic(err)
+ 	}
+@@ -808,7 +962,7 @@ func (s *Server) loadModel(
+ 
+ 	if ppath != "" {
+ 		var err error
+-		s.image, err = NewImageContext(s.lc, ppath)
++		s.image, err = NewImageContext(s.lc, ppath, imageMinTokens)
+ 		if err != nil {
+ 			panic(err)
+ 		}
+@@ -876,7 +1030,7 @@ func (s *Server) load(w http.ResponseWriter, r *http.Request) {
+ 		}
+ 
+ 		s.status = llm.ServerStatusLoadingModel
+-		go s.loadModel(params, s.modelPath, req.LoraPath, req.ProjectorPath, req.KvSize, req.KvCacheType, req.FlashAttention, req.NumThreads, req.MultiUserCache)
++		go s.loadModel(params, s.modelPath, req.LoraPath, req.ProjectorPath, req.KvSize, req.KvCacheType, req.FlashAttention, req.NumThreads, req.MultiUserCache, req.ImageMinTokens)
+ 
+ 	case llm.LoadOperationClose:
+ 		// No-op for us

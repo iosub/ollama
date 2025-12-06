@@ -1,0 +1,1 @@
+qwen3-vl:30b-a3b-instruct-q4_K_M cpu funciona
