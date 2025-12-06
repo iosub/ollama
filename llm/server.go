@@ -144,7 +144,11 @@ func NewLlamaServer(systemInfo ml.SystemInfo, gpus []ml.DeviceInfo, modelPath st
 	var textProcessor model.TextProcessor
 	var err error
 	if envconfig.NewEngine() || f.KV().OllamaEngineRequired() {
-		if len(projectors) == 0 {
+		if len(extraModelPaths) > 0 {
+			// Split models (e.g., Qwen3-VL with separate text+vision files) are not supported
+			// by the new Ollama engine, fallback to llama.cpp runner
+			err = errors.New("split models not supported in new engine")
+		} else if len(projectors) == 0 {
 			textProcessor, err = model.NewTextProcessor(modelPath)
 		} else {
 			err = errors.New("split vision models aren't supported")
