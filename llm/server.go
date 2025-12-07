@@ -116,6 +116,7 @@ type ollamaServer struct {
 	llmServer
 
 	textProcessor model.TextProcessor // textProcessor handles text encoding/decoding
+	projectorPath string              // projectorPath is the path to split vision model GGUF
 }
 
 // LoadModel will load a model from disk. The model must be in the GGML format.
@@ -144,16 +145,16 @@ func NewLlamaServer(systemInfo ml.SystemInfo, gpus []ml.DeviceInfo, modelPath st
 	var textProcessor model.TextProcessor
 	var err error
 	if envconfig.NewEngine() || f.KV().OllamaEngineRequired() {
-		if len(projectors) == 0 {
-			textProcessor, err = model.NewTextProcessor(modelPath)
-		} else {
-			err = errors.New("split vision models aren't supported")
-		}
+		// Allow projectors with new engine - vision model will handle loading
+		textProcessor, err = model.NewTextProcessor(modelPath)
 		if err != nil {
 			// To prepare for opt-out mode, instead of treating this as an error, we fallback to the old runner
 			slog.Debug("model not yet supported by Ollama engine, switching to compatibility mode", "model", modelPath, "error", err)
+		} else if len(projectors) > 0 {
+			slog.Info("loading model with split vision encoder", "projector", projectors[0])
 		}
 	}
+
 	if textProcessor == nil {
 		llamaModel, err = llama.LoadModelFromFile(modelPath, nil, llama.ModelParams{VocabOnly: true})
 		if err != nil {
@@ -185,7 +186,8 @@ func NewLlamaServer(systemInfo ml.SystemInfo, gpus []ml.DeviceInfo, modelPath st
 		loadRequest.MainGPU = opts.MainGPU
 	}
 
-	if len(projectors) > 0 && llamaModel != nil {
+	// Set projector path for both engines (vision model support)
+	if len(projectors) > 0 {
 		loadRequest.ProjectorPath = projectors[0]
 	}
 
@@ -273,7 +275,11 @@ func NewLlamaServer(systemInfo ml.SystemInfo, gpus []ml.DeviceInfo, modelPath st
 	}()
 
 	if textProcessor != nil {
-		return &ollamaServer{llmServer: s, textProcessor: textProcessor}, nil
+		var projPath string
+		if len(projectors) > 0 {
+			projPath = projectors[0]
+		}
+		return &ollamaServer{llmServer: s, textProcessor: textProcessor, projectorPath: projPath}, nil
 	} else {
 		return &llamaServer{llmServer: s, ggml: f}, nil
 	}
@@ -442,10 +448,12 @@ type LoadRequest struct {
 	GPULayers      ml.GPULayersList
 	MultiUserCache bool
 
-	// Legacy fields - not used with the Ollama engine
+	// Projector/Vision model fields - used for split vision GGUF models
 	ProjectorPath string
-	MainGPU       int
-	UseMmap       bool
+
+	// Legacy fields - not used with the Ollama engine
+	MainGPU int
+	UseMmap bool
 }
 
 type LoadResponse struct {

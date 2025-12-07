@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"errors"
 	"reflect"
 	"slices"
@@ -62,6 +63,13 @@ func (m *fakeBackend) Get(name string) ml.Tensor {
 	}
 
 	return nil
+}
+
+func (m *fakeBackend) LoadSecondary(ctx context.Context, path string, progress func(float32)) error {
+	return nil
+}
+
+func (m *fakeBackend) RegisterTensorAlias(aliasPrefix, sourcePrefix string) {
 }
 
 func TestPopulateFields(t *testing.T) {

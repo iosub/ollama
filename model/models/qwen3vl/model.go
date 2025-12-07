@@ -2,7 +2,9 @@ package qwen3vl
 
 import (
 	"bytes"
+	"context"
 	"image"
+	"log/slog"
 	"slices"
 
 	"github.com/ollama/ollama/fs"
@@ -22,10 +24,115 @@ type Model struct {
 	ImageProcessor
 
 	positionCache []int32
+
+	// Split vision model support
+	visionReady   bool       // true if vision encoder is ready (either loaded from main file or separate file)
+	visionPath    string     // path to separate vision GGUF file (empty if embedded in main file)
+	visionBackend ml.Backend // backend for vision model when loaded separately
+}
+
+// HasProjector returns true if the model has a vision projector (vision capability)
+// HasProjector checks if the vision encoder is actually loaded with tensors.
+// For split models, this returns false until the vision GGUF is loaded.
+func (m *Model) HasProjector() bool {
+	// Check if a critical vision tensor is actually populated
+	// Unified models use Conv3D (PatchEmbedding), split models use Conv2D (PatchEmbedding2D)
+	return m.VisionModel != nil && (m.VisionModel.PatchEmbedding != nil || m.VisionModel.PatchEmbedding2D != nil)
+}
+
+// ensureVisionReady loads the vision encoder if it hasn't been loaded yet.
+// For split GGUF models, this loads vision tensor data from the separate file
+// into the main backend's pre-allocated tensors using LoadSecondary.
+// For unified models, this just marks vision as ready.
+func (m *Model) ensureVisionReady() error {
+	if m.visionReady {
+		return nil
+	}
+
+	slog.Debug("ensureVisionReady", "hasProjector", m.HasProjector(), "visionPath", m.visionPath)
+
+	// If vision layers are already populated (unified model), mark as ready
+	if m.HasProjector() {
+		// Infer correct vision dimensions from actual tensor shapes (fixes incorrect config defaults)
+		m.VisionModel.InferOptionsFromTensors()
+		// Sync temporalPatchSize from VisionModel to ImageProcessor (split model may have different value)
+		m.ImageProcessor.temporalPatchSize = m.VisionModel.temporalPatchSize
+		slog.Debug("Vision ready", "hiddenSize", m.VisionModel.hiddenSize, "numHeads", m.VisionModel.numHeads, "layers", len(m.VisionModel.Layers), "isSplitArchitecture", m.VisionModel.isSplitArchitecture, "temporalPatchSize", m.VisionModel.temporalPatchSize)
+		m.visionReady = true
+		return nil
+	}
+
+	// If no vision path specified, vision is not available
+	if m.visionPath == "" {
+		return model.ErrNoVisionModel
+	}
+
+	// Load vision tensor data from separate GGUF file into main backend
+	// LoadSecondary creates tensors that don't exist and loads data into them
+	slog.Info("Loading split vision model into main backend", "path", m.visionPath)
+
+	err := m.Backend().LoadSecondary(context.Background(), m.visionPath, nil)
+	if err != nil {
+		slog.Error("Failed to load vision model from secondary GGUF", "error", err)
+		return err
+	}
+
+	// Register tensor name aliases for split model compatibility
+	// Split models (e.g., unsloth) use different naming conventions
+	slog.Info("Registering split model tensor aliases")
+
+	// Embedding tensors: patch_embd → patch_embed, position_embd → position_embed
+	m.Backend().RegisterTensorAlias("v.patch_embed", "v.patch_embd")
+	m.Backend().RegisterTensorAlias("v.position_embed", "v.position_embd")
+
+	// Layer norm tensors: ln1 → norm1, ln2 → norm2
+	// Split GGUF has v.blk.0.ln1.weight, model expects v.blk.0.norm1.weight
+	m.Backend().RegisterTensorAlias("v.blk.*.norm1", "v.blk.*.ln1")
+	m.Backend().RegisterTensorAlias("v.blk.*.norm2", "v.blk.*.ln2")
+
+	// MLP tensors: ffn_up → mlp.linear_fc1, ffn_down → mlp.linear_fc2
+	// Split GGUF has v.blk.0.ffn_up.weight, model expects v.blk.0.mlp.linear_fc1.weight
+	m.Backend().RegisterTensorAlias("v.blk.*.mlp.linear_fc1", "v.blk.*.ffn_up")
+	m.Backend().RegisterTensorAlias("v.blk.*.mlp.linear_fc2", "v.blk.*.ffn_down")
+
+	// Deepstack merger tensors: deepstack → deepstack_merger
+	// Split GGUF has v.deepstack.16.fc1, model expects v.deepstack_merger.0.fc1
+	m.Backend().RegisterTensorAlias("v.deepstack_merger", "v.deepstack")
+
+	slog.Info("Split model tensor aliases registered")
+
+	// IMPORTANT: After LoadSecondary, tensors exist in backend but VisionModel struct
+	// fields haven't been bound to them. Re-populate the VisionModel field.
+	// The "v" tag corresponds to `gguf:"v"` on the VisionModel field.
+	slog.Debug("Re-populating VisionModel struct after LoadSecondary")
+	if m.VisionModel == nil {
+		m.VisionModel = newVisionModel(m.Backend().Config())
+	}
+	model.RepopulateField(m.Base, m.VisionModel, "v")
+
+	// Infer correct vision dimensions from actual tensor shapes
+	m.VisionModel.InferOptionsFromTensors()
+
+	// Verify that the vision model is now ready
+	if !m.HasProjector() {
+		slog.Error("Vision tensors still not populated after LoadSecondary and RepopulateField",
+			"patchEmbedding", m.VisionModel.PatchEmbedding,
+			"layers", len(m.VisionModel.Layers))
+		return model.ErrNoVisionModel
+	}
+
+	m.visionReady = true
+	slog.Info("Split vision model loaded", "layers", len(m.VisionModel.Layers), "hiddenSize", m.VisionModel.hiddenSize)
+	return nil
 }
 
 func (m *Model) EncodeMultimodal(ctx ml.Context, multimodalData []byte) ([]input.Multimodal, error) {
-	if len(m.VisionModel.Layers) == 0 {
+	// Lazy load vision encoder if needed (supports split GGUF models)
+	if err := m.ensureVisionReady(); err != nil {
+		return nil, err
+	}
+
+	if !m.HasProjector() {
 		return nil, model.ErrNoVisionModel
 	}
 
@@ -198,6 +305,23 @@ func New(c fs.Config) (model.Model, error) {
 		return m.Options.applyRotaryPositionalEmbedding(ctx, key, positions), nil
 	})
 	return &m, nil
+}
+
+// SetVisionPath sets the path to a separate vision GGUF file for split models.
+// This should be called before any image processing if the vision model is
+// stored in a separate file from the language model.
+func (m *Model) SetVisionPath(path string) {
+	m.visionPath = path
+	m.visionReady = false // Reset ready flag to trigger re-loading
+}
+
+// Close cleans up resources used by the model, including the vision backend
+// if it was loaded from a separate file.
+func (m *Model) Close() {
+	if m.visionBackend != nil {
+		m.visionBackend.Close()
+		m.visionBackend = nil
+	}
 }
 
 func init() {

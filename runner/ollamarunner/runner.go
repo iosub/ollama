@@ -1170,6 +1170,7 @@ func (s *Server) allocModel(
 	mpath string,
 	params ml.BackendParams,
 	loraPath []string,
+	projectorPath string,
 	parallel int,
 	kvCacheType string,
 	kvSize int,
@@ -1192,6 +1193,13 @@ func (s *Server) allocModel(
 	}()
 
 	var err error
+
+	// Pass projector path as secondary GGUF to load vision tensors during backend creation
+	// This ensures vision tensors are registered with the scheduler
+	if projectorPath != "" {
+		params.SecondaryPaths = append(params.SecondaryPaths, projectorPath)
+	}
+
 	s.model, err = model.New(mpath, params)
 	if err != nil {
 		return err
@@ -1200,6 +1208,16 @@ func (s *Server) allocModel(
 	// TODO(jessegross): LoRA loading
 	if len(loraPath) > 0 {
 		return errors.New("loras are not yet implemented")
+	}
+
+	// Set vision path for split vision models (e.g., Qwen3VL)
+	if projectorPath != "" {
+		if visionSetter, ok := s.model.(interface{ SetVisionPath(string) }); ok {
+			slog.Info("setting vision path for split model", "path", projectorPath)
+			visionSetter.SetVisionPath(projectorPath)
+		} else {
+			slog.Warn("model does not support split vision", "projector", projectorPath)
+		}
 	}
 
 	s.cache, err = NewInputCache(s.model, kvCacheType, int32(kvSize), parallel, s.batchSize, multiUserCache)
@@ -1295,7 +1313,7 @@ func (s *Server) load(w http.ResponseWriter, r *http.Request) {
 
 		s.batchSize = req.BatchSize
 
-		err := s.allocModel(s.modelPath, params, req.LoraPath, req.Parallel, req.KvCacheType, req.KvSize, req.MultiUserCache)
+		err := s.allocModel(s.modelPath, params, req.LoraPath, req.ProjectorPath, req.Parallel, req.KvCacheType, req.KvSize, req.MultiUserCache)
 		if err != nil {
 			s.closeModel()
 
