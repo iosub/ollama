@@ -15,6 +15,7 @@ type ImageProcessor struct {
 	numChannels       int
 	patchSize         int
 	temporalPatchSize int
+	storagePatchSize  int
 	mergeSize         int
 	shortestEdge      int
 	longestEdge       int
@@ -43,8 +44,8 @@ func newImageProcessor(c fs.Config) ImageProcessor {
 		longestEdge:   2 << 20,
 		factor:        patchSize * mergeSize,
 		rescaleFactor: 1.0 / 255.0,
-		imageMean:     c.Floats("vision.image_mean", imageproc.ImageNetStandardMean[:]),
-		imageStd:      c.Floats("vision.image_std", imageproc.ImageNetStandardSTD[:]),
+		imageMean:     c.Floats("vision.image_mean", []float32{0.5, 0.5, 0.5}),
+		imageStd:      c.Floats("vision.image_std", []float32{0.5, 0.5, 0.5}),
 	}
 }
 
@@ -132,14 +133,19 @@ func (p *ImageProcessor) createPatches(pixels []float32, height, width int, grid
 	mergeSize := p.mergeSize
 	temporalPatchSize := p.temporalPatchSize
 
+	storageSize := p.storagePatchSize
+	if storageSize == 0 {
+		storageSize = patchSize
+	}
+
 	// Calculate output dimensions
 	numPatches := grid.Temporal * grid.Height * grid.Width
-	patchDim := channels * temporalPatchSize * patchSize * patchSize
+	patchDim := channels * temporalPatchSize * storageSize * storageSize
 
 	result := make([]float32, numPatches*patchDim)
 	patchIndex := 0
 
-	// Single temporal frame handling (copies to all frames)
+	// Iterate over grid locations
 	for range grid.Temporal {
 		for h := 0; h < grid.Height; h += mergeSize {
 			for w := 0; w < grid.Width; w += mergeSize {
@@ -147,10 +153,9 @@ func (p *ImageProcessor) createPatches(pixels []float32, height, width int, grid
 				for mh := range mergeSize {
 					for mw := range mergeSize {
 						baseOffset := patchIndex * patchDim
-
 						// Extract patch data for first temporal frame
 						for c := range channels {
-							channelOffset := baseOffset + (c * temporalPatchSize * patchSize * patchSize)
+							channelOffset := baseOffset + (c * temporalPatchSize * storageSize * storageSize)
 
 							for py := range patchSize {
 								for px := range patchSize {
@@ -161,8 +166,8 @@ func (p *ImageProcessor) createPatches(pixels []float32, height, width int, grid
 									// Source index in input tensor (CHW format)
 									srcIdx := c*height*width + y*width + x
 
-									// Destination index in first temporal frame
-									dstIdx := channelOffset + (py * patchSize) + px
+									// Destination index in first temporal frame (using storageSize for stride)
+									dstIdx := channelOffset + (py * storageSize) + px
 
 									if srcIdx < len(pixels) && dstIdx < len(result) {
 										result[dstIdx] = pixels[srcIdx]
@@ -174,9 +179,9 @@ func (p *ImageProcessor) createPatches(pixels []float32, height, width int, grid
 						// Copy first temporal frame to all other frames
 						if temporalPatchSize > 1 {
 							for c := range channels {
-								channelOffset := baseOffset + (c * temporalPatchSize * patchSize * patchSize)
+								channelOffset := baseOffset + (c * temporalPatchSize * storageSize * storageSize)
 								firstFrameOffset := channelOffset
-								frameSize := patchSize * patchSize
+								frameSize := storageSize * storageSize
 
 								// Copy first frame to all other frames
 								for tp := 1; tp < temporalPatchSize; tp++ {
@@ -186,7 +191,6 @@ func (p *ImageProcessor) createPatches(pixels []float32, height, width int, grid
 								}
 							}
 						}
-
 						patchIndex++
 					}
 				}

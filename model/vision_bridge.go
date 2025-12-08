@@ -4,7 +4,6 @@ import (
 	"log/slog"
 	"reflect"
 	"strconv"
-	"strings"
 
 	"github.com/ollama/ollama/logutil"
 	"github.com/ollama/ollama/ml"
@@ -44,6 +43,8 @@ func PopulateVisionFromBackend(visionBackend ml.Backend, visionModel interface{}
 
 // populateVisionFields recursively populates struct fields with tensors from a backend.
 // Returns true if any tensor was successfully populated.
+// populateVisionFields recursively populates struct fields with tensors from a backend.
+// Returns true if any tensor was successfully populated.
 func populateVisionFields(backend ml.Backend, v reflect.Value, tags []Tag) bool {
 	t := v.Type()
 	anyPopulated := false
@@ -68,12 +69,13 @@ func populateVisionFields(backend ml.Backend, v reflect.Value, tags []Tag) bool 
 
 		// Handle ml.Tensor interface fields
 		if tt == reflect.TypeOf((*ml.Tensor)(nil)).Elem() {
-			tensorName := buildTensorName(tagsCopy)
-			if tensorName != "" {
+			tensorNames := buildTensorNames(tagsCopy)
+			for _, tensorName := range tensorNames {
 				if tensor := backend.Get(tensorName); tensor != nil {
 					logutil.Trace("PopulateVision: found tensor", "name", tensorName, "shape", tensor.Shape())
 					vv.Set(reflect.ValueOf(tensor))
 					anyPopulated = true
+					break // Found a match, stop looking for alternatives for this field
 				}
 			}
 		} else if tt.Kind() == reflect.Pointer {
@@ -112,14 +114,37 @@ func populateVisionFields(backend ml.Backend, v reflect.Value, tags []Tag) bool 
 	return anyPopulated
 }
 
-// buildTensorName constructs a tensor name from a list of tags.
-// Tags are joined with "." separators.
-func buildTensorName(tags []Tag) string {
-	var parts []string
+// buildTensorNames constructs all possible tensor names from a list of tags, checking alternatives.
+// Returns a slice of fully qualified names.
+func buildTensorNames(tags []Tag) []string {
+	// Start with one empty path
+	names := []string{""}
+
 	for _, tag := range tags {
+		var nextNames []string
+
+		// Gather all variants for this segment (primary + alternatives)
+		variants := []string{}
 		if tag.name != "" {
-			parts = append(parts, tag.name)
+			variants = append(variants, tag.name)
 		}
+		variants = append(variants, tag.alternatives...)
+
+		if len(variants) == 0 {
+			continue
+		}
+
+		// Cartesian product: extend each existing name with each variant
+		for _, name := range names {
+			for _, variant := range variants {
+				if name == "" {
+					nextNames = append(nextNames, variant)
+				} else {
+					nextNames = append(nextNames, name+"."+variant)
+				}
+			}
+		}
+		names = nextNames
 	}
-	return strings.Join(parts, ".")
+	return names
 }
