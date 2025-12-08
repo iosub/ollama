@@ -141,8 +141,14 @@ func (m *VisionPatchMerger) Forward(ctx ml.Context, visionOutputs ml.Tensor, pos
 
 	// FC1/FC2 should exist for Qwen3-VL (v.deepstack.X.fc1/fc2 weights)
 	if m.FC1 != nil && m.FC2 != nil {
-		slog.Debug("DeepstackMerger projecting", "input_dim", hiddenSize)
-		return m.FC2.Forward(ctx, m.FC1.Forward(ctx, visionOutputs).GELU(ctx))
+		slog.Debug("DeepstackMerger projecting", "input_dim", hiddenSize, "input_shape", visionOutputs.Shape())
+		fc1Out := m.FC1.Forward(ctx, visionOutputs)
+		slog.Debug("FC1 output", "shape", fc1Out.Shape())
+		activated := fc1Out.GELU(ctx)
+		slog.Debug("After GELU", "shape", activated.Shape())
+		result := m.FC2.Forward(ctx, activated)
+		slog.Debug("FC2 output", "shape", result.Shape())
+		return result
 	}
 
 	// This shouldn't happen for Qwen3-VL split models
@@ -354,8 +360,17 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 	}
 
 	// PatchMerger may be nil for split models
-	if m.PatchMerger != nil {
+	// Even if non-nil, skip if it doesn't have FC weights (would return wrong dimensions)
+	if m.PatchMerger != nil && m.PatchMerger.FC1 != nil && m.PatchMerger.FC2 != nil {
 		hiddenStates = m.PatchMerger.Forward(ctx, hiddenStates, false, m.VisionOptions)
+		slog.Debug("Projected main vision via PatchMerger", "shape", hiddenStates.Shape())
+	} else if len(m.DeepstackMerger) > 0 && m.DeepstackMerger[0] != nil && m.DeepstackMerger[0].FC1 != nil {
+		// Fallback for split models: use DeepstackMerger[0] to project main output
+		// This ensures dimensions match (4608 -> 4096) for concatenation
+		// We use postshuffleNorm=true because the main output is [1152, N] like the deepstack inputs
+		slog.Debug("Projecting main vision via DeepstackMerger[0] (fallback)", "input_shape", hiddenStates.Shape())
+		hiddenStates = m.DeepstackMerger[0].Forward(ctx, hiddenStates, true, m.VisionOptions)
+		slog.Debug("Projected main vision via DeepstackMerger[0]", "shape", hiddenStates.Shape())
 	}
 	return hiddenStates, deepstackStates
 }
@@ -403,7 +418,7 @@ func newVisionModel(c fs.Config) *VisionModel {
 			isSplitArchitecture: false,
 			// For Split GGUFs: deepstack features go to first N LLM layers
 			// This matches llama.cpp: if (ubatch.embd && il < n_deepstack_layers)
-			deepstackVisualIndexes: []int32{0, 1, 2}, // 3 deepstack layers
+			deepstackVisualIndexes: []int32{8, 16, 24}, // Deepstack extraction layers matching GGUF tensor naming
 		},
 	}
 }

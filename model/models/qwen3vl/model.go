@@ -3,6 +3,7 @@ package qwen3vl
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"image"
 	"log/slog"
 	"slices"
@@ -10,6 +11,7 @@ import (
 	"github.com/ollama/ollama/fs"
 	"github.com/ollama/ollama/kvcache"
 	"github.com/ollama/ollama/ml"
+	"github.com/ollama/ollama/ml/nn"
 	"github.com/ollama/ollama/model"
 	"github.com/ollama/ollama/model/input"
 )
@@ -55,6 +57,45 @@ func (m *Model) ensureVisionReady() error {
 	if m.HasProjector() {
 		// Infer correct vision dimensions from actual tensor shapes (fixes incorrect config defaults)
 		m.VisionModel.InferOptionsFromTensors()
+
+		// MANUAL LOADING: DeepstackMerger FC weights
+		// vision_bridge cannot populate FC weights because array indices (0,1,2) don't match GGUF layer IDs (8,16,24)
+		// vision_bridge uses strconv.Itoa(j) which builds "v.deepstack.0.fc1" but GGUF has "v.deepstack.8.fc1.weight"
+		if m.VisionModel.DeepstackMerger != nil && len(m.VisionModel.DeepstackMerger) >= 3 {
+			layerIDs := []int{8, 16, 24}
+			for idx, layerID := range layerIDs {
+				prefix := fmt.Sprintf("v.deepstack.%d", layerID)
+
+				// Try to find FC1 weight tensor
+				fc1WeightName := prefix + ".fc1.weight"
+				if fc1Weight := m.Backend().Get(fc1WeightName); fc1Weight != nil {
+					fc1BiasName := prefix + ".fc1.bias"
+					fc1Bias := m.Backend().Get(fc1BiasName) // May be nil
+					m.VisionModel.DeepstackMerger[idx].FC1 = &nn.Linear{
+						Weight: fc1Weight,
+						Bias:   fc1Bias,
+					}
+					slog.Info("Manually loaded DeepstackMerger FC1", "layer", layerID, "idx", idx, "shape", fc1Weight.Shape())
+				} else {
+					slog.Debug("DeepstackMerger FC1 weight not found (expected for non-deepstack models)", "layer", layerID, "name", fc1WeightName)
+				}
+
+				// Try to find FC2 weight tensor
+				fc2WeightName := prefix + ".fc2.weight"
+				if fc2Weight := m.Backend().Get(fc2WeightName); fc2Weight != nil {
+					fc2BiasName := prefix + ".fc2.bias"
+					fc2Bias := m.Backend().Get(fc2BiasName) // May be nil
+					m.VisionModel.DeepstackMerger[idx].FC2 = &nn.Linear{
+						Weight: fc2Weight,
+						Bias:   fc2Bias,
+					}
+					slog.Info("Manually loaded DeepstackMerger FC2", "layer", layerID, "idx", idx, "shape", fc2Weight.Shape())
+				} else {
+					slog.Debug("DeepstackMerger FC2 weight not found (expected for non-deepstack models)", "layer", layerID, "name", fc2WeightName)
+				}
+			}
+		}
+
 		// Sync temporalPatchSize from VisionModel to ImageProcessor (split model may have different value)
 		m.ImageProcessor.temporalPatchSize = m.VisionModel.temporalPatchSize
 		m.ImageProcessor.storagePatchSize = m.VisionModel.storagePatchSize
@@ -123,6 +164,42 @@ func (m *Model) ensureVisionReady() error {
 	}
 
 	model.RepopulateField(m.Base, m.VisionModel, "v")
+
+	// MANUAL LOADING: DeepstackMerger FC weights
+	// vision_bridge cannot populate FC weights because array indices (0,1,2) don't match GGUF layer IDs (8,16,24)
+	// vision_bridge uses strconv.Itoa(j) which builds "v.deepstack.0.fc1" but GGUF has "v.deepstack.8.fc1.weight"
+	layerIDs := []int{8, 16, 24}
+	for idx, layerID := range layerIDs {
+		prefix := fmt.Sprintf("v.deepstack.%d", layerID)
+
+		// Try to find FC1 weight tensor
+		fc1WeightName := prefix + ".fc1.weight"
+		if fc1Weight := m.Backend().Get(fc1WeightName); fc1Weight != nil {
+			fc1BiasName := prefix + ".fc1.bias"
+			fc1Bias := m.Backend().Get(fc1BiasName) // May be nil
+			m.VisionModel.DeepstackMerger[idx].FC1 = &nn.Linear{
+				Weight: fc1Weight,
+				Bias:   fc1Bias,
+			}
+			slog.Info("Manually loaded DeepstackMerger FC1", "layer", layerID, "idx", idx, "shape", fc1Weight.Shape())
+		} else {
+			slog.Warn("DeepstackMerger FC1 weight not found", "layer", layerID, "name", fc1WeightName)
+		}
+
+		// Try to find FC2 weight tensor
+		fc2WeightName := prefix + ".fc2.weight"
+		if fc2Weight := m.Backend().Get(fc2WeightName); fc2Weight != nil {
+			fc2BiasName := prefix + ".fc2.bias"
+			fc2Bias := m.Backend().Get(fc2BiasName) // May be nil
+			m.VisionModel.DeepstackMerger[idx].FC2 = &nn.Linear{
+				Weight: fc2Weight,
+				Bias:   fc2Bias,
+			}
+			slog.Info("Manually loaded DeepstackMerger FC2", "layer", layerID, "idx", idx, "shape", fc2Weight.Shape())
+		} else {
+			slog.Warn("DeepstackMerger FC2 weight not found", "layer", layerID, "name", fc2WeightName)
+		}
+	}
 
 	// Infer correct vision dimensions from actual tensor shapes
 	m.VisionModel.InferOptionsFromTensors()
