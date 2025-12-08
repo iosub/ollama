@@ -645,3 +645,14 @@ See the [API documentation](./docs/api.md) for all endpoints.
 
 ### Security
 - [Ollama Fortress](https://github.com/ParisNeo/ollama_proxy_server)
+---
+** OllamaSplitRunner Branch**
+
+This branch implements deepstack vision architecture support for Qwen3-VL split GGUF models in Ollama's Go runner.
+
+**Objective**: Enable split GGUF models to process images correctly without crashes or hallucinations.
+
+**Status**: WIP - Blocked on FC weight loading mechanism. See z_iosu_2/1_split_ollama/README.md for details.
+
+---
+
