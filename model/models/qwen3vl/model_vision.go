@@ -66,27 +66,20 @@ func (sa *VisionAttention) Forward(ctx ml.Context, hiddenStates, cos, sin ml.Ten
 }
 
 type VisionMLP struct {
-	FC1 *nn.Linear `gguf:"linear_fc1"`
-	FC2 *nn.Linear `gguf:"linear_fc2"`
+	FC1 *nn.Linear `gguf:"linear_fc1,alt:ffn_up"`
+	FC2 *nn.Linear `gguf:"linear_fc2,alt:ffn_down"`
 }
 
 func (mlp *VisionMLP) Forward(ctx ml.Context, hiddenStates ml.Tensor, opts VisionOptions) ml.Tensor {
-	if mlp.FC1 == nil || mlp.FC1.Weight == nil {
-		panic("VisionMLP.FC1 is nil - alias 'v.blk.*.mlp.linear_fc1' not found. Check if ffn_up→linear_fc1 alias was created.")
-	}
-	if mlp.FC2 == nil || mlp.FC2.Weight == nil {
-		panic("VisionMLP.FC2 is nil - alias 'v.blk.*.mlp.linear_fc2' not found. Check if ffn_down→linear_fc2 alias was created.")
-	}
-
 	fc1Out := mlp.FC1.Forward(ctx, hiddenStates)
 	activated := fc1Out.GELU(ctx)
 	return mlp.FC2.Forward(ctx, activated)
 }
 
 type VisionEncoderLayer struct {
-	Norm1     *nn.LayerNorm `gguf:"norm1"`
+	Norm1     *nn.LayerNorm `gguf:"norm1,alt:ln1"`
 	Attention *VisionAttention
-	Norm2     *nn.LayerNorm `gguf:"norm2"`
+	Norm2     *nn.LayerNorm `gguf:"norm2,alt:ln2"`
 	MLP       *VisionMLP    `gguf:"mlp"`
 }
 
@@ -109,6 +102,7 @@ type VisionOptions struct {
 	numChannels,
 	spatialMergeSize,
 	temporalPatchSize,
+	storagePatchSize,
 	gridPerSide int
 
 	eps,
@@ -128,9 +122,9 @@ func (o VisionOptions) headDim() int {
 }
 
 type VisionPatchMerger struct {
-	Norm *nn.LayerNorm `gguf:"norm"`
-	FC1  *nn.Linear    `gguf:"linear_fc1"`
-	FC2  *nn.Linear    `gguf:"linear_fc2"`
+	Norm *nn.LayerNorm `gguf:"norm,alt:ln_merger"`
+	FC1  *nn.Linear    `gguf:"fc1,alt:linear_fc1,alt:ffn_up"`
+	FC2  *nn.Linear    `gguf:"fc2,alt:linear_fc2,alt:ffn_down"`
 }
 
 func (m *VisionPatchMerger) Forward(ctx ml.Context, visionOutputs ml.Tensor, postshuffleNorm bool, opts VisionOptions) ml.Tensor {
@@ -145,17 +139,19 @@ func (m *VisionPatchMerger) Forward(ctx ml.Context, visionOutputs ml.Tensor, pos
 	}
 	visionOutputs = visionOutputs.Reshape(ctx, hiddenSize, -1)
 
-	// FC1/FC2 may be nil for split models (they use separate mm.* projector)
+	// FC1/FC2 should exist for Qwen3-VL (v.deepstack.X.fc1/fc2 weights)
 	if m.FC1 != nil && m.FC2 != nil {
+		slog.Debug("DeepstackMerger projecting", "input_dim", hiddenSize)
 		return m.FC2.Forward(ctx, m.FC1.Forward(ctx, visionOutputs).GELU(ctx))
 	}
 
-	// Split model: just return normalized output, projection happens elsewhere
+	// This shouldn't happen for Qwen3-VL split models
+	slog.Warn("DeepstackMerger FC layers are nil", "dim", hiddenSize)
 	return visionOutputs
 }
 
 type VisionPositionEmbedding struct {
-	PositionEmbedding *nn.Embedding `gguf:"position_embed"` // Aliased from position_embd for split models
+	PositionEmbedding *nn.Embedding `gguf:"position_embed,alt:position_embd"` // Aliased from position_embd for split models
 }
 
 func makeSlice2D[T int32 | float32](n0, n1 int) iter.Seq[[]T] {
@@ -217,12 +213,12 @@ func (m *VisionPositionEmbedding) Forward(ctx ml.Context, hiddenStates ml.Tensor
 }
 
 type VisionModel struct {
-	PatchEmbedding    *nn.Conv3D `gguf:"patch_embed"` // Unified model uses 3D conv
+	PatchEmbedding    *nn.Conv3D `gguf:"patch_embed,alt:patch_embd"` // Unified model uses 3D conv
 	PatchEmbedding2D  *nn.Conv2D // Split model uses 2D conv (not auto-populated, set from PatchEmbedding when detected)
 	PositionEmbedding *VisionPositionEmbedding
 	Layers            []VisionEncoderLayer `gguf:"blk"`
 	PatchMerger       *VisionPatchMerger   `gguf:"merger"`
-	DeepstackMerger   []*VisionPatchMerger `gguf:"deepstack_merger"`
+	DeepstackMerger   []*VisionPatchMerger `gguf:"deepstack_merger,alt:deepstack"`
 
 	VisionOptions
 }
@@ -366,32 +362,50 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 
 // newVisionModel creates a new instance of the Qwen vision model
 func newVisionModel(c fs.Config) *VisionModel {
-	deepstackVisualIndexes := c.Ints("vision.deepstack_visual_indexes")
-	model := &VisionModel{
-		Layers:          make([]VisionEncoderLayer, c.Uint("vision.block_count", 32)),
-		DeepstackMerger: make([]*VisionPatchMerger, len(deepstackVisualIndexes)),
+	// For Qwen3-VL, deepstack features are applied to the first N LLM layers
+	// where N = number of loaded DeepstackMerger tensors (inferred from GGUF)
+	// This matches llama.cpp's approach: if (ubatch.embd && il < n_deepstack_layers)
+	// We'll infer the actual count after loading tensors
+
+	hiddenSize := int(c.Uint("vision.embedding_length", 1280))
+	patchSize := int(c.Uint("vision.patch_size", 14))
+	numChannels := int(c.Uint("vision.num_channels", 3))
+
+	// For Qwen3-VL Split, pre-initialize DeepstackMerger array for vision_bridge
+	// llama.cpp has n_deepstack_layers = 3 (layers 8, 16, 24)
+	nDeepstack := 3
+	return &VisionModel{
+		Layers: make([]VisionEncoderLayer, c.Uint("vision.block_count", 32)),
+		DeepstackMerger: func() []*VisionPatchMerger {
+			arr := make([]*VisionPatchMerger, nDeepstack)
+			for i := range arr {
+				arr[i] = &VisionPatchMerger{}
+			}
+			return arr
+		}(),
 		VisionOptions: VisionOptions{
-			hiddenSize:        int(c.Uint("vision.embedding_length", 1280)),
+			hiddenSize:        hiddenSize,
 			numHeads:          int(c.Uint("vision.attention.head_count", 16)),
-			patchSize:         int(c.Uint("vision.patch_size", 14)),
-			numChannels:       int(c.Uint("vision.num_channels", 3)),
+			patchSize:         patchSize,
+			numChannels:       numChannels,
 			eps:               c.Float("vision.attention.layer_norm_epsilon", 1e-6),
-			ropeTheta:         c.Float("vision.rope.freq_base", 10000.0),
+			ropeTheta:         c.Float("vision.rope.freq_base", 1000000.0),
 			spatialMergeSize:  int(c.Uint("vision.spatial_merge_size", 2)),
 			temporalPatchSize: int(c.Uint("vision.temporal_patch_size", 2)),
 			gridPerSide:       int(math.Sqrt(float64(c.Uint("vision.num_positional_embeddings", 2304)))),
 			mropeSections: slices.Collect(func(yield func(int) bool) {
-				for _, section := range c.Ints("mrope_sections", []int32{24, 20, 20}) {
+				for _, section := range c.Ints("vision.mrope_sections", []int32{24, 20, 20}) {
 					if !yield(int(section)) {
 						return
 					}
 				}
 			}),
-			deepstackVisualIndexes: deepstackVisualIndexes,
+			isSplitArchitecture: false,
+			// For Split GGUFs: deepstack features go to first N LLM layers
+			// This matches llama.cpp: if (ubatch.embd && il < n_deepstack_layers)
+			deepstackVisualIndexes: []int32{0, 1, 2}, // 3 deepstack layers
 		},
 	}
-
-	return model
 }
 
 // InferOptionsFromTensors updates VisionOptions by inferring dimensions from actual tensor shapes.
@@ -430,18 +444,23 @@ func (m *VisionModel) InferOptionsFromTensors() {
 			patchDim, hiddenSize := int(dims[0]), int(dims[1])
 			if hiddenSize == m.hiddenSize && patchDim > 0 {
 				m.isSplitArchitecture = true
-				m.temporalPatchSize = 1
-				// Infer patchSize from patchDim = numChannels * patchSize * patchSize
+				m.temporalPatchSize = 1 // 2D reshaped weights don't include temporal dimension
+				// Infer patchSize from patchDim = numChannels * temporalPatchSize * patchSize * patchSize
 				// 768 = 3 * 16 * 16, so patchSize = sqrt(patchDim / numChannels)
 				patchArea := patchDim / m.numChannels
 				for ps := 1; ps <= 64; ps++ {
 					if ps*ps == patchArea {
-						m.patchSize = ps
+						if ps > m.patchSize {
+							m.storagePatchSize = ps
+							slog.Info("Detected padded split weights", "patchSize", m.patchSize, "storagePatchSize", m.storagePatchSize)
+						} else {
+							m.patchSize = ps
+						}
 						break
 					}
 				}
 				slog.Info("Detected split architecture from 2D weight",
-					"patchDim", patchDim, "hiddenSize", hiddenSize, "patchSize", m.patchSize)
+					"patchDim", patchDim, "hiddenSize", hiddenSize, "patchSize", m.patchSize, "storagePatchSize", m.storagePatchSize)
 			}
 		} else if len(dims) >= 4 {
 			kH, kW, dim2, dim3 := int(dims[0]), int(dims[1]), int(dims[2]), int(dims[3])
@@ -457,7 +476,8 @@ func (m *VisionModel) InferOptionsFromTensors() {
 			if dim3 == m.hiddenSize && dim2 == m.numChannels {
 				// Split architecture: [kH, kW, channels, hiddenSize]
 				m.isSplitArchitecture = true
-				m.temporalPatchSize = 1 // No temporal dimension in split
+				m.temporalPatchSize = 1 // 2D reshaped weights don't include temporal dimension
+				m.temporalPatchSize = 1 // Split 2D weights process single frames
 				// Create Conv2D using the same weight/bias tensors
 				m.PatchEmbedding2D = &nn.Conv2D{
 					Weight: m.PatchEmbedding.Weight,
@@ -498,6 +518,37 @@ func (m *VisionModel) InferOptionsFromTensors() {
 		if layer.Norm1 != nil {
 			populatedCount++
 		}
+	}
+
+	// Infer deepstack configuration from loaded tensors
+	// Count how many DeepstackMerger tensors are loaded (v.deepstack.8, v.deepstack.16, etc.)
+	nDeepstack := 0
+	if m.DeepstackMerger != nil {
+		for _, merger := range m.DeepstackMerger {
+			if merger != nil && merger.FC2 != nil {
+				nDeepstack++
+			}
+		}
+	}
+
+	// Initialize empty DeepstackMerger array if not already done
+	if m.DeepstackMerger == nil && nDeepstack == 0 {
+		// Try to detect from struct field tags
+		// For now, we'll just create an empty array and it will be populated by vision_bridge
+		m.DeepstackMerger = []*VisionPatchMerger{}
+	}
+
+	// For llama.cpp compatibility: deepstack features go to first N LLM layers
+	// where N = number of loaded deepstack mergers
+	// This matches: if (ubatch.embd && il < n_deepstack_layers)
+	if nDeepstack > 0 {
+		m.deepstackVisualIndexes = make([]int32, nDeepstack)
+		for i := 0; i < nDeepstack; i++ {
+			m.deepstackVisualIndexes[i] = int32(i)
+		}
+		slog.Info("Inferred deepstack configuration from loaded tensors",
+			"n_deepstack_layers", nDeepstack,
+			"target_llm_layers", m.deepstackVisualIndexes)
 	}
 	if populatedCount > 0 && populatedCount != len(m.Layers) {
 		// Resize layers array to match actual populated count
