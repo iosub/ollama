@@ -1,3 +1,13 @@
+---
+** OllamaSplitRunner Branch**
+
+This branch implements deepstack vision architecture support for Qwen3-VL split GGUF models in Ollama's Go runner.
+
+**Objective**: Enable split GGUF models to process images correctly without crashes or hallucinations.
+
+**Status**: WIP - Blocked on FC weight loading mechanism. See `z_iosu_2/1_split_ollama/README.md` for details.
+
+---
 <div align="center">
   <a href="https://ollama.com">
     <img alt="ollama" width="240" src="https://github.com/ollama/ollama/assets/3325447/0d0b44e2-8f4a-4e99-9b52-a5c1c741c8f7">
