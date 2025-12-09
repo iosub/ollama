@@ -65,7 +65,7 @@ var initDevices = sync.OnceFunc(func() {
 			// Skip Vulkan devices if OLLAMA_VULKAN is not enabled
 			name := C.GoString(C.ggml_backend_dev_name(d))
 			if !envconfig.EnableVulkan() && strings.Contains(strings.ToLower(name), "vulkan") {
-				slog.Info("skipping Vulkan device (OLLAMA_VULKAN not enabled)", "device", name)
+				slog.Debug("skipping Vulkan device (OLLAMA_VULKAN not enabled)", "device", name)
 				continue
 			}
 			gpus = append(gpus, d)
@@ -145,7 +145,7 @@ func New(modelPath string, params ml.BackendParams) (ml.Backend, error) {
 	}
 
 	once.Do(func() {
-		slog.Info(
+		slog.Debug(
 			"",
 			"architecture", meta.KV().Architecture(),
 			"file_type", meta.KV().FileType(),
@@ -304,7 +304,7 @@ func New(modelPath string, params ml.BackendParams) (ml.Backend, error) {
 				patchDim := C.int64_t(t.source.Shape[0] * t.source.Shape[1] * t.source.Shape[2])
 				hiddenSize := C.int64_t(t.source.Shape[3])
 				shape = []C.int64_t{patchDim, hiddenSize}
-				slog.Info("reshaping patch embedding at load time", "original", t.source.Shape, "target", shape)
+				slog.Debug("reshaping patch embedding at load time", "original", t.source.Shape, "target", shape)
 			} else {
 				shape = make([]C.int64_t, len(t.source.Shape))
 				for i, s := range t.source.Shape {
@@ -398,7 +398,7 @@ func New(modelPath string, params ml.BackendParams) (ml.Backend, error) {
 			continue
 		}
 
-		slog.Info("loading secondary GGUF into main backend", "path", secondaryPath, "tensors", len(secondaryMeta.Tensors().Items()))
+		slog.Debug("loading secondary GGUF into main backend", "path", secondaryPath, "tensors", len(secondaryMeta.Tensors().Items()))
 		secondaryMetas = append(secondaryMetas, secondaryMeta)
 
 		// Create tensors from secondary GGUF - vision tensors go to output buffer
@@ -632,19 +632,19 @@ func (b *Backend) Load(ctx context.Context, progress func(float32)) error {
 			gpuLayers++
 		}
 	}
-	slog.Info(fmt.Sprintf("offloading %d repeating layers to GPU", gpuLayers))
+	slog.Debug(fmt.Sprintf("offloading %d repeating layers to GPU", gpuLayers))
 
 	switch C.ggml_backend_dev_type(b.output) {
 	case C.GGML_BACKEND_DEVICE_TYPE_CPU:
-		slog.Info("offloading output layer to CPU")
+		slog.Debug("offloading output layer to CPU")
 	case C.GGML_BACKEND_DEVICE_TYPE_GPU,
 		C.GGML_BACKEND_DEVICE_TYPE_IGPU:
-		slog.Info("offloading output layer to GPU")
+		slog.Debug("offloading output layer to GPU")
 		gpuLayers++
 	case C.GGML_BACKEND_DEVICE_TYPE_ACCEL:
-		slog.Info("offloading output layer to ACCEL")
+		slog.Debug("offloading output layer to ACCEL")
 	}
-	slog.Info(fmt.Sprintf("offloaded %d/%d layers to GPU", gpuLayers, len(b.layers)+1))
+	slog.Debug(fmt.Sprintf("offloaded %d/%d layers to GPU", gpuLayers, len(b.layers)+1))
 
 	var doneBytes atomic.Uint64
 	totalBytes := uint64(b.meta.Length) - b.meta.Tensors().Offset
@@ -864,7 +864,7 @@ func (b *Backend) LoadSecondary(ctx context.Context, path string, progress func(
 		return fmt.Errorf("failed to decode secondary GGUF: %w", err)
 	}
 
-	slog.Info("loading secondary GGUF", "path", path, "tensors", len(meta.Tensors().Items()))
+	slog.Debug("loading secondary GGUF", "path", path, "tensors", len(meta.Tensors().Items()))
 
 	// Use the first scheduler buffer type (typically GPU if available, else CPU)
 	// This ensures secondary tensors are on the same buffer as main model tensors
@@ -912,7 +912,7 @@ func (b *Backend) LoadSecondary(ctx context.Context, path string, progress func(
 			patchDim := C.int64_t(t.Shape[0] * t.Shape[1] * t.Shape[2])
 			hiddenSize := C.int64_t(t.Shape[3])
 			shape = []C.int64_t{patchDim, hiddenSize}
-			slog.Info("reshaping secondary patch embedding at load time", "original", t.Shape, "target", shape)
+			slog.Debug("reshaping secondary patch embedding at load time", "original", t.Shape, "target", shape)
 		} else {
 			shape = make([]C.int64_t, len(t.Shape))
 			for i, s := range t.Shape {
@@ -937,7 +937,7 @@ func (b *Backend) LoadSecondary(ctx context.Context, path string, progress func(
 			C.ggml_free(secondaryCtx)
 			return errors.New("failed to allocate buffer for secondary tensors")
 		}
-		slog.Info("allocated buffer for secondary tensors", "count", len(newTensors), "buffer_type", C.GoString(C.ggml_backend_buft_name(bufferType)))
+		slog.Debug("allocated buffer for secondary tensors", "count", len(newTensors), "buffer_type", C.GoString(C.ggml_backend_buft_name(bufferType)))
 
 		// Store the buffer for cleanup (add to weightBuffers)
 		b.weightBuffers[secondaryCtx] = buf
@@ -998,7 +998,7 @@ func (b *Backend) LoadSecondary(ctx context.Context, path string, progress func(
 		return err
 	}
 
-	slog.Info("secondary GGUF loaded", "path", path, "tensors_loaded", loadedCount, "new_tensors", len(newTensors))
+	slog.Debug("secondary GGUF loaded", "path", path, "tensors_loaded", loadedCount, "new_tensors", len(newTensors))
 	return nil
 }
 
@@ -1202,7 +1202,7 @@ func (b *Backend) RegisterTensorAlias(aliasPattern, sourcePattern string) {
 		aliasPrefix := aliasParts[0]
 		aliasSuffix := aliasParts[1]
 
-		slog.Info("registering wildcard tensor alias",
+		slog.Debug("registering wildcard tensor alias",
 			"source_pattern", sourcePattern, "alias_pattern", aliasPattern,
 			"source_prefix", sourcePrefix, "source_suffix", sourceSuffix)
 
@@ -1223,13 +1223,13 @@ func (b *Backend) RegisterTensorAlias(aliasPattern, sourcePattern string) {
 						b.tensors[aliasName] = tensor
 						matchCount++
 						if matchCount <= 5 {
-							slog.Info("created wildcard alias", "source", name, "alias", aliasName)
+							slog.Debug("created wildcard alias", "source", name, "alias", aliasName)
 						}
 					}
 				}
 			}
 		}
-		slog.Info("wildcard alias complete", "pattern", sourcePattern, "matches", matchCount)
+		slog.Debug("wildcard alias complete", "pattern", sourcePattern, "matches", matchCount)
 	} else {
 		// Simple prefix-based aliasing (original behavior)
 		matchCount := 0
@@ -1240,12 +1240,12 @@ func (b *Backend) RegisterTensorAlias(aliasPattern, sourcePattern string) {
 					b.tensors[aliasName] = tensor
 					matchCount++
 					if matchCount <= 3 {
-						slog.Info("created prefix alias", "source", name, "alias", aliasName)
+						slog.Debug("created prefix alias", "source", name, "alias", aliasName)
 					}
 				}
 			}
 		}
-		slog.Info("prefix alias complete", "pattern", sourcePattern, "matches", matchCount)
+		slog.Debug("prefix alias complete", "pattern", sourcePattern, "matches", matchCount)
 	}
 }
 

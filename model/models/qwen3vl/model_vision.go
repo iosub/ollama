@@ -324,7 +324,7 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 		// Log shapes for debugging
 		weightShape := m.PatchEmbedding.Weight.Shape()
 		pixelShape := pixelValues.Shape()
-		slog.Info("Split patch embedding forward",
+		slog.Debug("Split patch embedding forward",
 			"weight_shape", weightShape, "pixel_shape", pixelShape,
 			"expected_patchDim", patchDim, "hiddenSize", m.hiddenSize, "numPatches", numPatches)
 
@@ -348,7 +348,7 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 		}
 	} else {
 		// Unified architecture: conv kernel is [kH, kW, temporal, channels*hidden] - use Conv3D
-		slog.Info("Unified patch embedding BEFORE reshape",
+		slog.Debug("Unified patch embedding BEFORE reshape",
 			"pixelValues_shape", pixelValues.Shape(),
 			"patchSize", m.patchSize,
 			"temporalPatchSize", m.temporalPatchSize,
@@ -356,17 +356,17 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 			"target_reshape", []int{m.patchSize, m.patchSize, m.temporalPatchSize, -1})
 		
 		pixelValues = pixelValues.Reshape(ctx, m.patchSize, m.patchSize, m.temporalPatchSize, -1)
-		slog.Info("Unified patch embedding AFTER reshape",
+		slog.Debug("Unified patch embedding AFTER reshape",
 			"pixelValues_shape", pixelValues.Shape())
 		
 		// Log Conv3D weight shape
 		if m.PatchEmbedding != nil && m.PatchEmbedding.Weight != nil {
-			slog.Info("Unified Conv3D kernel",
+			slog.Debug("Unified Conv3D kernel",
 				"weight_shape", m.PatchEmbedding.Weight.Shape())
 		}
 		
 		hiddenStates = m.PatchEmbedding.Forward(ctx, pixelValues, m.numChannels, m.patchSize, m.patchSize, m.temporalPatchSize, 0, 0, 0, 1, 1, 1)
-		slog.Info("Unified patch embedding AFTER Conv3D",
+		slog.Debug("Unified patch embedding AFTER Conv3D",
 			"hiddenStates_shape", hiddenStates.Shape())
 	}
 
@@ -388,7 +388,7 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 	}
 
 	// Log deepstack configuration before processing
-	slog.Info("VisionModel.Forward starting", 
+	slog.Debug("VisionModel.Forward starting", 
 		"n_layers", len(m.Layers),
 		"deepstackVisualIndexes", m.deepstackVisualIndexes,
 		"n_deepstack_mergers", len(m.DeepstackMerger))
@@ -440,7 +440,7 @@ func (m *VisionModel) Forward(ctx ml.Context, pixelValues ml.Tensor, grid *Grid)
 		// FC2: 4608 -> 4096
 		hiddenStates = m.MultimodalFC2.Forward(ctx, hiddenStates)
 		
-		slog.Info("Split Model: Projected main vision via mm.0/mm.2", 
+		slog.Debug("Split Model: Projected main vision via mm.0/mm.2", 
 			"shape", hiddenStates.Shape(), "mergedPatches", mergedPatches)
 	} else if len(deepstackStates) > 0 && len(m.DeepstackMerger) > 0 {
 		// FALLBACK: PatchMerger is nil AND mm.0/mm.2 not available
@@ -594,7 +594,7 @@ func (m *VisionModel) InferOptionsFromTensors() {
 		}
 	} else if m.PatchEmbedding != nil && m.PatchEmbedding.Weight != nil {
 		dims := m.PatchEmbedding.Weight.Shape()
-		slog.Info("InferOptionsFromTensors checking PatchEmbedding", "shape", dims, "len", len(dims))
+		slog.Debug("InferOptionsFromTensors checking PatchEmbedding", "shape", dims, "len", len(dims))
 
 		if len(dims) == 2 {
 			// 2D weight [patchDim, hiddenSize] - this is from load-time reshape of split GGUF
@@ -610,14 +610,14 @@ func (m *VisionModel) InferOptionsFromTensors() {
 					if ps*ps == patchArea {
 						if ps > m.patchSize {
 							m.storagePatchSize = ps
-							slog.Info("Detected padded split weights", "patchSize", m.patchSize, "storagePatchSize", m.storagePatchSize)
+							slog.Debug("Detected padded split weights", "patchSize", m.patchSize, "storagePatchSize", m.storagePatchSize)
 						} else {
 							m.patchSize = ps
 						}
 						break
 					}
 				}
-				slog.Info("Detected split architecture from 2D weight",
+				slog.Debug("Detected split architecture from 2D weight",
 					"patchDim", patchDim, "hiddenSize", hiddenSize, "patchSize", m.patchSize, "storagePatchSize", m.storagePatchSize)
 			}
 		} else if len(dims) >= 4 {
@@ -705,7 +705,7 @@ func (m *VisionModel) InferOptionsFromTensors() {
 		for i, layerID := range m.deepstackLayerIDs {
 			m.deepstackVisualIndexes[i] = int32(layerID)
 		}
-		slog.Info("Using detected deepstack layer IDs for vision extraction",
+		slog.Debug("Using detected deepstack layer IDs for vision extraction",
 			"n_deepstack_layers", nDeepstack,
 			"vision_extraction_layers", m.deepstackVisualIndexes)
 	} else if nDeepstack > 0 {
@@ -714,7 +714,7 @@ func (m *VisionModel) InferOptionsFromTensors() {
 		// Qwen3-VL uses approximately evenly spaced layers for deepstack
 		nLayers := len(m.Layers)
 		m.deepstackVisualIndexes = calculateDeepstackLayerIDs(nLayers, nDeepstack)
-		slog.Info("Calculated deepstack layer IDs for unified model",
+		slog.Debug("Calculated deepstack layer IDs for unified model",
 			"n_vision_layers", nLayers,
 			"n_deepstack_layers", nDeepstack,
 			"vision_extraction_layers", m.deepstackVisualIndexes)

@@ -151,7 +151,7 @@ func NewLlamaServer(systemInfo ml.SystemInfo, gpus []ml.DeviceInfo, modelPath st
 			// To prepare for opt-out mode, instead of treating this as an error, we fallback to the old runner
 			slog.Debug("model not yet supported by Ollama engine, switching to compatibility mode", "model", modelPath, "error", err)
 		} else if len(projectors) > 0 {
-			slog.Info("loading model with split vision encoder", "projector", projectors[0])
+			slog.Debug("loading model with split vision encoder", "projector", projectors[0])
 		}
 	}
 

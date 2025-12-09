@@ -724,7 +724,7 @@ func (s *Server) EmbedHandler(c *gin.Context) {
 				ctxLen--
 			}
 
-			slog.Info("", "ctxLen", ctxLen, "tokenCount", len(tokens))
+			slog.Debug("truncating context", "ctxLen", ctxLen, "tokenCount", len(tokens))
 			if ctxLen <= 0 {
 				// return error if the truncated input would be empty or just special tokens
 				c.JSON(http.StatusBadRequest, gin.H{"error": "input after truncation exceeds maximum context length"})

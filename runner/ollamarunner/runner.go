@@ -1213,7 +1213,7 @@ func (s *Server) allocModel(
 	// Set vision path for split vision models (e.g., Qwen3VL)
 	if projectorPath != "" {
 		if visionSetter, ok := s.model.(interface{ SetVisionPath(string) }); ok {
-			slog.Info("setting vision path for split model", "path", projectorPath)
+			slog.Debug("setting vision path for split model", "path", projectorPath)
 			visionSetter.SetVisionPath(projectorPath)
 		} else {
 			slog.Warn("model does not support split vision", "projector", projectorPath)

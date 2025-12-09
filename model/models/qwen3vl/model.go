@@ -69,7 +69,7 @@ func (m *Model) loadDeepstackMergerWeights(layerIDs []int) {
 				Weight: fc1Weight,
 				Bias:   fc1Bias,
 			}
-			slog.Info("Loaded DeepstackMerger FC1", "layer", layerID, "idx", idx, "shape", fc1Weight.Shape())
+			slog.Debug("Loaded DeepstackMerger FC1", "layer", layerID, "idx", idx, "shape", fc1Weight.Shape())
 		} else {
 			slog.Warn("DeepstackMerger FC1 weight not found", "layer", layerID, "name", fc1WeightName)
 		}
@@ -83,7 +83,7 @@ func (m *Model) loadDeepstackMergerWeights(layerIDs []int) {
 				Weight: fc2Weight,
 				Bias:   fc2Bias,
 			}
-			slog.Info("Loaded DeepstackMerger FC2", "layer", layerID, "idx", idx, "shape", fc2Weight.Shape())
+			slog.Debug("Loaded DeepstackMerger FC2", "layer", layerID, "idx", idx, "shape", fc2Weight.Shape())
 		} else {
 			slog.Warn("DeepstackMerger FC2 weight not found", "layer", layerID, "name", fc2WeightName)
 		}
@@ -113,7 +113,7 @@ func (m *Model) loadDeepstackMergerWeights(layerIDs []int) {
 	}
 	m.VisionModel.deepstackVisualIndexes = deepstackIndexes
 	
-	slog.Info("Deepstack layers detected and loaded", "layerIDs", layerIDs, "deepstackVisualIndexes", deepstackIndexes, "count", len(layerIDs))
+	slog.Debug("Deepstack layers detected and loaded", "layerIDs", layerIDs, "deepstackVisualIndexes", deepstackIndexes, "count", len(layerIDs))
 }
 
 type Model struct {
@@ -186,7 +186,7 @@ func (m *Model) ensureVisionReady() error {
 	// CRITICAL: Register tensor name aliases BEFORE LoadSecondary!
 	// Aliases must be active when tensors are loaded so they map to correct struct fields.
 	// Split models (e.g., unsloth) use different naming conventions than the Go struct.
-	slog.Info("Registering split model tensor aliases BEFORE load")
+	slog.Debug("Registering split model tensor aliases BEFORE load")
 
 	// Embedding tensors: patch_embd → patch_embed, position_embd → position_embed
 	m.Backend().RegisterTensorAlias("v.patch_embed", "v.patch_embd")
@@ -205,11 +205,11 @@ func (m *Model) ensureVisionReady() error {
 	// Deepstack merger tensors: deepstack → deepstack_merger
 	m.Backend().RegisterTensorAlias("v.deepstack_merger", "v.deepstack")
 
-	slog.Info("Split model tensor aliases registered, now loading secondary GGUF")
+	slog.Debug("Split model tensor aliases registered, now loading secondary GGUF")
 
 	// Load vision tensor data from separate GGUF file into main backend
 	// LoadSecondary creates tensors that don't exist and loads data into them
-	slog.Info("Loading split vision model into main backend", "path", m.visionPath)
+	slog.Debug("Loading split vision model into main backend", "path", m.visionPath)
 
 	err := m.Backend().LoadSecondary(context.Background(), m.visionPath, nil)
 	if err != nil {
@@ -217,7 +217,7 @@ func (m *Model) ensureVisionReady() error {
 		return err
 	}
 
-	slog.Info("Split vision model loaded from GGUF, re-populating struct")
+	slog.Debug("Split vision model loaded from GGUF, re-populating struct")
 
 	// IMPORTANT: After LoadSecondary, tensors exist in backend but VisionModel struct
 	// fields haven't been bound to them. Re-populate the VisionModel field.
@@ -236,7 +236,7 @@ func (m *Model) ensureVisionReady() error {
 		nDeepstack = 3
 		slog.Warn("No deepstack layers detected, using fallback count", "nDeepstack", nDeepstack)
 	} else {
-		slog.Info("Detected deepstack layers from GGUF", "layerIDs", layerIDs, "count", nDeepstack)
+		slog.Debug("Detected deepstack layers from GGUF", "layerIDs", layerIDs, "count", nDeepstack)
 	}
 
 	// Pre-initialize DeepstackMerger array for vision_bridge
@@ -264,7 +264,7 @@ func (m *Model) ensureVisionReady() error {
 	}
 
 	m.visionReady = true
-	slog.Info("Split vision model loaded", "layers", len(m.VisionModel.Layers), "hiddenSize", m.VisionModel.hiddenSize)
+	slog.Debug("Split vision model loaded", "layers", len(m.VisionModel.Layers), "hiddenSize", m.VisionModel.hiddenSize)
 	return nil
 }
 
@@ -318,7 +318,7 @@ func (m *Model) EncodeMultimodal(ctx ml.Context, multimodalData []byte) ([]input
 		for i := 2; i < len(allEmbeds); i++ {
 			concatenated = concatenated.Concat(ctx, allEmbeds[i], 0)
 		}
-		slog.Info("Concatenated vision + deepstack embeddings",
+		slog.Debug("Concatenated vision + deepstack embeddings",
 			"main_shape", visionOutputs.Shape(),
 			"n_deepstack", len(deepstackVisualEmbeds),
 			"concatenated_shape", concatenated.Shape())
@@ -423,7 +423,7 @@ func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
 			// Split concatenated embeddings: [main | deepstack_0 | deepstack_1 | ...] in feature dimension
 			nDeepstackLayers := nEmbdFull/nEmbd - 1
 			nTokens := visionOutputs.Dim(1)
-			slog.Info("Detected concatenated vision embeddings - splitting",
+			slog.Debug("Detected concatenated vision embeddings - splitting",
 				"full_dim", nEmbdFull, "n_embd", nEmbd, "n_tokens", nTokens, "n_deepstack", nDeepstackLayers)
 
 			// Extract main vision (first n_embd rows in column-major = first n_embd features)
@@ -448,7 +448,7 @@ func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
 			h := grid.Height / m.spatialMergeSize
 			// Get the temporal base position (same for all image tokens)
 			temporalBase := positionSlice[0][mi.Index]
-			slog.Info("M-RoPE image position adjustment",
+			slog.Debug("M-RoPE image position adjustment",
 				"grid.Width", grid.Width, "grid.Height", grid.Height,
 				"spatialMergeSize", m.spatialMergeSize, "w", w, "h", h,
 				"mi.Index", mi.Index, "numImageTokens", visionOutputs.Dim(1),
@@ -467,7 +467,7 @@ func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
 			}
 			// Log sample positions after adjustment
 			if visionOutputs.Dim(1) >= 3 {
-				slog.Info("M-RoPE sample positions after adjustment",
+				slog.Debug("M-RoPE sample positions after adjustment",
 					"pos[0][0,1,2]", []int32{positionSlice[0][mi.Index], positionSlice[0][mi.Index+1], positionSlice[0][mi.Index+2]},
 					"pos[1][0,1,2]", []int32{positionSlice[1][mi.Index], positionSlice[1][mi.Index+1], positionSlice[1][mi.Index+2]},
 					"pos[2][0,1,2]", []int32{positionSlice[2][mi.Index], positionSlice[2][mi.Index+1], positionSlice[2][mi.Index+2]})
@@ -494,14 +494,14 @@ func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
 				// Copy deepstack embeddings into the correct position (where image tokens are)
 				ctx.Forward(ds.Copy(ctx, deepstackVisualEmbeds[i].View(ctx, mi.Index*deepstackVisualEmbeds[i].Stride(1), ds.Dim(0)*ds.Dim(1))))
 			}
-			slog.Info("Expanded deepstacks to hiddenStates shape",
+			slog.Debug("Expanded deepstacks to hiddenStates shape",
 				"n_deepstacks", len(deepstackVisualEmbeds),
 				"hiddenStates_shape", hiddenStates.Shape(),
 				"ds_shape", extractedDeepstacks[0].Shape())
 		}
 	}
 
-	slog.Info("M-RoPE total positions",
+	slog.Debug("M-RoPE total positions",
 		"numPositions", len(positionSlice[0]),
 		"mropeSections", m.Options.mropeSections,
 		"samplePos0_first3", positionSlice[0][:min(3, len(positionSlice[0]))],

@@ -128,7 +128,7 @@ func (c *ImageContext) BatchSize(configuredBatchSize int) int {
 	if c.UsesMRoPE() {
 		const mropeBatchSize = 8192
 		if configuredBatchSize < mropeBatchSize {
-			slog.Info("M-RoPE batch size increased for large images", "configured", configuredBatchSize, "actual", mropeBatchSize)
+			slog.Debug("M-RoPE batch size increased for large images", "configured", configuredBatchSize, "actual", mropeBatchSize)
 			return mropeBatchSize
 		}
 	}
@@ -168,7 +168,7 @@ var errImageNotFound = errors.New("image not found in cache")
 func (c *ImageContext) findImage(hash uint64) ([]llama.MtmdChunk, error) {
 	for i := range c.images {
 		if c.images[i].key == hash {
-			slog.Info("image cache HIT", "entry", i, "hash", hash)
+			slog.Debug("image cache HIT", "entry", i, "hash", hash)
 			c.images[i].lastUsed = time.Now()
 			return c.images[i].val, nil
 		}
@@ -193,7 +193,7 @@ func (c *ImageContext) addImage(hash uint64, embed []llama.MtmdChunk) {
 		}
 	}
 
-	slog.Info("image cache MISS - encoding and storing", "entry", bestImage, "hash", hash)
+	slog.Debug("image cache MISS - encoding and storing", "entry", bestImage, "hash", hash)
 	c.images[bestImage].key = hash
 	c.images[bestImage].val = embed
 	c.images[bestImage].lastUsed = time.Now()

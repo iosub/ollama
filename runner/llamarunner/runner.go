@@ -509,7 +509,7 @@ func (s *Server) run(ctx context.Context) {
 	if embedBatchSize != 0 {
 		// Use M-RoPE batch if the vision model requires it (Qwen3-VL, Qwen2-VL)
 		if s.image.UsesMRoPE() {
-			slog.Info("using M-RoPE batch for vision model")
+			slog.Debug("using M-RoPE batch for vision model")
 			embedBatch, err = llama.NewBatchMRoPE(embedBatchSize, len(s.seqs), s.image.EmbedSize(s.lc))
 		} else {
 			embedBatch, err = llama.NewBatch(embedBatchSize, len(s.seqs), s.image.EmbedSize(s.lc))
@@ -885,7 +885,7 @@ func (s *Server) completion(w http.ResponseWriter, r *http.Request) {
 	// Ensure there is a place to put the sequence, released when removed from s.seqs
 	if err := s.seqsSem.Acquire(r.Context(), 1); err != nil {
 		if errors.Is(err, context.Canceled) {
-			slog.Info("aborting completion request due to client closing the connection")
+			slog.Debug("aborting completion request due to client closing the connection")
 		} else {
 			http.Error(w, fmt.Sprintf("Failed to acquire semaphore: %v", err), http.StatusInternalServerError)
 		}
@@ -978,7 +978,7 @@ func (s *Server) embeddings(w http.ResponseWriter, r *http.Request) {
 	// Ensure there is a place to put the sequence, released when removed from s.seqs
 	if err := s.seqsSem.Acquire(r.Context(), 1); err != nil {
 		if errors.Is(err, context.Canceled) {
-			slog.Info("aborting embeddings request due to client closing the connection")
+			slog.Debug("aborting embeddings request due to client closing the connection")
 		} else {
 			http.Error(w, fmt.Sprintf("Failed to acquire semaphore: %v", err), http.StatusInternalServerError)
 		}
@@ -1056,7 +1056,7 @@ func (s *Server) loadModel(
 	if ppath != "" {
 		const multimodalMinBatchSize = 8192
 		if actualBatchSize < multimodalMinBatchSize {
-			slog.Info("increasing batch size for multimodal model",
+			slog.Debug("increasing batch size for multimodal model",
 				"original", actualBatchSize,
 				"new", multimodalMinBatchSize,
 				"reason", "M-RoPE images require processing all tokens in single batch")
@@ -1120,7 +1120,7 @@ func (s *Server) load(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("load", "request", req)
+	slog.Debug("load", "request", req)
 
 	switch req.Operation {
 	// LoadOperationFit and LoadOperationAlloc have no meaning here - just return a successful response
@@ -1192,7 +1192,7 @@ func Execute(args []string) error {
 		return err
 	}
 	slog.SetDefault(logutil.NewLogger(os.Stderr, envconfig.LogLevel()))
-	slog.Info("starting go runner")
+	slog.Debug("starting go runner")
 
 	llama.BackendInit()
 
