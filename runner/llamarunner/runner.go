@@ -220,7 +220,7 @@ func (s *Server) NewSequence(prompt string, images []llm.ImageData, params NewSe
 		shift:            params.shift,
 		logprobs:         params.logprobs,
 		topLogprobs:      params.topLogprobs,
-		recentTokens:     make([]int, 256), // buffer for last 256 tokens
+		recentTokens:     make([]int, 512), // buffer for last 512 tokens (supports patterns up to 128)
 		recentTokensIdx:  0,
 		repetitionCount:  0,
 	}, nil
@@ -236,13 +236,15 @@ func (seq *Sequence) detectRepetitionLoop(token int) bool {
 	seq.recentTokens[seq.recentTokensIdx] = token
 	seq.recentTokensIdx = (seq.recentTokensIdx + 1) % bufSize
 	
-	// Only check after we have enough tokens (at least 64)
-	if seq.numPredicted < 64 {
+	// Only check after we have enough tokens (at least 48)
+	if seq.numPredicted < 48 {
 		return false
 	}
 	
-	// Check for repeating patterns of various lengths (8 to 64 tokens)
-	for patternLen := 8; patternLen <= 64; patternLen++ {
+	// Check for repeating patterns of various lengths (6 to 128 tokens)
+	// Smaller patterns catch "word word word" loops
+	// Larger patterns catch "paragraph paragraph" loops
+	for patternLen := 6; patternLen <= 128; patternLen++ {
 		if seq.numPredicted < patternLen*3 {
 			continue
 		}
@@ -269,7 +271,7 @@ func (seq *Sequence) detectRepetitionLoop(token int) bool {
 		// If we found 2 consecutive repetitions of the same pattern
 		if matches >= 2 {
 			seq.repetitionCount++
-			if seq.repetitionCount >= 3 { // Trigger after 3 detections
+			if seq.repetitionCount >= 2 { // Trigger after 2 detections (more sensitive)
 				slog.Warn("repetition loop detected", "patternLen", patternLen, 
 					"numPredicted", seq.numPredicted, "repetitionCount", seq.repetitionCount)
 				return true

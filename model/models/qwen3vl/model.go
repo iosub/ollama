@@ -7,6 +7,7 @@ import (
 	"image"
 	"log/slog"
 	"slices"
+	"sort"
 
 	"github.com/ollama/ollama/fs"
 	"github.com/ollama/ollama/kvcache"
@@ -16,12 +17,117 @@ import (
 	"github.com/ollama/ollama/model/input"
 )
 
+// detectDeepstackLayerIDs probes the backend for v.deepstack.N.fc1.weight tensors
+// and returns the sorted list of layer IDs found (e.g., [5, 11, 17] for 4B or [8, 16, 24] for 8B)
+func detectDeepstackLayerIDs(backend ml.Backend) []int {
+	var layerIDs []int
+
+	// Probe common deepstack layer indices used by different model sizes
+	// 8B model uses layers 8, 16, 24 (with 32 total vision encoder layers)
+	// 4B model uses layers 5, 11, 17 (with 24 total vision encoder layers)
+	// 2B model uses layers 4, 9, 14 (with 16 total vision encoder layers)
+	// We check a wide range to support various model configurations
+	candidateLayers := []int{4, 5, 6, 8, 9, 10, 11, 12, 14, 16, 17, 18, 20, 24, 28, 32}
+
+	for _, layerID := range candidateLayers {
+		tensorName := fmt.Sprintf("v.deepstack.%d.fc1.weight", layerID)
+		if tensor := backend.Get(tensorName); tensor != nil {
+			layerIDs = append(layerIDs, layerID)
+			slog.Debug("Found deepstack layer", "layerID", layerID, "tensor", tensorName)
+		}
+	}
+
+	sort.Ints(layerIDs)
+	return layerIDs
+}
+
+// loadDeepstackMergerWeights manually loads FC weights from GGUF into DeepstackMerger array
+// This is needed because vision_bridge array indices (0,1,2) don't match GGUF layer IDs
+func (m *Model) loadDeepstackMergerWeights(layerIDs []int) {
+	if len(layerIDs) == 0 {
+		slog.Debug("No deepstack layers found in GGUF")
+		return
+	}
+
+	// Ensure DeepstackMerger array is properly sized
+	if m.VisionModel.DeepstackMerger == nil || len(m.VisionModel.DeepstackMerger) != len(layerIDs) {
+		m.VisionModel.DeepstackMerger = make([]*VisionPatchMerger, len(layerIDs))
+		for i := range m.VisionModel.DeepstackMerger {
+			m.VisionModel.DeepstackMerger[i] = &VisionPatchMerger{}
+		}
+	}
+
+	for idx, layerID := range layerIDs {
+		prefix := fmt.Sprintf("v.deepstack.%d", layerID)
+
+		// Load FC1
+		fc1WeightName := prefix + ".fc1.weight"
+		if fc1Weight := m.Backend().Get(fc1WeightName); fc1Weight != nil {
+			fc1BiasName := prefix + ".fc1.bias"
+			fc1Bias := m.Backend().Get(fc1BiasName)
+			m.VisionModel.DeepstackMerger[idx].FC1 = &nn.Linear{
+				Weight: fc1Weight,
+				Bias:   fc1Bias,
+			}
+			slog.Info("Loaded DeepstackMerger FC1", "layer", layerID, "idx", idx, "shape", fc1Weight.Shape())
+		} else {
+			slog.Warn("DeepstackMerger FC1 weight not found", "layer", layerID, "name", fc1WeightName)
+		}
+
+		// Load FC2
+		fc2WeightName := prefix + ".fc2.weight"
+		if fc2Weight := m.Backend().Get(fc2WeightName); fc2Weight != nil {
+			fc2BiasName := prefix + ".fc2.bias"
+			fc2Bias := m.Backend().Get(fc2BiasName)
+			m.VisionModel.DeepstackMerger[idx].FC2 = &nn.Linear{
+				Weight: fc2Weight,
+				Bias:   fc2Bias,
+			}
+			slog.Info("Loaded DeepstackMerger FC2", "layer", layerID, "idx", idx, "shape", fc2Weight.Shape())
+		} else {
+			slog.Warn("DeepstackMerger FC2 weight not found", "layer", layerID, "name", fc2WeightName)
+		}
+
+		// Load Norm (optional but recommended)
+		normWeightName := prefix + ".norm.weight"
+		if normWeight := m.Backend().Get(normWeightName); normWeight != nil {
+			normBiasName := prefix + ".norm.bias"
+			normBias := m.Backend().Get(normBiasName)
+			m.VisionModel.DeepstackMerger[idx].Norm = &nn.LayerNorm{
+				Weight: normWeight,
+				Bias:   normBias,
+			}
+			slog.Debug("Loaded DeepstackMerger Norm", "layer", layerID, "idx", idx)
+		}
+	}
+
+	// Store the detected layer IDs for use in vision processing
+	m.VisionModel.deepstackLayerIDs = layerIDs
+	
+	// CRITICAL: Also update deepstackVisualIndexes in VisionOptions
+	// This is what VisionModel.Forward() uses to know which layers to extract deepstack from
+	// Without this, Forward() still uses hardcoded [8,16,24] and produces nil tensors!
+	deepstackIndexes := make([]int32, len(layerIDs))
+	for i, id := range layerIDs {
+		deepstackIndexes[i] = int32(id)
+	}
+	m.VisionModel.deepstackVisualIndexes = deepstackIndexes
+	
+	slog.Info("Deepstack layers detected and loaded", "layerIDs", layerIDs, "deepstackVisualIndexes", deepstackIndexes, "count", len(layerIDs))
+}
+
 type Model struct {
 	model.Base
 	model.TextProcessor
 
 	*TextModel
 	*VisionModel `gguf:"v"`
+
+	// Multimodal projector for main vision output (mm.0 -> mm.2 MLP)
+	// These are loaded from "mm.0.*" and "mm.2.*" tensors in split GGUF
+	// Used instead of PatchMerger for split models
+	MultimodalProjectorFC1 *nn.Linear `gguf:"mm.0"` // [4608, 4608] with GELU
+	MultimodalProjectorFC2 *nn.Linear `gguf:"mm.2"` // [4608, 4096]
 
 	ImageProcessor
 
@@ -58,42 +164,10 @@ func (m *Model) ensureVisionReady() error {
 		// Infer correct vision dimensions from actual tensor shapes (fixes incorrect config defaults)
 		m.VisionModel.InferOptionsFromTensors()
 
-		// MANUAL LOADING: DeepstackMerger FC weights
-		// vision_bridge cannot populate FC weights because array indices (0,1,2) don't match GGUF layer IDs (8,16,24)
-		// vision_bridge uses strconv.Itoa(j) which builds "v.deepstack.0.fc1" but GGUF has "v.deepstack.8.fc1.weight"
-		if m.VisionModel.DeepstackMerger != nil && len(m.VisionModel.DeepstackMerger) >= 3 {
-			layerIDs := []int{8, 16, 24}
-			for idx, layerID := range layerIDs {
-				prefix := fmt.Sprintf("v.deepstack.%d", layerID)
-
-				// Try to find FC1 weight tensor
-				fc1WeightName := prefix + ".fc1.weight"
-				if fc1Weight := m.Backend().Get(fc1WeightName); fc1Weight != nil {
-					fc1BiasName := prefix + ".fc1.bias"
-					fc1Bias := m.Backend().Get(fc1BiasName) // May be nil
-					m.VisionModel.DeepstackMerger[idx].FC1 = &nn.Linear{
-						Weight: fc1Weight,
-						Bias:   fc1Bias,
-					}
-					slog.Info("Manually loaded DeepstackMerger FC1", "layer", layerID, "idx", idx, "shape", fc1Weight.Shape())
-				} else {
-					slog.Debug("DeepstackMerger FC1 weight not found (expected for non-deepstack models)", "layer", layerID, "name", fc1WeightName)
-				}
-
-				// Try to find FC2 weight tensor
-				fc2WeightName := prefix + ".fc2.weight"
-				if fc2Weight := m.Backend().Get(fc2WeightName); fc2Weight != nil {
-					fc2BiasName := prefix + ".fc2.bias"
-					fc2Bias := m.Backend().Get(fc2BiasName) // May be nil
-					m.VisionModel.DeepstackMerger[idx].FC2 = &nn.Linear{
-						Weight: fc2Weight,
-						Bias:   fc2Bias,
-					}
-					slog.Info("Manually loaded DeepstackMerger FC2", "layer", layerID, "idx", idx, "shape", fc2Weight.Shape())
-				} else {
-					slog.Debug("DeepstackMerger FC2 weight not found (expected for non-deepstack models)", "layer", layerID, "name", fc2WeightName)
-				}
-			}
+		// Auto-detect and load deepstack layers from GGUF
+		layerIDs := detectDeepstackLayerIDs(m.Backend())
+		if len(layerIDs) > 0 {
+			m.loadDeepstackMergerWeights(layerIDs)
 		}
 
 		// Sync temporalPatchSize from VisionModel to ImageProcessor (split model may have different value)
@@ -153,11 +227,19 @@ func (m *Model) ensureVisionReady() error {
 		m.VisionModel = newVisionModel(m.Backend().Config())
 	}
 
-	// CRITICAL: vision_bridge needs pre-initialized DeepstackMerger array
-	// For Qwen3-VL Split, we know there are 3 deepstack layers (8, 16, 24)
-	// This matches llama.cpp's n_deepstack_layers = 3
-	nDeepstack := 3
-	slog.Info("Pre-initializing DeepstackMerger array for Split GGUF", "n_deep stack", nDeepstack)
+	// Auto-detect deepstack layer IDs from GGUF tensors (varies by model size)
+	// e.g., 8B uses [8, 16, 24], 4B uses [5, 11, 17]
+	layerIDs := detectDeepstackLayerIDs(m.Backend())
+	nDeepstack := len(layerIDs)
+	if nDeepstack == 0 {
+		// Fallback to 3 empty slots for vision_bridge
+		nDeepstack = 3
+		slog.Warn("No deepstack layers detected, using fallback count", "nDeepstack", nDeepstack)
+	} else {
+		slog.Info("Detected deepstack layers from GGUF", "layerIDs", layerIDs, "count", nDeepstack)
+	}
+
+	// Pre-initialize DeepstackMerger array for vision_bridge
 	m.VisionModel.DeepstackMerger = make([]*VisionPatchMerger, nDeepstack)
 	for i := range m.VisionModel.DeepstackMerger {
 		m.VisionModel.DeepstackMerger[i] = &VisionPatchMerger{}
@@ -165,40 +247,9 @@ func (m *Model) ensureVisionReady() error {
 
 	model.RepopulateField(m.Base, m.VisionModel, "v")
 
-	// MANUAL LOADING: DeepstackMerger FC weights
-	// vision_bridge cannot populate FC weights because array indices (0,1,2) don't match GGUF layer IDs (8,16,24)
-	// vision_bridge uses strconv.Itoa(j) which builds "v.deepstack.0.fc1" but GGUF has "v.deepstack.8.fc1.weight"
-	layerIDs := []int{8, 16, 24}
-	for idx, layerID := range layerIDs {
-		prefix := fmt.Sprintf("v.deepstack.%d", layerID)
-
-		// Try to find FC1 weight tensor
-		fc1WeightName := prefix + ".fc1.weight"
-		if fc1Weight := m.Backend().Get(fc1WeightName); fc1Weight != nil {
-			fc1BiasName := prefix + ".fc1.bias"
-			fc1Bias := m.Backend().Get(fc1BiasName) // May be nil
-			m.VisionModel.DeepstackMerger[idx].FC1 = &nn.Linear{
-				Weight: fc1Weight,
-				Bias:   fc1Bias,
-			}
-			slog.Info("Manually loaded DeepstackMerger FC1", "layer", layerID, "idx", idx, "shape", fc1Weight.Shape())
-		} else {
-			slog.Warn("DeepstackMerger FC1 weight not found", "layer", layerID, "name", fc1WeightName)
-		}
-
-		// Try to find FC2 weight tensor
-		fc2WeightName := prefix + ".fc2.weight"
-		if fc2Weight := m.Backend().Get(fc2WeightName); fc2Weight != nil {
-			fc2BiasName := prefix + ".fc2.bias"
-			fc2Bias := m.Backend().Get(fc2BiasName) // May be nil
-			m.VisionModel.DeepstackMerger[idx].FC2 = &nn.Linear{
-				Weight: fc2Weight,
-				Bias:   fc2Bias,
-			}
-			slog.Info("Manually loaded DeepstackMerger FC2", "layer", layerID, "idx", idx, "shape", fc2Weight.Shape())
-		} else {
-			slog.Warn("DeepstackMerger FC2 weight not found", "layer", layerID, "name", fc2WeightName)
-		}
+	// Load deepstack weights using detected layer IDs
+	if len(layerIDs) > 0 {
+		m.loadDeepstackMergerWeights(layerIDs)
 	}
 
 	// Infer correct vision dimensions from actual tensor shapes
@@ -237,21 +288,35 @@ func (m *Model) EncodeMultimodal(ctx ml.Context, multimodalData []byte) ([]input
 		return nil, err
 	}
 
+	// Copy multimodal projector references to VisionModel for split model support
+	// These are the mm.0/mm.2 tensors that project main vision (separate from deepstack FC)
+	if m.MultimodalProjectorFC1 != nil && m.MultimodalProjectorFC2 != nil {
+		m.VisionModel.MultimodalFC1 = m.MultimodalProjectorFC1
+		m.VisionModel.MultimodalFC2 = m.MultimodalProjectorFC2
+		slog.Debug("Copied mm.0/mm.2 projectors to VisionModel",
+			"FC1_shape", m.MultimodalProjectorFC1.Weight.Shape(),
+			"FC2_shape", m.MultimodalProjectorFC2.Weight.Shape())
+	}
+
 	// Calculate tensor dimensions
 	visionOutputs, deepstackVisualEmbeds := m.VisionModel.Forward(ctx, pixelValues, grid)
 
 	// Qwen3-VL requires concatenating main + deepstack embeddings into single expanded tensor
 	// Format: [main (n_embd) | deepstack_0 (n_embd) | deepstack_1 (n_embd) | deepstack_2 (n_embd)]
 	// This creates n_embd_inp = n_embd * (1 + n_deepstack_layers)
+	// GGML uses column-major: shape [features, tokens] means features are contiguous in memory
+	// So concatenating features requires dim=0
 	if len(deepstackVisualEmbeds) > 0 {
-		// Concatenate along the feature dimension (dim=1)
+		// Concatenate along the feature dimension (dim=0 for column-major GGML tensors)
+		// Input shapes: [4096, n_tokens] each
+		// Output shape: [16384, n_tokens] = [4096*4, n_tokens]
 		allEmbeds := []ml.Tensor{visionOutputs}
 		allEmbeds = append(allEmbeds, deepstackVisualEmbeds...)
 
-		// Concatenated shape: [n_tokens, n_embd * (1 + n_deepstack)]
-		concatenated := allEmbeds[0].Concat(ctx, allEmbeds[1], 1)
+		// Concatenated shape: [n_embd * (1 + n_deepstack), n_tokens]
+		concatenated := allEmbeds[0].Concat(ctx, allEmbeds[1], 0)
 		for i := 2; i < len(allEmbeds); i++ {
-			concatenated = concatenated.Concat(ctx, allEmbeds[i], 1)
+			concatenated = concatenated.Concat(ctx, allEmbeds[i], 0)
 		}
 		slog.Info("Concatenated vision + deepstack embeddings",
 			"main_shape", visionOutputs.Shape(),
@@ -350,23 +415,26 @@ func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
 		visionOutputs := mi.Multimodal[0].Tensor
 
 		// Check if embeddings are concatenated (n_embd_inp format)
-		nEmbdFull := visionOutputs.Dim(1)
+		// GGML column-major: shape [features, tokens] - features in dim(0)
+		nEmbdFull := visionOutputs.Dim(0)
 		nEmbd := m.TextModel.Options.hiddenSize
+		var extractedDeepstacks []ml.Tensor
 		if nEmbdFull > nEmbd && nEmbdFull%nEmbd == 0 {
-			// Split concatenated embeddings: [main | deepstack_0 | deepstack_1 | ...]
+			// Split concatenated embeddings: [main | deepstack_0 | deepstack_1 | ...] in feature dimension
 			nDeepstackLayers := nEmbdFull/nEmbd - 1
+			nTokens := visionOutputs.Dim(1)
 			slog.Info("Detected concatenated vision embeddings - splitting",
-				"full_dim", nEmbdFull, "n_embd", nEmbd, "n_deepstack", nDeepstackLayers)
+				"full_dim", nEmbdFull, "n_embd", nEmbd, "n_tokens", nTokens, "n_deepstack", nDeepstackLayers)
 
-			// Extract main vision (first n_embd columns)
-			mainVision := visionOutputs.View(ctx, 0, visionOutputs.Dim(0)*nEmbd).Reshape(ctx, nEmbd, visionOutputs.Dim(0))
+			// Extract main vision (first n_embd rows in column-major = first n_embd features)
+			mainVision := visionOutputs.View(ctx, 0, nEmbd*nTokens).Reshape(ctx, nEmbd, nTokens)
 
-			// Extract deepstack features
-			if nDeepstackLayers > 0 && deepstackVisualEmbeds == nil {
-				deepstackVisualEmbeds = make([]ml.Tensor, nDeepstackLayers)
+			// Extract deepstack features (these are raw, need to be expanded to hiddenStates shape later)
+			if nDeepstackLayers > 0 {
+				extractedDeepstacks = make([]ml.Tensor, nDeepstackLayers)
 				for i := 0; i < nDeepstackLayers; i++ {
-					offset := (i + 1) * nEmbd * visionOutputs.Dim(0)
-					deepstackVisualEmbeds[i] = visionOutputs.View(ctx, offset, visionOutputs.Dim(0)*nEmbd).Reshape(ctx, nEmbd, visionOutputs.Dim(0))
+					offset := (i + 1) * nEmbd * nTokens
+					extractedDeepstacks[i] = visionOutputs.View(ctx, offset, nEmbd*nTokens).Reshape(ctx, nEmbd, nTokens)
 				}
 			}
 			visionOutputs = mainVision
@@ -406,10 +474,30 @@ func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
 			}
 		}
 
-		deepstackVisualEmbeds = make([]ml.Tensor, len(mi.Multimodal[1:]))
-		for i, mm := range mi.Multimodal[1:] {
-			deepstackVisualEmbeds[i] = ctx.Input().Zeros(mm.Tensor.DType(), hiddenStates.Shape()...)
-			ctx.Forward(mm.Tensor.Copy(ctx, deepstackVisualEmbeds[i].View(ctx, mi.Index*deepstackVisualEmbeds[i].Stride(1), mm.Tensor.Dim(0)*mm.Tensor.Dim(1))))
+		// Only process additional multimodal elements if deepstackVisualEmbeds wasn't already extracted
+		// from concatenated tensor above (split model path)
+		if deepstackVisualEmbeds == nil && len(mi.Multimodal) > 1 {
+			deepstackVisualEmbeds = make([]ml.Tensor, len(mi.Multimodal[1:]))
+			for i, mm := range mi.Multimodal[1:] {
+				deepstackVisualEmbeds[i] = ctx.Input().Zeros(mm.Tensor.DType(), hiddenStates.Shape()...)
+				ctx.Forward(mm.Tensor.Copy(ctx, deepstackVisualEmbeds[i].View(ctx, mi.Index*deepstackVisualEmbeds[i].Stride(1), mm.Tensor.Dim(0)*mm.Tensor.Dim(1))))
+			}
+		}
+
+		// Expand extracted deepstacks (from concatenated tensor) to hiddenStates shape
+		// Each deepstack has shape [n_embd, n_image_tokens], need to expand to [n_embd, batch_size]
+		if len(extractedDeepstacks) > 0 && deepstackVisualEmbeds == nil {
+			deepstackVisualEmbeds = make([]ml.Tensor, len(extractedDeepstacks))
+			for i, ds := range extractedDeepstacks {
+				// Create zeros tensor with same shape as hiddenStates
+				deepstackVisualEmbeds[i] = ctx.Input().Zeros(ds.DType(), hiddenStates.Shape()...)
+				// Copy deepstack embeddings into the correct position (where image tokens are)
+				ctx.Forward(ds.Copy(ctx, deepstackVisualEmbeds[i].View(ctx, mi.Index*deepstackVisualEmbeds[i].Stride(1), ds.Dim(0)*ds.Dim(1))))
+			}
+			slog.Info("Expanded deepstacks to hiddenStates shape",
+				"n_deepstacks", len(deepstackVisualEmbeds),
+				"hiddenStates_shape", hiddenStates.Shape(),
+				"ds_shape", extractedDeepstacks[0].Shape())
 		}
 	}
 

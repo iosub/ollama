@@ -29,6 +29,7 @@ import (
 	"unicode"
 	"unsafe"
 
+	"github.com/ollama/ollama/envconfig"
 	"github.com/ollama/ollama/format"
 	"github.com/ollama/ollama/fs"
 	fsggml "github.com/ollama/ollama/fs/ggml"
@@ -61,6 +62,12 @@ var initDevices = sync.OnceFunc(func() {
 			accels = append(accels, d)
 		case C.GGML_BACKEND_DEVICE_TYPE_GPU,
 			C.GGML_BACKEND_DEVICE_TYPE_IGPU:
+			// Skip Vulkan devices if OLLAMA_VULKAN is not enabled
+			name := C.GoString(C.ggml_backend_dev_name(d))
+			if !envconfig.EnableVulkan() && strings.Contains(strings.ToLower(name), "vulkan") {
+				slog.Info("skipping Vulkan device (OLLAMA_VULKAN not enabled)", "device", name)
+				continue
+			}
 			gpus = append(gpus, d)
 		}
 
