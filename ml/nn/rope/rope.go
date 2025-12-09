@@ -1,4 +1,3 @@
-// Package rope provides options for RoPE
 package rope
 
 import "github.com/ollama/ollama/ml"

@@ -1,0 +1,70 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: iosub <iosub@users.noreply.github.com>
+Date: Thu, 28 Nov 2025 19:25:00 -0500
+Subject: [PATCH] fix multimodal embd_size calculation for vision models
+
+Fixes embedding dimension issues for multimodal models with vision projectors.
+---
+ src/llama-context.cpp | 35 +++++++++++++++++++++++++++++------
+ 1 file changed, 29 insertions(+), 6 deletions(-)
+
+diff --git a/src/llama-context.cpp b/src/llama-context.cpp
+index 7d77f0732..a1b2c3d4e 100644
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -640,7 +640,11 @@ float * llama_context::get_embeddings_ith(int32_t i) {
+             throw std::runtime_error(format("corrupt output buffer (j=%" PRId64 ", n_outputs=%d)", j, n_outputs));
+         }
+ 
+-        return embd + j*model.hparams.n_embd;
++        // For multimodal models, use the actual embedding dimension
++        const uint64_t n_embd_stride = model.hparams.n_embd_inp() > model.hparams.n_embd 
++                                       ? model.hparams.n_embd_inp() 
++                                       : model.hparams.n_embd;
++        return embd + j*n_embd_stride;
+     } catch (const std::exception & err) {
+         LLAMA_LOG_ERROR("%s: invalid embeddings id %d, reason: %s\n", __func__, i, err.what());
+ #ifndef NDEBUG
+@@ -1306,7 +1310,13 @@ uint32_t llama_context::output_reserve(uint32_t n_outputs_max) {
+     }
+ 
+     logits_size = has_logits ? n_vocab*n_outputs_max : 0;
+-    embd_size   = has_embd   ?  n_embd*n_outputs_max : 0;
++    // For multimodal models with vision projectors, use n_embd_inp()
++    // which represents the maximum input embedding dimension
++    uint32_t n_embd_buf = n_embd;
++    if (model.hparams.n_embd_inp() > n_embd) {
++        n_embd_buf = model.hparams.n_embd_inp();
++    }
++    embd_size   = has_embd   ?  n_embd_buf*n_outputs_max : 0;
+ 
+     if (output_ids.empty()) {
+         // init, never resized afterwards
+@@ -1358,7 +1368,11 @@ uint32_t llama_context::output_reserve(uint32_t n_outputs_max) {
+ 
+ void llama_context::output_reorder() {
+     const uint64_t n_vocab = model.vocab.n_tokens();
+-    const uint64_t n_embd  = model.hparams.n_embd;
++    // For multimodal models, use the actual embedding dimension
++    // allocated in embd_size, not just the text model's n_embd
++    const uint64_t n_embd_actual = model.hparams.n_embd_inp() > model.hparams.n_embd 
++                                   ? model.hparams.n_embd_inp() 
++                                   : model.hparams.n_embd;
+ 
+     for (size_t s = 0; s < output_swaps.size(); ++s) {
+         const uint64_t i0 = output_swaps[s].i0;
+@@ -1371,8 +1385,8 @@ void llama_context::output_reorder() {
+         }
+ 
+         if (embd_size > 0) {
+-            for (uint64_t k = 0; k < n_embd; k++) {
+-                std::swap(embd[i0*n_embd + k], embd[i1*n_embd + k]);
++            for (uint64_t k = 0; k < n_embd_actual; k++) {
++                std::swap(embd[i0*n_embd_actual + k], embd[i1*n_embd_actual + k]);
+             }
+         }
+     }
+-- 
+2.47.1.windows.1
+
+
