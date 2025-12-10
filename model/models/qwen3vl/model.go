@@ -301,24 +301,20 @@ func (m *Model) EncodeMultimodal(ctx ml.Context, multimodalData []byte) ([]input
 	// Calculate tensor dimensions
 	visionOutputs, deepstackVisualEmbeds := m.VisionModel.Forward(ctx, pixelValues, grid)
 
-	// Qwen3-VL requires concatenating main + deepstack embeddings into single expanded tensor
+	// For SPLIT models only: concatenate main + deepstack embeddings into single tensor
+	// This is needed because split models pass vision through a single tensor interface
 	// Format: [main (n_embd) | deepstack_0 (n_embd) | deepstack_1 (n_embd) | deepstack_2 (n_embd)]
-	// This creates n_embd_inp = n_embd * (1 + n_deepstack_layers)
-	// GGML uses column-major: shape [features, tokens] means features are contiguous in memory
-	// So concatenating features requires dim=0
-	if len(deepstackVisualEmbeds) > 0 {
+	// For UNIFIED models: keep embeddings separate (original Ollama behavior)
+	if m.VisionModel.isSplitArchitecture && len(deepstackVisualEmbeds) > 0 {
 		// Concatenate along the feature dimension (dim=0 for column-major GGML tensors)
-		// Input shapes: [4096, n_tokens] each
-		// Output shape: [16384, n_tokens] = [4096*4, n_tokens]
 		allEmbeds := []ml.Tensor{visionOutputs}
 		allEmbeds = append(allEmbeds, deepstackVisualEmbeds...)
 
-		// Concatenated shape: [n_embd * (1 + n_deepstack), n_tokens]
 		concatenated := allEmbeds[0].Concat(ctx, allEmbeds[1], 0)
 		for i := 2; i < len(allEmbeds); i++ {
 			concatenated = concatenated.Concat(ctx, allEmbeds[i], 0)
 		}
-		slog.Debug("Concatenated vision + deepstack embeddings",
+		slog.Debug("Split model: Concatenated vision + deepstack embeddings",
 			"main_shape", visionOutputs.Shape(),
 			"n_deepstack", len(deepstackVisualEmbeds),
 			"concatenated_shape", concatenated.Shape())
@@ -326,8 +322,12 @@ func (m *Model) EncodeMultimodal(ctx ml.Context, multimodalData []byte) ([]input
 		return []input.Multimodal{{Tensor: concatenated, Data: grid}}, nil
 	}
 
-	// No deepstack - return main vision output only
-	return []input.Multimodal{{Tensor: visionOutputs, Data: grid}}, nil
+	// Unified model: return embeddings separately (original Ollama behavior)
+	mm := []input.Multimodal{{Tensor: visionOutputs, Data: grid}}
+	for i := range deepstackVisualEmbeds {
+		mm = append(mm, input.Multimodal{Tensor: deepstackVisualEmbeds[i]})
+	}
+	return mm, nil
 }
 
 var (
@@ -445,33 +445,12 @@ func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
 
 		if grid, ok := mi.Multimodal[0].Data.(*Grid); ok {
 			w := grid.Width / m.spatialMergeSize
-			h := grid.Height / m.spatialMergeSize
-			// Get the temporal base position (same for all image tokens)
-			temporalBase := positionSlice[0][mi.Index]
-			slog.Debug("M-RoPE image position adjustment",
-				"grid.Width", grid.Width, "grid.Height", grid.Height,
-				"spatialMergeSize", m.spatialMergeSize, "w", w, "h", h,
-				"mi.Index", mi.Index, "numImageTokens", visionOutputs.Dim(1),
-				"temporalBase", temporalBase)
-
-			// For M-RoPE, image tokens need proper 2D position encoding:
-			// pos[0] = temporal (constant for all image tokens)
-			// pos[1] = temporal + row (y coordinate)
-			// pos[2] = temporal + column (x coordinate)
+			// M-RoPE position encoding for images:
+			// pos[0] already has correct value from positionCache (temporal position)
+			// pos[1] and pos[2] are incremented by row/col for 2D spatial encoding
 			for i := range visionOutputs.Dim(1) {
-				row := int32(i / w)
-				col := int32(i % w)
-				// pos[0] must be constant (temporalBase) for all image tokens
-				positionSlice[0][mi.Index+i] = temporalBase
-				positionSlice[1][mi.Index+i] = temporalBase + row
-				positionSlice[2][mi.Index+i] = temporalBase + col
-			}
-			// Log sample positions after adjustment
-			if visionOutputs.Dim(1) >= 3 {
-				slog.Debug("M-RoPE sample positions after adjustment",
-					"pos[0][0,1,2]", []int32{positionSlice[0][mi.Index], positionSlice[0][mi.Index+1], positionSlice[0][mi.Index+2]},
-					"pos[1][0,1,2]", []int32{positionSlice[1][mi.Index], positionSlice[1][mi.Index+1], positionSlice[1][mi.Index+2]},
-					"pos[2][0,1,2]", []int32{positionSlice[2][mi.Index], positionSlice[2][mi.Index+1], positionSlice[2][mi.Index+2]})
+				positionSlice[1][mi.Index+i] += int32(i / w)
+				positionSlice[2][mi.Index+i] += int32(i % w)
 			}
 		}
 
@@ -501,12 +480,6 @@ func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
 				"ds_shape", extractedDeepstacks[0].Shape())
 		}
 	}
-
-	slog.Debug("M-RoPE total positions",
-		"numPositions", len(positionSlice[0]),
-		"mropeSections", m.Options.mropeSections,
-		"samplePos0_first3", positionSlice[0][:min(3, len(positionSlice[0]))],
-		"samplePos1_first3", positionSlice[1][:min(3, len(positionSlice[1]))])
 
 	positions := ctx.Input().FromInts(slices.Concat(positionSlice...), len(positionSlice[0])*len(positionSlice))
 	for i, layer := range m.TextModel.Layers {
