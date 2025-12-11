@@ -103,7 +103,7 @@ func (m *Model) loadDeepstackMergerWeights(layerIDs []int) {
 
 	// Store the detected layer IDs for use in vision processing
 	m.VisionModel.deepstackLayerIDs = layerIDs
-	
+
 	// CRITICAL: Also update deepstackVisualIndexes in VisionOptions
 	// This is what VisionModel.Forward() uses to know which layers to extract deepstack from
 	// Without this, Forward() still uses hardcoded [8,16,24] and produces nil tensors!
@@ -112,7 +112,7 @@ func (m *Model) loadDeepstackMergerWeights(layerIDs []int) {
 		deepstackIndexes[i] = int32(id)
 	}
 	m.VisionModel.deepstackVisualIndexes = deepstackIndexes
-	
+
 	slog.Debug("Deepstack layers detected and loaded", "layerIDs", layerIDs, "deepstackVisualIndexes", deepstackIndexes, "count", len(layerIDs))
 }
 
@@ -170,7 +170,20 @@ func (m *Model) ensureVisionReady() error {
 			m.loadDeepstackMergerWeights(layerIDs)
 		}
 
-		// Sync temporalPatchSize from VisionModel to ImageProcessor (split model may have different value)
+		// Manually load the second patch embedding kernel (v.patch_embd.weight.1) for split models
+		// The GGUF tag system cannot handle this tensor name format
+		if m.VisionModel.PatchEmbedding1 == nil {
+			if patchEmbd1Weight := m.Backend().Get("v.patch_embd.weight.1"); patchEmbd1Weight != nil {
+				m.VisionModel.PatchEmbedding1 = &nn.Linear{
+					Weight: patchEmbd1Weight,
+				}
+				slog.Info("Loaded second patch embedding kernel (early path)", "tensor", "v.patch_embd.weight.1", "shape", patchEmbd1Weight.Shape())
+			}
+		}
+
+		// Sync temporalPatchSize from VisionModel to ImageProcessor
+		// For split models, use the ORIGINAL temporalPatchSize=1 from the GGUF
+		// (the split kernels expect 768-dim input, not 1536-dim)
 		m.ImageProcessor.temporalPatchSize = m.VisionModel.temporalPatchSize
 		m.ImageProcessor.storagePatchSize = m.VisionModel.storagePatchSize
 		slog.Debug("Vision ready", "hiddenSize", m.VisionModel.hiddenSize, "numHeads", m.VisionModel.numHeads, "layers", len(m.VisionModel.Layers), "isSplitArchitecture", m.VisionModel.isSplitArchitecture, "temporalPatchSize", m.VisionModel.temporalPatchSize)
@@ -250,6 +263,20 @@ func (m *Model) ensureVisionReady() error {
 	// Load deepstack weights using detected layer IDs
 	if len(layerIDs) > 0 {
 		m.loadDeepstackMergerWeights(layerIDs)
+	}
+
+	// Manually load the second patch embedding kernel (v.patch_embd.weight.1)
+	// The GGUF tag system cannot handle this tensor because it expects v.patch_embd.1.weight
+	// but the actual tensor is named v.patch_embd.weight.1
+	patchEmbd1Weight := m.Backend().Get("v.patch_embd.weight.1")
+	slog.Info("Looking for second patch embedding kernel", "tensor", "v.patch_embd.weight.1", "found", patchEmbd1Weight != nil)
+	if patchEmbd1Weight != nil {
+		m.VisionModel.PatchEmbedding1 = &nn.Linear{
+			Weight: patchEmbd1Weight,
+		}
+		slog.Info("Loaded second patch embedding kernel", "tensor", "v.patch_embd.weight.1", "shape", patchEmbd1Weight.Shape())
+	} else {
+		slog.Warn("No second patch embedding kernel found - dual kernel summing disabled", "tensor", "v.patch_embd.weight.1")
 	}
 
 	// Infer correct vision dimensions from actual tensor shapes
