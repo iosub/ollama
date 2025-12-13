@@ -181,9 +181,20 @@ func (m *Model) ensureVisionReady() error {
 			}
 		}
 
-		// Sync temporalPatchSize from VisionModel to ImageProcessor
+		// Sync image preprocessing parameters from model config.
+		// For split GGUF setups, vision-specific config (e.g., image_mean/std) may
+		// live in the vision GGUF, so we refresh from the merged backend config.
+		cfg := m.Backend().Config()
+		if v := cfg.Floats("vision.image_mean"); len(v) > 0 {
+			m.ImageProcessor.imageMean = v
+		}
+		if v := cfg.Floats("vision.image_std"); len(v) > 0 {
+			m.ImageProcessor.imageStd = v
+		}
+
+		// Sync temporalPatchSize from VisionModel to ImageProcessor.
 		// For split models, use the ORIGINAL temporalPatchSize=1 from the GGUF
-		// (the split kernels expect 768-dim input, not 1536-dim)
+		// (the split kernels expect 768-dim input, not 1536-dim).
 		m.ImageProcessor.temporalPatchSize = m.VisionModel.temporalPatchSize
 		m.ImageProcessor.storagePatchSize = m.VisionModel.storagePatchSize
 		slog.Debug("Vision ready", "hiddenSize", m.VisionModel.hiddenSize, "numHeads", m.VisionModel.numHeads, "layers", len(m.VisionModel.Layers), "isSplitArchitecture", m.VisionModel.isSplitArchitecture, "temporalPatchSize", m.VisionModel.temporalPatchSize)
@@ -291,7 +302,20 @@ func (m *Model) ensureVisionReady() error {
 	}
 
 	m.visionReady = true
-	slog.Debug("Split vision model loaded", "layers", len(m.VisionModel.Layers), "hiddenSize", m.VisionModel.hiddenSize)
+
+	// Sync image preprocessing parameters from merged config now that vision GGUF is loaded.
+	cfg := m.Backend().Config()
+	if v := cfg.Floats("vision.image_mean"); len(v) > 0 {
+		m.ImageProcessor.imageMean = v
+	}
+	if v := cfg.Floats("vision.image_std"); len(v) > 0 {
+		m.ImageProcessor.imageStd = v
+	}
+	// Keep temporal/storage patch sizes in sync with the inferred vision options.
+	m.ImageProcessor.temporalPatchSize = m.VisionModel.temporalPatchSize
+	m.ImageProcessor.storagePatchSize = m.VisionModel.storagePatchSize
+
+	slog.Debug("Split vision model loaded", "layers", len(m.VisionModel.Layers), "hiddenSize", m.VisionModel.hiddenSize, "temporalPatchSize", m.VisionModel.temporalPatchSize)
 	return nil
 }
 
@@ -310,7 +334,14 @@ func (m *Model) EncodeMultimodal(ctx ml.Context, multimodalData []byte) ([]input
 		return nil, err
 	}
 
-	pixelValues, grid, err := m.ProcessImage(ctx, img)
+	// Always use patch-based inputs produced by ImageProcessor.
+	// This keeps tensor memory layout consistent with ggml's expectations and matches the original
+	// Qwen3VL runtime path (split and non-split).
+	var (
+		pixelValues ml.Tensor
+		grid        *Grid
+	)
+	pixelValues, grid, err = m.ProcessImage(ctx, img)
 	if err != nil {
 		return nil, err
 	}
@@ -328,6 +359,17 @@ func (m *Model) EncodeMultimodal(ctx ml.Context, multimodalData []byte) ([]input
 	// Calculate tensor dimensions
 	visionOutputs, deepstackVisualEmbeds := m.VisionModel.Forward(ctx, pixelValues, grid)
 
+	// Defensive: ensure returned tensors are not views with view_src chains.
+	// This helps avoid subtle lifetime/aliasing issues that can manifest as unstable outputs.
+	if visionOutputs != nil {
+		visionOutputs = visionOutputs.Contiguous(ctx, visionOutputs.Shape()...)
+	}
+	for i := range deepstackVisualEmbeds {
+		if deepstackVisualEmbeds[i] != nil {
+			deepstackVisualEmbeds[i] = deepstackVisualEmbeds[i].Contiguous(ctx, deepstackVisualEmbeds[i].Shape()...)
+		}
+	}
+
 	// For SPLIT models only: concatenate main + deepstack embeddings into single tensor
 	// This is needed because split models pass vision through a single tensor interface
 	// Format: [main (n_embd) | deepstack_0 (n_embd) | deepstack_1 (n_embd) | deepstack_2 (n_embd)]
@@ -341,15 +383,18 @@ func (m *Model) EncodeMultimodal(ctx ml.Context, multimodalData []byte) ([]input
 		for i := 2; i < len(allEmbeds); i++ {
 			concatenated = concatenated.Concat(ctx, allEmbeds[i], 0)
 		}
+		concatenated = concatenated.Contiguous(ctx, concatenated.Shape()...)
 		slog.Debug("Split model: Concatenated vision + deepstack embeddings",
 			"main_shape", visionOutputs.Shape(),
 			"n_deepstack", len(deepstackVisualEmbeds),
 			"concatenated_shape", concatenated.Shape())
-
 		return []input.Multimodal{{Tensor: concatenated, Data: grid}}, nil
 	}
 
 	// Unified model: return embeddings separately (original Ollama behavior)
+	if visionOutputs != nil {
+		visionOutputs = visionOutputs.Contiguous(ctx, visionOutputs.Shape()...)
+	}
 	mm := []input.Multimodal{{Tensor: visionOutputs, Data: grid}}
 	for i := range deepstackVisualEmbeds {
 		mm = append(mm, input.Multimodal{Tensor: deepstackVisualEmbeds[i]})
@@ -453,18 +498,22 @@ func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
 			slog.Debug("Detected concatenated vision embeddings - splitting",
 				"full_dim", nEmbdFull, "n_embd", nEmbd, "n_tokens", nTokens, "n_deepstack", nDeepstackLayers)
 
-			// Extract main vision (first n_embd rows in column-major = first n_embd features)
-			mainVision := visionOutputs.View(ctx, 0, nEmbd*nTokens).Reshape(ctx, nEmbd, nTokens)
+			// GGML tensors are column-major. A flattened View() cannot correctly slice rows
+			// across all columns because the memory for [rows, tokens] is not laid out as a
+			// single contiguous span per row-block. Use Chunk() to split along dim(0).
+			chunks := visionOutputs.Chunk(ctx, 0, nEmbd)
+			if len(chunks) != nDeepstackLayers+1 {
+				panic(fmt.Sprintf("unexpected concatenated vision chunk count: got=%d want=%d (full_dim=%d n_embd=%d)", len(chunks), nDeepstackLayers+1, nEmbdFull, nEmbd))
+			}
 
-			// Extract deepstack features (these are raw, need to be expanded to hiddenStates shape later)
+			// Main vision is chunk 0; deepstacks follow in order.
+			visionOutputs = chunks[0].Contiguous(ctx, nEmbd, nTokens)
 			if nDeepstackLayers > 0 {
 				extractedDeepstacks = make([]ml.Tensor, nDeepstackLayers)
 				for i := 0; i < nDeepstackLayers; i++ {
-					offset := (i + 1) * nEmbd * nTokens
-					extractedDeepstacks[i] = visionOutputs.View(ctx, offset, nEmbd*nTokens).Reshape(ctx, nEmbd, nTokens)
+					extractedDeepstacks[i] = chunks[i+1].Contiguous(ctx, nEmbd, nTokens)
 				}
 			}
-			visionOutputs = mainVision
 		}
 
 		// Copy main vision embeddings into hiddenStates
