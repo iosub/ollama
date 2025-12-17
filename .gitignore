@@ -15,5 +15,3 @@ __debug_bin*
 llama/build
 llama/vendor
 /ollama
-z_iosu_2/logs
-z_iosu_2/logs3/
