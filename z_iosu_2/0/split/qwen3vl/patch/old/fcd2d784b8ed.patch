@@ -1,0 +1,1909 @@
+commit fcd2d784b8edc21f950e520c1093869666408f58
+Author: iosub <iosub@gabiges.com>
+Date:   Thu Nov 13 19:26:08 2025 -0500
+
+    Backup snapshot 2025-11-12
+
+diff --git a/.gitignore b/.gitignore
+index eabf94c2..97ea4a77 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -15,3 +15,4 @@ __debug_bin*
+ llama/build
+ llama/vendor
+ /ollama
++Z_Iosu/logs2/
+diff --git a/TestModel/test.py b/TestModel/test.py
+index 3d7fafd4..d54c4db8 100644
+--- a/TestModel/test.py
++++ b/TestModel/test.py
+@@ -1,32 +1,93 @@
++import argparse
+ import base64
+ import json
+-import requests
+ from pathlib import Path
+ 
+-image_path = Path(r"C:\ia\1.png")
+-
+-with image_path.open("rb") as f:
+-    image_b64 = base64.b64encode(f.read()).decode()
+-
+-payload = {
+-    "model": "hf.co/unsloth/Qwen3-VL-4B-Instruct-GGUF:Q4_K_M",
+-    "messages": [
+-        {
+-            "role": "user",
+-            "content": "Describe la imagen adjunta.",
+-            "images": [image_b64],
+-        }
+-    ],
+-    "stream": False,
+-}
+-
+-resp = requests.post(
+-    "http://127.0.0.1:11434/api/chat",
+-    headers={"Content-Type": "application/json"},
+-    data=json.dumps(payload),
+-    timeout=60,
+-)
+-
+-resp.raise_for_status()
+-print(resp.json())
+-print(resp.text)
+\ No newline at end of file
++import requests
++
++
++def load_image(path: Path) -> str:
++    with path.open("rb") as f:
++        return base64.b64encode(f.read()).decode()
++
++
++def build_payload(model: str, prompt: str, image_path: Path, stream: bool) -> dict:
++    payload = {
++        "model": model,
++        "messages": [
++            {
++                "role": "user",
++                "content": prompt,
++                "images": [load_image(image_path)],
++            }
++        ],
++        "stream": stream,
++        "options": {
++            "temperature": 0.0,
++            "top_p": 0.9,
++            # "seed": 42,
++            # "stop": ["<|im_end|>"]
++        },
++    }
++    return payload
++
++
++def main() -> None:
++    parser = argparse.ArgumentParser()
++    parser.add_argument(
++        "--image",
++        type=Path,
++        default=Path(r"C:\ia\2.png"),
++        help="Ruta al archivo de imagen que se enviar?? al modelo.",
++    )
++    parser.add_argument(
++        "--prompt",
++        type=Path,
++        help="Archivo de texto con el prompt a enviar. Si se omite, se usa el valor por defecto.",
++    )
++    parser.add_argument(
++        "--model",
++        # default="hf.co/unsloth/Qwen3-VL-4B-Instruct-GGUF:Q4_K_M",
++        # default="qwen3-vl:8b-instruct",
++        default="hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M",
++        help="Nombre del modelo a invocar.",
++    )
++    parser.add_argument(
++        "--stream",
++        action="store_true",
++        help="Activa la respuesta en streaming.",
++    )
++    args = parser.parse_args()
++
++    default_prompt = "Describe la imagen adjunta."
++
++    if args.prompt:
++        prompt_text = args.prompt.read_text(encoding="utf-8")
++    else:
++        prompt_text = default_prompt
++
++    payload = build_payload(args.model, prompt_text, args.image, args.stream)
++
++    with requests.post(
++        "http://127.0.0.1:11434/api/chat",
++        headers={"Content-Type": "application/json"},
++        data=json.dumps(payload),
++        timeout=60,
++        stream=args.stream,
++    ) as resp:
++        resp.raise_for_status()
++
++        if args.stream:
++            for line in resp.iter_lines(decode_unicode=True):
++                if not line:
++                    continue
++                chunk = json.loads(line)
++                print(chunk)
++                if chunk.get("done"):
++                    break
++        else:
++            print(resp.json())
++
++
++if __name__ == "__main__":
++    main()
+\ No newline at end of file
+diff --git a/Z_Iosu/docs/0 GIT.MD b/Z_Iosu/docs/0 GIT.MD
+new file mode 100644
+index 00000000..219a6dcb
+--- /dev/null
++++ b/Z_Iosu/docs/0 GIT.MD	
+@@ -0,0 +1,15 @@
++
++Guarda el estado actual en un stash con todo incluido, crea una rama de respaldo desde ah??, aplica el stash y s??belo al remoto:
++
++
++git stash push --include-untracked --message "snapshot-2025-11-11"
++git switch -c backup-2025-11-11
++git stash pop
++git add -A
++git commit -m "Backup snapshot 2025-11-11"
++git push origin backup-2025-11-11
++
++Regresa a tu rama habitual y vuelve a dejar los cambios como pendientes (sin commit):
++git switch 12-11
++git cherry-pick --no-commit backup-2025-11-11
++git reset
+\ No newline at end of file
+diff --git a/Z_Iosu/docs/qwen3_split_analysis.md b/Z_Iosu/docs/qwen3_split_analysis.md
+new file mode 100644
+index 00000000..9d7de21b
+--- /dev/null
++++ b/Z_Iosu/docs/qwen3_split_analysis.md
+@@ -0,0 +1,54 @@
++# Qwen3-VL Split Investigation
++
++## Scope of the Work Completed
++
++- **Sampler hardening (rounds 08???11):**
++	- Diagnosed the empty completions after restarts. Added the leading-EOS resampling guard in `runner/llamarunner/runner.go` so the first emitted token can never be an `eog`. 
++	- Trimmed the assistant preface before streaming chunks to stop the ???Assistant: ??? artefact from leaking into responses.
++	- Put a defensive check on KV cache shifts to avoid reusing an invalidated cache when the runner wakes up from idle.
++	- Validated these changes against the historical log set (`08-.log` through `11v3-.log`) to ensure there were no regressions.
++
++- **GGUF manifest guard:**
++	- Investigated the `/api/show` panic and `/api/chat` 500s traced back to malformed string lengths in GGUF headers.
++	- Added a bound check inside `fs/gguf/gguf.go:readString` (reject strings above 1<<30 or `math.MaxInt`) and reformatted the file (`gofmt`).
++	- Confirmed the panic disappeared on the next server restart and that `ollama show` now handles the split manifest cleanly.
++
++- **Split Modelfile restoration:**
++	- Located the loss of parser directives in the split model build; reintroduced `RENDERER qwen3-vl-instruct` and `PARSER qwen3-vl-instruct` alongside the explicit `stop` tokens and `image_min_tokens`.
++	- Rebuilt the model as `qwen3-vl-split-fixed`, verified `ollama create` completed, and tested that parser events now fire as expected in `15-split-.log`.
++
++- **Structured extraction experiments:**
++	- Ran paired tests against the non-split checkpoint (`registry.ollama.ai/library/qwen3-vl:8b-instruct-q8_0`) and the split pair (`hf.co/unsloth/...:Q4_K_M`).
++	- Captured full server traces (`13-.log`, `13-split-.log`, `15-split-.log`, `15-split-14k-.log`) to compare parser output, `runner.num_ctx`, and aggregate payload sizes.
++	- Confirmed caching of vision embeddings (4030 token chunks) and observed how retry prompts amplified the token estimate.
++
++- **Context pressure deep-dive (latest session):**
++	- Focused on the difference between the 14k and 32k context runs, correlating `content_len` with truncation and identifying the warm-up workaround (send ???hola??? first).
++	- Mapped the compatibility-mode logs to the llama.cpp fallback path to explain why the prompt is flattened and emitted as a single block.
++
++## What We Observed
++
++1. **Compatibility mode is still enabled for split vision models.** The server reports `model not yet supported by Ollama engine, switching to compatibility mode` as soon as the split GGUF pair is loaded. This means Ollama delegates execution to the bundled llama.cpp runner because the native engine only supports non-split checkpoints today.
++2. In compatibility mode (llama.cpp fallback), the initial prompt is rendered as a single block (~11k characters) plus the vision embeddings. With `num_ctx=32768` this leaves very little space for generated tokens. The model therefore stops after producing only the JSON skeleton (`content_len` ~ 189) and returns apparently empty values.
++3. When the same workflow is limited to ~14k context, the model produces a full JSON object (`content_len=411`) before the parser finalises. This matches the user report: a lightweight turn ("hola") first warms up the cache, then the invoice request succeeds because the prompt stack is shorter.
++4. No crashes were seen after the GGUF bounds guard. Parser input/output is consistent across runs, so the failure is not caused by parser misconfiguration.
++
++## Current Hypothesis
++
++The objective blocker is **context pressure inside compatibility mode**. Because the engine cannot natively run split vision checkpoints, it expands the system + schema + retry instructions into a long single prompt, adds ~4k vision tokens, and leaves almost no room for the model to answer. The immediate symptom is the empty JSON output, which appears to be truncation rather than hallucination.
++
++## Recommended Next Steps
++
++1. **Remove compatibility mode** by enabling native split-vision support in the Windows Vulkan build. That will stop the prompt from being flattened and should restore the full context budget.
++2. While the engine is still in compatibility mode, **shorten the schema or lower `image_min_tokens`** in the Modelfile so the first turn falls well below 20k tokens.
++3. Instrument the request path to log the prompt and output token counts (e.g. around `llama_eval`) so we can confirm when the model starts truncating.
++
++## Quick Reference / Do-Not-Forget
++
++- Compatibility mode == llama.cpp fallback; anything split will go through that path until native support lands.
++- The first turn with image + schema already consumes ~32k tokens; always keep a warm-up or prompt pruning strategy handy.
++- `image_min_tokens 1024` inflates the minimum image footprint to ~1M pixels???tune it down when testing long prompts.
++- Parser emits valid JSON even when the model truncates; low `content_len` (<200) is the red flag to watch.
++- Keep `15-split-.log` and `15-split-14k-.log` as baselines: they show the exact before/after behaviour for context pressure.
++
++Until at least one of these mitigation steps is applied, any invoice extraction that starts directly with the full schema + image will continue to "answer in blank" because the response window is exhausted before the model can populate the fields.
+diff --git a/Z_Iosu/prompts/simple.txt b/Z_Iosu/prompts/simple.txt
+new file mode 100644
+index 00000000..57844adb
+--- /dev/null
++++ b/Z_Iosu/prompts/simple.txt
+@@ -0,0 +1 @@
++ extrae todos los datos
+\ No newline at end of file
+diff --git a/Z_Iosu/prompts/vision.txt b/Z_Iosu/prompts/vision.txt
+new file mode 100644
+index 00000000..3e3490da
+--- /dev/null
++++ b/Z_Iosu/prompts/vision.txt
+@@ -0,0 +1,9 @@
++**Contexto de las representaciones:**
++
++### En resumen, con respecto a lo que aparezca en la imagen:
++
++### Observaciones finales:
++- Lo que aparezca en la imagen.
++- Se entiende el contexto.
++- No se entiende el contexto.
++- La imagen se convierte en una **representaci??n** del conocimiento.
+diff --git a/api/types.go b/api/types.go
+index 1615fce6..b40e8d6a 100644
+--- a/api/types.go
++++ b/api/types.go
+@@ -410,12 +410,13 @@ type Options struct {
+ 
+ // Runner options which must be set when the model is loaded into memory
+ type Runner struct {
+-	NumCtx    int   `json:"num_ctx,omitempty"`
+-	NumBatch  int   `json:"num_batch,omitempty"`
+-	NumGPU    int   `json:"num_gpu,omitempty"`
+-	MainGPU   int   `json:"main_gpu,omitempty"`
+-	UseMMap   *bool `json:"use_mmap,omitempty"`
+-	NumThread int   `json:"num_thread,omitempty"`
++	NumCtx         int   `json:"num_ctx,omitempty"`
++	NumBatch       int   `json:"num_batch,omitempty"`
++	NumGPU         int   `json:"num_gpu,omitempty"`
++	MainGPU        int   `json:"main_gpu,omitempty"`
++	UseMMap        *bool `json:"use_mmap,omitempty"`
++	NumThread      int   `json:"num_thread,omitempty"`
++	ImageMinTokens int   `json:"image_min_tokens,omitempty"`
+ }
+ 
+ // EmbedRequest is the request passed to [Client.Embed].
+diff --git a/fs/gguf/gguf.go b/fs/gguf/gguf.go
+index bbb9bb41..a109b17e 100644
+--- a/fs/gguf/gguf.go
++++ b/fs/gguf/gguf.go
+@@ -8,6 +8,7 @@ import (
+ 	"fmt"
+ 	"io"
+ 	"iter"
++	"math"
+ 	"os"
+ 	"slices"
+ 	"strings"
+@@ -191,11 +192,19 @@ func readString(f *File) (string, error) {
+ 		return "", err
+ 	}
+ 
++	if n > uint64(math.MaxInt) {
++		return "", fmt.Errorf("string length %d exceeds host limits", n)
++	}
++
+ 	if int(n) > len(f.bts) {
+-		f.bts = make([]byte, n)
++		if n > 1<<30 { // guard against corrupted metadata requesting huge buffers
++			return "", fmt.Errorf("string length %d exceeds maximum allowed", n)
++		}
++
++		f.bts = make([]byte, int(n))
+ 	}
+ 
+-	bts := f.bts[:n]
++	bts := f.bts[:int(n)]
+ 	if _, err := io.ReadFull(f.reader, bts); err != nil {
+ 		return "", err
+ 	}
+diff --git a/llama/llama.cpp/include/llama.h b/llama/llama.cpp/include/llama.h
+index 8abee5d8..8fcc0f83 100644
+--- a/llama/llama.cpp/include/llama.h
++++ b/llama/llama.cpp/include/llama.h
+@@ -491,6 +491,7 @@ extern "C" {
+     LLAMA_API int32_t llama_model_n_head     (const struct llama_model * model);
+     LLAMA_API int32_t llama_model_n_head_kv  (const struct llama_model * model);
+     LLAMA_API int32_t llama_model_n_swa      (const struct llama_model * model);
++    LLAMA_API uint32_t llama_model_n_pos_per_embd(const struct llama_model * model);
+ 
+     // Get the model's RoPE frequency scaling factor
+     LLAMA_API float llama_model_rope_freq_scale_train(const struct llama_model * model);
+diff --git a/llama/llama.cpp/src/llama-context.cpp b/llama/llama.cpp/src/llama-context.cpp
+index 3ece5c8c..4a99acaa 100644
+--- a/llama/llama.cpp/src/llama-context.cpp
++++ b/llama/llama.cpp/src/llama-context.cpp
+@@ -7,6 +7,7 @@
+ #include "llama-mmap.h"
+ #include "llama-model.h"
+ 
++#include <algorithm>
+ #include <cinttypes>
+ #include <cstring>
+ #include <limits>
+@@ -639,11 +640,7 @@ float * llama_context::get_embeddings_ith(int32_t i) {
+             throw std::runtime_error(format("corrupt output buffer (j=%" PRId64 ", n_outputs=%d)", j, n_outputs));
+         }
+ 
+-        if (embd_stride <= 0) {
+-            throw std::runtime_error("no embeddings available");
+-        }
+-
+-        return embd + j*embd_stride;
++        return embd + j*model.hparams.n_embd_inp();
+     } catch (const std::exception & err) {
+         LLAMA_LOG_ERROR("%s: invalid embeddings id %d, reason: %s\n", __func__, i, err.what());
+ #ifndef NDEBUG
+@@ -663,10 +660,6 @@ float * llama_context::get_embeddings_seq(llama_seq_id seq_id) {
+     return it->second.data();
+ }
+ 
+-int64_t llama_context::embeddings_stride() const {
+-    return embd_stride;
+-}
+-
+ void llama_context::attach_threadpool(
+            ggml_threadpool_t threadpool,
+            ggml_threadpool_t threadpool_batch) {
+@@ -835,11 +828,11 @@ int llama_context::encode(const llama_batch & batch_inp) {
+ 
+     const auto & hparams = model.hparams;
+ 
+-    const int64_t n_embd_cap = hparams.n_embd_inp();
++    const uint32_t n_embd_stride = hparams.n_embd_inp();
+     const int64_t n_vocab = model.vocab.n_tokens();
+ 
+     // note: during encode, we always pass the full sequence starting from pos = 0
+-    if (!balloc->init(batch_inp, model.vocab, nullptr, n_embd_cap, cparams.kv_unified ? LLAMA_MAX_SEQ : cparams.n_seq_max, true)) {
++    if (!balloc->init(batch_inp, model.vocab, nullptr, n_embd_stride, cparams.kv_unified ? LLAMA_MAX_SEQ : cparams.n_seq_max, true)) {
+         LLAMA_LOG_ERROR("%s: failed to initialize batch\n", __func__);
+         return -1;
+     }
+@@ -912,8 +905,8 @@ int llama_context::encode(const llama_batch & batch_inp) {
+         ggml_backend_t backend_embd = ggml_backend_sched_get_tensor_backend(sched.get(), t_embd);
+         GGML_ASSERT(backend_embd != nullptr);
+ 
+-        const int64_t embd_cols = t_embd->ne[0];
+-        GGML_ASSERT(embd_cols <= n_embd_cap);
++        const uint32_t embd_width = (uint32_t) t_embd->ne[0];
++        GGML_ASSERT(embd_width <= n_embd_stride);
+ 
+         switch (cparams.pooling_type) {
+             case LLAMA_POOLING_TYPE_NONE:
+@@ -921,9 +914,20 @@ int llama_context::encode(const llama_batch & batch_inp) {
+                     // extract token embeddings
+                     GGML_ASSERT(embd != nullptr);
+ 
+-                    GGML_ASSERT(n_tokens*embd_cols <= (int64_t) embd_size);
+-                    ggml_backend_tensor_get_async(backend_embd, t_embd, embd, 0, n_tokens*embd_cols*sizeof(float));
+-                    embd_stride = embd_cols;
++                    GGML_ASSERT((int64_t) n_tokens*n_embd_stride <= (int64_t) embd_size);
++
++                    if (embd_width == n_embd_stride) {
++                        ggml_backend_tensor_get_async(backend_embd, t_embd, embd, 0, n_tokens*embd_width*sizeof(float));
++                    } else {
++                        for (uint32_t i = 0; i < n_tokens; ++i) {
++                            float * dst = embd + i*n_embd_stride;
++                            const size_t src_offset = i*embd_width*sizeof(float);
++                            ggml_backend_tensor_get_async(backend_embd, t_embd, dst, src_offset, embd_width*sizeof(float));
++                            if (embd_width < n_embd_stride) {
++                                std::fill(dst + embd_width, dst + n_embd_stride, 0.0f);
++                            }
++                        }
++                    }
+                 } break;
+             case LLAMA_POOLING_TYPE_MEAN:
+             case LLAMA_POOLING_TYPE_CLS:
+@@ -936,8 +940,8 @@ int llama_context::encode(const llama_batch & batch_inp) {
+                         const llama_seq_id seq_id  = ubatch.seq_id_unq[s];
+                         const int32_t      seq_idx = ubatch.seq_idx[seq_id];
+ 
+-                        embd_seq_out[seq_id].resize(embd_cols);
+-                        ggml_backend_tensor_get_async(backend_embd, t_embd, embd_seq_out[seq_id].data(), (embd_cols*seq_idx)*sizeof(float), embd_cols*sizeof(float));
++                        embd_seq_out[seq_id].resize(embd_width);
++                        ggml_backend_tensor_get_async(backend_embd, t_embd, embd_seq_out[seq_id].data(), (embd_width*seq_idx)*sizeof(float), embd_width*sizeof(float));
+                     }
+                 } break;
+             case LLAMA_POOLING_TYPE_RANK:
+@@ -1007,12 +1011,12 @@ int llama_context::decode(const llama_batch & batch_inp) {
+     const auto & vocab   = model.vocab;
+     const auto & hparams = model.hparams;
+ 
+-    const int64_t n_vocab     = vocab.n_tokens();
+-    const int64_t n_embd_cap  = hparams.n_embd_inp();
++    const int64_t n_vocab = vocab.n_tokens();
++    const uint32_t n_embd_stride = hparams.n_embd_inp();
+ 
+     const bool output_all = false;
+ 
+-    if (!balloc->init(batch_inp, vocab, memory.get(), n_embd_cap, cparams.kv_unified ? LLAMA_MAX_SEQ : cparams.n_seq_max, output_all)) {
++    if (!balloc->init(batch_inp, vocab, memory.get(), n_embd_stride, cparams.kv_unified ? LLAMA_MAX_SEQ : cparams.n_seq_max, output_all)) {
+         LLAMA_LOG_ERROR("%s: failed to initialize batch\n", __func__);
+         return -1;
+     }
+@@ -1185,24 +1189,33 @@ int llama_context::decode(const llama_batch & batch_inp) {
+             ggml_backend_t backend_embd = ggml_backend_sched_get_tensor_backend(sched.get(), t_embd);
+             GGML_ASSERT(backend_embd != nullptr);
+ 
+-            const int64_t embd_cols = t_embd->ne[0];
+-            GGML_ASSERT(embd_cols <= n_embd_cap);
++            const uint32_t embd_width = (uint32_t) t_embd->ne[0];
++            GGML_ASSERT(embd_width <= n_embd_stride);
+ 
+             switch (cparams.pooling_type) {
+                 case LLAMA_POOLING_TYPE_NONE:
+                     {
+                         // extract token embeddings
+                         GGML_ASSERT(embd != nullptr);
+-                        GGML_ASSERT(embd_stride == 0 || embd_stride == embd_cols);
+-                        float * embd_out = embd + n_outputs_prev*embd_cols;
++                        float * embd_out_base = embd + n_outputs_prev*n_embd_stride;
+ 
+                         if (n_outputs) {
+                             GGML_ASSERT( n_outputs_prev + n_outputs <= n_outputs_all);
+-                            GGML_ASSERT((n_outputs_prev + n_outputs)*embd_cols <= (int64_t) embd_size);
+-                            ggml_backend_tensor_get_async(backend_embd, t_embd, embd_out, 0, n_outputs*embd_cols*sizeof(float));
++                            GGML_ASSERT((n_outputs_prev + n_outputs)*n_embd_stride <= (int64_t) embd_size);
++
++                            if (embd_width == n_embd_stride) {
++                                ggml_backend_tensor_get_async(backend_embd, t_embd, embd_out_base, 0, n_outputs*embd_width*sizeof(float));
++                            } else {
++                                for (uint32_t i = 0; i < n_outputs; ++i) {
++                                    float * dst = embd_out_base + i*n_embd_stride;
++                                    const size_t src_offset = i*embd_width*sizeof(float);
++                                    ggml_backend_tensor_get_async(backend_embd, t_embd, dst, src_offset, embd_width*sizeof(float));
++                                    if (embd_width < n_embd_stride) {
++                                        std::fill(dst + embd_width, dst + n_embd_stride, 0.0f);
++                                    }
++                                }
++                            }
+                         }
+-
+-                        embd_stride = embd_cols;
+                     } break;
+                 case LLAMA_POOLING_TYPE_MEAN:
+                 case LLAMA_POOLING_TYPE_CLS:
+@@ -1215,8 +1228,8 @@ int llama_context::decode(const llama_batch & batch_inp) {
+                             const llama_seq_id seq_id  = ubatch.seq_id_unq[s];
+                             const int32_t      seq_idx = ubatch.seq_idx[seq_id];
+ 
+-                            embd_seq_out[seq_id].resize(embd_cols);
+-                            ggml_backend_tensor_get_async(backend_embd, t_embd, embd_seq_out[seq_id].data(), (embd_cols*seq_idx)*sizeof(float), embd_cols*sizeof(float));
++                            embd_seq_out[seq_id].resize(embd_width);
++                            ggml_backend_tensor_get_async(backend_embd, t_embd, embd_seq_out[seq_id].data(), (embd_width*seq_idx)*sizeof(float), embd_width*sizeof(float));
+                         }
+                     } break;
+                 case LLAMA_POOLING_TYPE_RANK:
+@@ -1310,9 +1323,10 @@ uint32_t llama_context::output_reserve(int32_t n_outputs) {
+ 
+     const int64_t n_outputs_max = std::max<int64_t>(n_outputs, n_seq_max());
+ 
+-    const auto n_batch = cparams.n_batch;
+-    const auto n_vocab = vocab.n_tokens();
+-    const auto n_embd  = hparams.n_embd_inp();
++    const auto n_batch      = cparams.n_batch;
++    const auto n_vocab      = vocab.n_tokens();
++    const auto n_embd       = hparams.n_embd;
++    const auto n_embd_inp   = hparams.n_embd_inp();
+ 
+     bool has_logits = true;
+     bool has_embd   = cparams.embeddings;
+@@ -1324,7 +1338,7 @@ uint32_t llama_context::output_reserve(int32_t n_outputs) {
+     }
+ 
+     logits_size = has_logits ? n_vocab*n_outputs_max : 0;
+-    embd_size   = has_embd   ?  n_embd*n_outputs_max : 0;
++    embd_size   = has_embd   ?  n_embd_inp*n_outputs_max : 0;
+ 
+     if (output_ids.empty()) {
+         // init, never resized afterwards
+@@ -1365,7 +1379,6 @@ uint32_t llama_context::output_reserve(int32_t n_outputs) {
+ 
+     logits = has_logits ? output_base               : nullptr;
+     embd   = has_embd   ? output_base + logits_size : nullptr;
+-    embd_stride = 0;
+ 
+     // set all ids as invalid (negative)
+     std::fill(output_ids.begin(), output_ids.end(), -1);
+@@ -1376,8 +1389,8 @@ uint32_t llama_context::output_reserve(int32_t n_outputs) {
+ }
+ 
+ void llama_context::output_reorder() {
+-    const uint64_t n_vocab = model.vocab.n_tokens();
+-    const uint64_t n_embd  = embd_stride > 0 ? (uint64_t) embd_stride : 0;
++    const uint64_t n_vocab     = model.vocab.n_tokens();
++    const uint64_t n_embd_out  = model.hparams.n_embd_inp();
+ 
+     for (size_t s = 0; s < output_swaps.size(); ++s) {
+         const uint64_t i0 = output_swaps[s].i0;
+@@ -1389,9 +1402,9 @@ void llama_context::output_reorder() {
+             }
+         }
+ 
+-        if (embd_size > 0 && n_embd > 0) {
+-            for (uint64_t k = 0; k < n_embd; k++) {
+-                std::swap(embd[i0*n_embd + k], embd[i1*n_embd + k]);
++        if (embd_size > 0) {
++            for (uint64_t k = 0; k < n_embd_out; k++) {
++                std::swap(embd[i0*n_embd_out + k], embd[i1*n_embd_out + k]);
+             }
+         }
+     }
+@@ -1920,10 +1933,7 @@ size_t llama_context::state_write_data(llama_io_write_i & io) {
+     {
+         LLAMA_LOG_DEBUG("%s: - writing embeddings\n", __func__);
+ 
+-        const uint64_t embd_stride_cur = embd_stride > 0 ? (uint64_t) embd_stride : 0;
+-        const uint64_t embd_size = embd_stride_cur > 0
+-            ? std::min((uint64_t) this->embd_size, (uint64_t) n_outputs * embd_stride_cur)
+-            : 0;
++        const uint64_t embd_size = std::min((uint64_t) this->embd_size, (uint64_t) n_outputs * model.hparams.n_embd_inp());
+ 
+         io.write(&embd_size, sizeof(embd_size));
+ 
+@@ -2015,17 +2025,6 @@ size_t llama_context::state_read_data(llama_io_read_i & io) {
+ 
+         if (embd_size) {
+             io.read_to(this->embd, embd_size * sizeof(float));
+-
+-            if (this->n_outputs > 0) {
+-                if (embd_size % this->n_outputs != 0) {
+-                    throw std::runtime_error("invalid embeddings size in state");
+-                }
+-                this->embd_stride = static_cast<int64_t>(embd_size / this->n_outputs);
+-            } else {
+-                this->embd_stride = 0;
+-            }
+-        } else {
+-            this->embd_stride = 0;
+         }
+     }
+ 
+@@ -2519,21 +2518,6 @@ float * llama_get_embeddings(llama_context * ctx) {
+     return ctx->get_embeddings();
+ }
+ 
+-int32_t llama_get_embeddings_stride(llama_context * ctx) {
+-    ctx->synchronize();
+-
+-    const int64_t stride = ctx->embeddings_stride();
+-    if (stride <= 0) {
+-        return 0;
+-    }
+-
+-    if (stride > std::numeric_limits<int32_t>::max()) {
+-        return std::numeric_limits<int32_t>::max();
+-    }
+-
+-    return static_cast<int32_t>(stride);
+-}
+-
+ float * llama_get_embeddings_ith(llama_context * ctx, int32_t i) {
+     ctx->synchronize();
+ 
+diff --git a/llama/llama.cpp/src/llama-context.h b/llama/llama.cpp/src/llama-context.h
+index 6b5b6c85..20cbd789 100644
+--- a/llama/llama.cpp/src/llama-context.h
++++ b/llama/llama.cpp/src/llama-context.h
+@@ -65,7 +65,6 @@ struct llama_context {
+     float * get_embeddings();
+     float * get_embeddings_ith(int32_t i);
+     float * get_embeddings_seq(llama_seq_id seq_id);
+-        int64_t embeddings_stride() const;
+ 
+     void attach_threadpool(
+             ggml_threadpool_t threadpool,
+@@ -247,7 +246,6 @@ private:
+     // populated only when pooling_type == LLAMA_POOLING_TYPE_NONE
+     size_t  embd_size = 0; // capacity (of floats) for embeddings
+     float * embd      = nullptr;
+-        int64_t embd_stride = 0; // number of floats per embedding row
+ 
+     // sequence embeddings output (map of [n_embd] vectors)
+     // populated only when pooling_type != LLAMA_POOLING_TYPE_NONE
+diff --git a/llama/llama.cpp/src/llama-model.cpp b/llama/llama.cpp/src/llama-model.cpp
+index 84d7183d..666aeafa 100644
+--- a/llama/llama.cpp/src/llama-model.cpp
++++ b/llama/llama.cpp/src/llama-model.cpp
+@@ -7434,6 +7434,10 @@ int32_t llama_model_n_swa(const llama_model * model) {
+     return model->hparams.n_swa;
+ }
+ 
++uint32_t llama_model_n_pos_per_embd(const struct llama_model * model) {
++    return model->hparams.n_pos_per_embd();
++}
++
+ uint32_t llama_model_n_cls_out(const struct llama_model * model) {
+     return model->hparams.n_cls_out;
+ }
+diff --git a/llama/llama.go b/llama/llama.go
+index a5e1a36a..126defe3 100644
+--- a/llama/llama.go
++++ b/llama/llama.go
+@@ -201,13 +201,8 @@ func (c *Context) GetEmbeddingsSeq(seqId int) []float32 {
+ 		return nil
+ 	}
+ 
+-	stride := int(C.llama_get_embeddings_stride(c.c))
+-	if stride <= 0 {
+-		return nil
+-	}
+-
+-	embeddings := make([]float32, stride)
+-	_ = copy(embeddings, unsafe.Slice((*float32)(e), stride))
++	embeddings := make([]float32, c.Model().NEmbdInput())
++	_ = copy(embeddings, unsafe.Slice((*float32)(e), c.Model().NEmbdInput()))
+ 	return embeddings
+ }
+ 
+@@ -217,13 +212,8 @@ func (c *Context) GetEmbeddingsIth(i int) []float32 {
+ 		return nil
+ 	}
+ 
+-	stride := int(C.llama_get_embeddings_stride(c.c))
+-	if stride <= 0 {
+-		return nil
+-	}
+-
+-	embeddings := make([]float32, stride)
+-	_ = copy(embeddings, unsafe.Slice((*float32)(e), stride))
++	embeddings := make([]float32, c.Model().NEmbdInput())
++	_ = copy(embeddings, unsafe.Slice((*float32)(e), c.Model().NEmbdInput()))
+ 	return embeddings
+ }
+ 
+@@ -301,6 +291,10 @@ func (m *Model) NumVocab() int {
+ 	return int(C.llama_vocab_n_tokens(m.Vocab()))
+ }
+ 
++func (m *Model) NPosPerEmbedding() int {
++	return int(C.llama_model_n_pos_per_embd(m.c))
++}
++
+ func (m *Model) TokenIsEog(token int) bool {
+ 	return bool(C.llama_vocab_is_eog(m.Vocab(), C.llama_token(token)))
+ }
+@@ -489,6 +483,10 @@ func (m *Model) Tokenize(text string, addSpecial bool, parseSpecial bool) ([]int
+ }
+ 
+ func (m *Model) NEmbd() int {
++	return int(C.llama_model_n_embd(m.c))
++}
++
++func (m *Model) NEmbdInput() int {
+ 	return int(C.llama_model_n_embd_inp(m.c))
+ }
+ 
+@@ -497,11 +495,14 @@ type MtmdContext struct {
+ 	c *C.struct_mtmd_context
+ }
+ 
+-func NewMtmdContext(llamaContext *Context, modelPath string) (*MtmdContext, error) {
++func NewMtmdContext(llamaContext *Context, modelPath string, imageMinTokens int) (*MtmdContext, error) {
+ 	mp := C.CString(modelPath)
+ 	defer C.free(unsafe.Pointer(mp))
+ 	// TODO: Support non-default params
+ 	cp := C.mtmd_context_params_default()
++	if imageMinTokens > 0 {
++		cp.image_min_tokens = C.int(imageMinTokens)
++	}
+ 
+ 	// NOTE: The model and projector embedding lengths are checked during init
+ 	c := C.mtmd_init_from_file(mp, C.llama_get_model(llamaContext.c), cp)
+@@ -539,7 +540,7 @@ func (c *MtmdContext) MultimodalTokenize(llamaContext *Context, data []byte) ([]
+ 		return nil, errors.New("unable to tokenize mtmd embedding from image")
+ 	}
+ 	nChunks := C.mtmd_input_chunks_size(ic)
+-	numEmbed := llamaContext.Model().NEmbd()
++	numEmbed := llamaContext.Model().NEmbdInput()
+ 	outChunks := make([]MtmdChunk, 0)
+ 	for i := range int(nChunks) {
+ 		chunk := C.mtmd_input_chunks_get(ic, C.size_t(i))
+diff --git a/llama/llama.go.bak b/llama/llama.go.bak
+new file mode 100644
+index 00000000..a5e1a36a
+--- /dev/null
++++ b/llama/llama.go.bak
+@@ -0,0 +1,762 @@
++package llama
++
++/*
++#cgo CFLAGS: -std=c11
++#cgo windows CFLAGS: -Wno-dll-attribute-on-redeclaration
++#cgo CXXFLAGS: -std=c++17
++#cgo CPPFLAGS: -I${SRCDIR}/llama.cpp/include
++#cgo CPPFLAGS: -I${SRCDIR}/llama.cpp/common
++#cgo CPPFLAGS: -I${SRCDIR}/llama.cpp/vendor
++#cgo CPPFLAGS: -I${SRCDIR}/llama.cpp/tools/mtmd
++#cgo CPPFLAGS: -I${SRCDIR}/llama.cpp/src
++#cgo CPPFLAGS: -I${SRCDIR}/../ml/backend/ggml/ggml/include
++
++#include <stdlib.h>
++#include "ggml.h"
++#include "llama.h"
++#include "mtmd.h"
++#include "mtmd-helper.h"
++#include "gguf.h"
++
++#include "sampling_ext.h"
++
++extern bool llamaProgressCallback(float progress, void *user_data);
++extern void llamaLog(int level, char* text, void* user_data);
++*/
++import "C"
++
++import (
++	"context"
++	_ "embed"
++	"errors"
++	"fmt"
++	"log/slog"
++	"os"
++	"runtime"
++	"runtime/cgo"
++	"slices"
++	"strings"
++	"sync"
++	"unsafe"
++
++	_ "github.com/ollama/ollama/llama/llama.cpp/common"
++	_ "github.com/ollama/ollama/llama/llama.cpp/src"
++	_ "github.com/ollama/ollama/llama/llama.cpp/tools/mtmd"
++	"github.com/ollama/ollama/ml"
++	ggml "github.com/ollama/ollama/ml/backend/ggml/ggml/src"
++)
++
++func init() {
++	C.llama_log_set(C.ggml_log_callback(C.llamaLog), nil)
++}
++
++//export llamaLog
++func llamaLog(level C.int, text *C.char, _ unsafe.Pointer) {
++	// slog levels zeros INFO and are multiples of 4
++	if slog.Default().Enabled(context.TODO(), slog.Level(int(level-C.GGML_LOG_LEVEL_INFO)*4)) {
++		fmt.Fprint(os.Stderr, C.GoString(text))
++	}
++}
++
++func BackendInit() {
++	ggml.OnceLoad()
++	C.llama_backend_init()
++}
++
++func EnumerateGPUs() []ml.DeviceID {
++	var ids []ml.DeviceID
++
++	for i := range C.ggml_backend_dev_count() {
++		device := C.ggml_backend_dev_get(i)
++
++		switch C.ggml_backend_dev_type(device) {
++		case C.GGML_BACKEND_DEVICE_TYPE_GPU,
++			C.GGML_BACKEND_DEVICE_TYPE_IGPU:
++			var props C.struct_ggml_backend_dev_props
++			C.ggml_backend_dev_get_props(device, &props)
++			ids = append(ids, ml.DeviceID{
++				ID:      C.GoString(props.id),
++				Library: C.GoString(props.library),
++			})
++		}
++	}
++
++	return ids
++}
++
++func GetModelArch(modelPath string) (string, error) {
++	mp := C.CString(modelPath)
++	defer C.free(unsafe.Pointer(mp))
++
++	gguf_ctx := C.gguf_init_from_file(mp, C.struct_gguf_init_params{no_alloc: true, ctx: (**C.struct_ggml_context)(C.NULL)})
++	if gguf_ctx == nil {
++		return "", errors.New("unable to load model file")
++	}
++	defer C.gguf_free(gguf_ctx)
++
++	key := C.CString("general.architecture")
++	defer C.free(unsafe.Pointer(key))
++	arch_index := C.gguf_find_key(gguf_ctx, key)
++	if int(arch_index) < 0 {
++		return "", errors.New("unknown model architecture")
++	}
++
++	arch := C.gguf_get_val_str(gguf_ctx, arch_index)
++
++	return C.GoString(arch), nil
++}
++
++type ContextParams struct {
++	c C.struct_llama_context_params
++}
++
++func NewContextParams(numCtx int, batchSize int, numSeqMax int, threads int, flashAttention bool, kvCacheType string) ContextParams {
++	params := C.llama_context_default_params()
++	params.n_ctx = C.uint(numCtx)
++	params.n_batch = C.uint(batchSize)
++	params.n_seq_max = C.uint(numSeqMax)
++	params.n_threads = C.int(threads)
++	params.n_threads_batch = params.n_threads
++	params.embeddings = C.bool(true)
++	if flashAttention {
++		params.flash_attn_type = C.LLAMA_FLASH_ATTN_TYPE_ENABLED
++	} else {
++		params.flash_attn_type = C.LLAMA_FLASH_ATTN_TYPE_DISABLED
++	}
++	params.type_k = kvCacheTypeFromStr(strings.ToLower(kvCacheType))
++	params.type_v = kvCacheTypeFromStr(strings.ToLower(kvCacheType))
++
++	return ContextParams{c: params}
++}
++
++// kvCacheTypeFromStr converts a string cache type to the corresponding GGML type value
++func kvCacheTypeFromStr(s string) C.enum_ggml_type {
++	if s == "" {
++		return C.GGML_TYPE_F16
++	}
++
++	switch s {
++	case "q8_0":
++		return C.GGML_TYPE_Q8_0
++	case "q4_0":
++		return C.GGML_TYPE_Q4_0
++	default:
++		return C.GGML_TYPE_F16
++	}
++}
++
++type Context struct {
++	c          *C.struct_llama_context
++	numThreads int
++}
++
++var ErrKvCacheFull = errors.New("could not find a kv cache slot")
++
++func (c *Context) Decode(batch *Batch) error {
++	// Positive return values does not mean a fatal error, but rather a warning.
++	//   0 - success
++	//   1 - could not find a KV slot for the batch (try reducing the size of the batch or increase the context)
++	// < 0 - error
++	code := int(C.llama_decode(c.c, batch.c))
++
++	if code < 0 {
++		return fmt.Errorf("llama_decode failed with code %d", code)
++	}
++
++	if code > 0 {
++		return ErrKvCacheFull
++	}
++
++	return nil
++}
++
++func (c *Context) Model() *Model {
++	return &Model{c: C.llama_get_model(c.c)}
++}
++
++func (c *Context) KvCacheSeqAdd(seqId int, p0 int, p1 int, delta int) {
++	C.llama_memory_seq_add(C.llama_get_memory(c.c), C.int(seqId), C.int(p0), C.int(p1), C.int(delta))
++}
++
++func (c *Context) KvCacheSeqRm(seqId int, p0 int, p1 int) bool {
++	return bool(C.llama_memory_seq_rm(C.llama_get_memory(c.c), C.int(seqId), C.int(p0), C.int(p1)))
++}
++
++func (c *Context) KvCacheSeqCp(srcSeqId int, dstSeqId int, p0 int, p1 int) {
++	C.llama_memory_seq_cp(C.llama_get_memory(c.c), C.int(srcSeqId), C.int(dstSeqId), C.int(p0), C.int(p1))
++}
++
++func (c *Context) KvCacheClear() {
++	C.llama_memory_clear(C.llama_get_memory(c.c), true)
++}
++
++func (c *Context) KvCacheCanShift() bool {
++	return bool(C.llama_memory_can_shift(C.llama_get_memory(c.c)))
++}
++
++// Get the embeddings for a sequence id
++func (c *Context) GetEmbeddingsSeq(seqId int) []float32 {
++	e := unsafe.Pointer(C.llama_get_embeddings_seq(c.c, C.int(seqId)))
++	if e == nil {
++		return nil
++	}
++
++	stride := int(C.llama_get_embeddings_stride(c.c))
++	if stride <= 0 {
++		return nil
++	}
++
++	embeddings := make([]float32, stride)
++	_ = copy(embeddings, unsafe.Slice((*float32)(e), stride))
++	return embeddings
++}
++
++func (c *Context) GetEmbeddingsIth(i int) []float32 {
++	e := unsafe.Pointer(C.llama_get_embeddings_ith(c.c, C.int32_t(i)))
++	if e == nil {
++		return nil
++	}
++
++	stride := int(C.llama_get_embeddings_stride(c.c))
++	if stride <= 0 {
++		return nil
++	}
++
++	embeddings := make([]float32, stride)
++	_ = copy(embeddings, unsafe.Slice((*float32)(e), stride))
++	return embeddings
++}
++
++type ModelParams struct {
++	NumGpuLayers int
++	MainGpu      int
++	UseMmap      bool
++	TensorSplit  []float32
++	Progress     func(float32)
++	VocabOnly    bool
++}
++
++//export llamaProgressCallback
++func llamaProgressCallback(progress C.float, userData unsafe.Pointer) C.bool {
++	handle := *(*cgo.Handle)(userData)
++	callback := handle.Value().(func(float32))
++	callback(float32(progress))
++	return true
++}
++
++func LoadModelFromFile(modelPath string, params ModelParams) (*Model, error) {
++	cparams := C.llama_model_default_params()
++	cparams.n_gpu_layers = C.int(params.NumGpuLayers)
++	cparams.main_gpu = C.int32_t(params.MainGpu)
++	cparams.use_mmap = C.bool(params.UseMmap)
++	cparams.vocab_only = C.bool(params.VocabOnly)
++
++	if len(params.TensorSplit) > 0 {
++		tensorSplitData := &params.TensorSplit[0]
++
++		var tensorSplitPin runtime.Pinner
++		tensorSplitPin.Pin(tensorSplitData)
++		defer tensorSplitPin.Unpin()
++
++		cparams.tensor_split = (*C.float)(unsafe.Pointer(tensorSplitData))
++	}
++
++	if params.Progress != nil {
++		handle := cgo.NewHandle(params.Progress)
++		defer handle.Delete()
++
++		var handlePin runtime.Pinner
++		handlePin.Pin(&handle)
++		defer handlePin.Unpin()
++
++		cparams.progress_callback = C.llama_progress_callback(C.llamaProgressCallback)
++		cparams.progress_callback_user_data = unsafe.Pointer(&handle)
++	}
++
++	m := Model{c: C.llama_model_load_from_file(C.CString(modelPath), cparams)}
++	if m.c == nil {
++		return nil, fmt.Errorf("unable to load model: %s", modelPath)
++	}
++
++	return &m, nil
++}
++
++func FreeModel(model *Model) {
++	C.llama_model_free(model.c)
++}
++
++func NewContextWithModel(model *Model, params ContextParams) (*Context, error) {
++	c := Context{
++		c:          C.llama_init_from_model(model.c, params.c),
++		numThreads: int(params.c.n_threads),
++	}
++	if c.c == nil {
++		return nil, errors.New("unable to create llama context")
++	}
++
++	return &c, nil
++}
++
++func (m *Model) NumVocab() int {
++	return int(C.llama_vocab_n_tokens(m.Vocab()))
++}
++
++func (m *Model) TokenIsEog(token int) bool {
++	return bool(C.llama_vocab_is_eog(m.Vocab(), C.llama_token(token)))
++}
++
++func (m *Model) AddBOSToken() bool {
++	return bool(C.llama_vocab_get_add_bos(m.Vocab()))
++}
++
++func (m *Model) ApplyLoraFromFile(context *Context, loraPath string, scale float32, threads int) error {
++	cLoraPath := C.CString(loraPath)
++	defer C.free(unsafe.Pointer(cLoraPath))
++
++	loraAdapter := C.llama_adapter_lora_init(m.c, cLoraPath)
++	if loraAdapter == nil {
++		return errors.New("unable to load lora")
++	}
++
++	err := -1
++	if loraAdapter != nil {
++		err = int(C.llama_set_adapter_lora(context.c, loraAdapter, C.float(scale)))
++	}
++	if err != 0 {
++		return errors.New("error applying lora from file")
++	}
++
++	return nil
++}
++
++func (m *Model) Vocab() *C.struct_llama_vocab {
++	return C.llama_model_get_vocab(m.c)
++}
++
++type Batch struct {
++	c         C.struct_llama_batch
++	batchSize int
++	maxSeq    int
++	embedSize int
++}
++
++// Creates a new batch for either word tokens or image embeddings (if embedSize is non-zero).
++// Batches cannot contain both types at the same time. batchSize is the maximum number of entries
++// that can be added per sequence
++func NewBatch(batchSize int, maxSeq int, embedSize int) (*Batch, error) {
++	b := Batch{
++		c:         C.llama_batch_init(C.int(batchSize*maxSeq), C.int(embedSize), C.int(maxSeq)),
++		batchSize: batchSize,
++		maxSeq:    maxSeq,
++		embedSize: embedSize,
++	}
++
++	// Check to see if any of the allocations in llama_batch_init() failed
++	nilPointer := (embedSize == 0 && b.c.token == nil) || (embedSize != 0 && b.c.embd == nil) ||
++		b.c.pos == nil || b.c.n_seq_id == nil || b.c.seq_id == nil || b.c.logits == nil ||
++		slices.Contains(unsafe.Slice(b.c.seq_id, b.allocSize()), nil)
++
++	if nilPointer {
++		C.llama_batch_free(b.c)
++		return nil, fmt.Errorf("unable to allocate batch (batchSize=%v maxSeq=%v embedSize=%v)", batchSize, maxSeq, embedSize)
++	}
++
++	return &b, nil
++}
++
++func (b *Batch) Size() int {
++	return b.batchSize
++}
++
++func (b *Batch) allocSize() int {
++	return b.batchSize * b.maxSeq
++}
++
++func (b *Batch) NumTokens() int {
++	return int(b.c.n_tokens)
++}
++
++func (b *Batch) IsEmbedding() bool {
++	return b.embedSize != 0
++}
++
++// Add adds either a token or an image embedding to the batch depending on the type
++// when the batch was initialized. The other argument will be ignored. Adds to the
++// batch with the given position for the given sequence ids, and optionally instructs
++// to include logits.
++func (b *Batch) Add(token int, embed []float32, pos int, logits bool, seqIds ...int) {
++	if !b.IsEmbedding() {
++		unsafe.Slice(b.c.token, b.allocSize())[b.c.n_tokens] = C.llama_token(token)
++	} else {
++		copy(unsafe.Slice((*float32)(b.c.embd), b.allocSize()*b.embedSize)[int(b.c.n_tokens)*b.embedSize:], embed)
++	}
++	unsafe.Slice(b.c.pos, b.allocSize())[b.c.n_tokens] = C.llama_pos(pos)
++	unsafe.Slice(b.c.n_seq_id, b.allocSize())[b.c.n_tokens] = C.int(len(seqIds))
++
++	for i, s := range seqIds {
++		unsafe.Slice((unsafe.Slice(b.c.seq_id, b.allocSize())[b.c.n_tokens]), C.int(len(seqIds)))[i] = C.int32_t(s)
++	}
++
++	if logits {
++		unsafe.Slice(b.c.logits, b.allocSize())[b.c.n_tokens] = 1
++	} else {
++		unsafe.Slice(b.c.logits, b.allocSize())[b.c.n_tokens] = 0
++	}
++
++	b.c.n_tokens += 1
++}
++
++func (b *Batch) Clear() {
++	b.c.n_tokens = 0
++}
++
++func (b *Batch) Free() {
++	b.batchSize = 0
++	C.llama_batch_free(b.c)
++}
++
++type Model struct {
++	c *C.struct_llama_model
++}
++
++func (m *Model) TokenToPiece(token int) string {
++	tokenLen := 12
++	buf := make([]byte, tokenLen)
++	tokenLen = int(C.llama_token_to_piece(
++		m.Vocab(),
++		C.int32_t(token),
++		(*C.char)(unsafe.Pointer(&buf[0])),
++		C.int32_t(tokenLen),
++		C.int32_t(0),
++		C.bool(true),
++	))
++	if tokenLen < 0 {
++		tokenLen = -tokenLen
++
++		buf = make([]byte, tokenLen)
++		C.llama_token_to_piece(
++			m.Vocab(),
++			C.int32_t(token),
++			(*C.char)(unsafe.Pointer(&buf[0])),
++			C.int32_t(tokenLen),
++			C.int32_t(0),
++			C.bool(true),
++		)
++	}
++	return strings.TrimRight(string(buf), "\x00")
++}
++
++func (m *Model) Tokenize(text string, addSpecial bool, parseSpecial bool) ([]int, error) {
++	maxTokens := len(text) + 2
++	cTokens := make([]C.llama_token, maxTokens)
++	cText := C.CString(text)
++	defer C.free(unsafe.Pointer(cText))
++
++	result := C.llama_tokenize(
++		m.Vocab(),
++		cText,
++		C.int32_t(len(text)),
++		&cTokens[0],
++		C.int32_t(maxTokens),
++		C.bool(addSpecial),
++		C.bool(parseSpecial),
++	)
++
++	// if the result is negative, reallocate and retry with the correct buffer size
++	if result < 0 {
++		maxTokens = int(-result)
++		cTokens = make([]C.llama_token, maxTokens)
++		result = C.llama_tokenize(
++			m.Vocab(),
++			cText,
++			C.int32_t(len(text)),
++			&cTokens[0],
++			C.int32_t(maxTokens),
++			C.bool(addSpecial),
++			C.bool(parseSpecial),
++		)
++		if result < 0 {
++			return nil, fmt.Errorf("tokenization failed, required %d tokens", -result)
++		}
++	}
++
++	tokens := make([]int, result)
++	for i := range result {
++		tokens[i] = int(cTokens[i])
++	}
++
++	return tokens, nil
++}
++
++func (m *Model) NEmbd() int {
++	return int(C.llama_model_n_embd_inp(m.c))
++}
++
++// vision processing
++type MtmdContext struct {
++	c *C.struct_mtmd_context
++}
++
++func NewMtmdContext(llamaContext *Context, modelPath string) (*MtmdContext, error) {
++	mp := C.CString(modelPath)
++	defer C.free(unsafe.Pointer(mp))
++	// TODO: Support non-default params
++	cp := C.mtmd_context_params_default()
++
++	// NOTE: The model and projector embedding lengths are checked during init
++	c := C.mtmd_init_from_file(mp, C.llama_get_model(llamaContext.c), cp)
++	if c == nil {
++		return nil, fmt.Errorf("unable to load mmtd model: %v", modelPath)
++	}
++
++	return &MtmdContext{c: c}, nil
++}
++
++func (c *MtmdContext) Free() {
++	C.mtmd_free(c.c)
++}
++
++type MtmdChunk struct {
++	Embed  []float32
++	Tokens []int
++}
++
++func (c *MtmdContext) MultimodalTokenize(llamaContext *Context, data []byte) ([]MtmdChunk, error) {
++	// Initialize the input chunks pointer
++	ic := C.mtmd_input_chunks_init()
++	defer C.mtmd_input_chunks_free(ic)
++
++	// Initialize an empty text prompt so we can tokenize
++	it := C.mtmd_input_text_init(C.mtmd_default_marker(), true, true)
++	defer C.mtmd_input_text_free(it)
++
++	// Initialize a bitmap with the image data
++	bm := C.mtmd_helper_bitmap_init_from_buf(c.c, (*C.uchar)(unsafe.Pointer(&data[0])), C.size_t(len(data)))
++	defer C.mtmd_bitmap_free(bm)
++
++	// Tokenize the image
++	if C.int32_t(0) != C.mtmd_tokenize(c.c, ic, it, &bm, 1) {
++		return nil, errors.New("unable to tokenize mtmd embedding from image")
++	}
++	nChunks := C.mtmd_input_chunks_size(ic)
++	numEmbed := llamaContext.Model().NEmbd()
++	outChunks := make([]MtmdChunk, 0)
++	for i := range int(nChunks) {
++		chunk := C.mtmd_input_chunks_get(ic, C.size_t(i))
++		numTokens := int(C.mtmd_input_chunk_get_n_tokens(chunk))
++		slog.Debug("chunk tokens", "index", i, "numTokens", numTokens)
++
++		if C.mtmd_input_chunk_get_type(chunk) == C.MTMD_INPUT_CHUNK_TYPE_TEXT {
++			// If this is a text chunk, add the tokens
++			cNumTokens := C.size_t(0)
++			cTokens := C.mtmd_input_chunk_get_tokens_text(chunk, &cNumTokens)
++			cTokensArr := unsafe.Slice(cTokens, int(cNumTokens))
++			tokens := make([]int, int(cNumTokens))
++			for j := range int(cNumTokens) {
++				tokens[j] = int(cTokensArr[j])
++			}
++			outChunks = append(outChunks, MtmdChunk{Tokens: tokens})
++		} else {
++			// Otherwise, encode the image chunk to embeddings
++
++			// Encode the chunk
++			if C.int32_t(0) != C.mtmd_encode_chunk(c.c, chunk) {
++				return nil, errors.New("unable to encode mtmd image chunk")
++			}
++
++			// Get the embeddings for this chunk
++			chunkEmbed := make([][]float32, numTokens)
++			chunkEmbd := C.mtmd_get_output_embd(c.c)
++			if nil == chunkEmbd {
++				return nil, errors.New("no mtmd image embedding")
++			}
++
++			// Extend the embedding array for each token
++			s := unsafe.Slice((*float32)(chunkEmbd), numTokens*numEmbed)
++			rows := make([]float32, len(s))
++			copy(rows, s)
++			for i := range numTokens {
++				chunkEmbed[i] = rows[i*numEmbed : (i+1)*numEmbed]
++			}
++			for _, e := range chunkEmbed {
++				outChunks = append(outChunks, MtmdChunk{Embed: e})
++			}
++		}
++	}
++	slog.Debug("image tokenization chunks", "totalChunks", len(outChunks))
++	return outChunks, nil
++}
++
++func (c *Context) Synchronize() {
++	C.llama_synchronize(c.c)
++}
++
++// sampling
++// TODO: this is a temporary wrapper to allow calling C++ code from CGo
++type SamplingContext struct {
++	c *C.struct_common_sampler
++}
++
++type SamplingParams struct {
++	TopK           int
++	TopP           float32
++	MinP           float32
++	TypicalP       float32
++	Temp           float32
++	RepeatLastN    int
++	PenaltyRepeat  float32
++	PenaltyFreq    float32
++	PenaltyPresent float32
++	PenalizeNl     bool
++	Seed           uint32
++	Grammar        string
++}
++
++func NewSamplingContext(model *Model, params SamplingParams) (*SamplingContext, error) {
++	var cparams C.struct_common_sampler_cparams
++	cparams.top_k = C.int32_t(params.TopK)
++	cparams.top_p = C.float(params.TopP)
++	cparams.min_p = C.float(params.MinP)
++	cparams.typical_p = C.float(params.TypicalP)
++	cparams.temp = C.float(params.Temp)
++	cparams.penalty_last_n = C.int32_t(params.RepeatLastN)
++	cparams.penalty_repeat = C.float(params.PenaltyRepeat)
++	cparams.penalty_freq = C.float(params.PenaltyFreq)
++	cparams.penalty_present = C.float(params.PenaltyPresent)
++	cparams.seed = C.uint32_t(params.Seed)
++
++	grammar := C.CString(params.Grammar)
++	defer C.free(unsafe.Pointer(grammar))
++
++	cparams.grammar = grammar
++	context := &SamplingContext{c: C.common_sampler_cinit(model.c, &cparams)}
++	if context.c == nil {
++		return nil, errors.New("unable to create sampling context")
++	}
++
++	runtime.SetFinalizer(context, func(s *SamplingContext) { C.common_sampler_cfree(s.c) })
++
++	return context, nil
++}
++
++func (s *SamplingContext) Reset() {
++	C.common_sampler_creset(s.c)
++}
++
++func (s *SamplingContext) Sample(llamaContext *Context, idx int) int {
++	return int(C.common_sampler_csample(s.c, llamaContext.c, C.int(idx)))
++}
++
++func (s *SamplingContext) Accept(id int, applyGrammar bool) {
++	C.common_sampler_caccept(s.c, C.llama_token(id), C.bool(applyGrammar))
++}
++
++// SchemaToGrammar converts the provided JSON schema to a grammar. It returns
++// nil if the provided schema is invalid JSON or an invalid JSON schema.
++func SchemaToGrammar(schema []byte) []byte {
++	cStr := C.CString(string(schema))
++	defer C.free(unsafe.Pointer(cStr))
++
++	// Allocate buffer for grammar based on schema length but with upper bound
++	maxLen := max(32768, min(1024*1024, len(schema)*4))
++	buf := make([]byte, maxLen)
++
++	// Call C function to convert schema to grammar
++	n := C.schema_to_grammar(cStr, (*C.char)(unsafe.Pointer(&buf[0])), C.size_t(maxLen))
++	if n == 0 {
++		// preserve nil
++		return nil
++	}
++	return buf[:n]
++}
++
++type TokenData struct {
++	ID    int32
++	Logit float32
++}
++
++type Grammar struct {
++	c  *C.struct_llama_grammar
++	mu sync.Mutex
++}
++
++func NewGrammar(grammar string, vocabIds []uint32, vocabValues []string, eogTokens []int32) *Grammar {
++	cGrammar := C.CString(grammar)
++	defer C.free(unsafe.Pointer(cGrammar))
++
++	cTokens := make([]C.uint32_t, len(vocabIds))
++	for i, token := range vocabIds {
++		cTokens[i] = C.uint32_t(token)
++	}
++
++	cPieces := make([]*C.char, len(vocabValues))
++	for i, piece := range vocabValues {
++		cPieces[i] = C.CString(piece)
++		defer C.free(unsafe.Pointer(cPieces[i]))
++	}
++
++	cEogTokens := make([]C.uint32_t, len(eogTokens))
++	for i, token := range eogTokens {
++		cEogTokens[i] = C.uint32_t(token)
++	}
++
++	g := C.grammar_init(cGrammar, unsafe.SliceData(cTokens), C.size_t(len(cTokens)), unsafe.SliceData(cPieces), unsafe.SliceData(cEogTokens), C.size_t(len(cEogTokens)))
++	if g == nil {
++		return nil
++	}
++
++	return &Grammar{c: g}
++}
++
++func (g *Grammar) Free() {
++	g.mu.Lock()
++	defer g.mu.Unlock()
++	if g.c != nil {
++		C.grammar_free(g.c)
++		g.c = nil
++	}
++}
++
++func (g *Grammar) Apply(tokens []TokenData) {
++	g.mu.Lock()
++	defer g.mu.Unlock()
++
++	if g.c == nil {
++		return
++	}
++
++	tds := make([]C.struct_llama_token_data, len(tokens))
++	for i, token := range tokens {
++		tds[i] = C.struct_llama_token_data{
++			id:    C.int32_t(token.ID),
++			logit: C.float(token.Logit),
++			p:     C.float(0.0),
++		}
++	}
++	tda := &C.llama_token_data_array{
++		data:     (*C.struct_llama_token_data)(unsafe.Pointer(&tds[0])),
++		size:     C.size_t(len(tokens)),
++		selected: C.int64_t(-1),
++		sorted:   C.bool(false),
++	}
++	var pinner runtime.Pinner
++	pinner.Pin(&tds[0])
++	defer pinner.Unpin()
++
++	C.grammar_apply(g.c, tda)
++	for i := range tokens {
++		tokens[i].Logit = float32(tds[i].logit)
++	}
++}
++
++func (g *Grammar) Accept(token int32) {
++	g.mu.Lock()
++	defer g.mu.Unlock()
++
++	// Check if grammar was freed
++	if g.c == nil {
++		return
++	}
++
++	C.grammar_accept(g.c, C.llama_token(token))
++}
+diff --git a/llm/server.go b/llm/server.go
+index 4f7c3760..80a2939e 100644
+--- a/llm/server.go
++++ b/llm/server.go
+@@ -176,7 +176,7 @@ func NewLlamaServer(systemInfo ml.SystemInfo, gpus []ml.DeviceInfo, modelPath st
+ 
+ 	opts.NumBatch = min(opts.NumBatch, opts.NumCtx)
+ 
+-	loadRequest := LoadRequest{LoraPath: adapters, KvSize: opts.NumCtx * numParallel, BatchSize: opts.NumBatch, Parallel: numParallel, MultiUserCache: envconfig.MultiUserCache()}
++	loadRequest := LoadRequest{LoraPath: adapters, KvSize: opts.NumCtx * numParallel, BatchSize: opts.NumBatch, Parallel: numParallel, MultiUserCache: envconfig.MultiUserCache(), ImageMinTokens: opts.ImageMinTokens}
+ 
+ 	defaultThreads := systemInfo.ThreadCount
+ 	if opts.NumThread > 0 {
+@@ -449,6 +449,7 @@ type LoadRequest struct {
+ 	NumThreads     int
+ 	GPULayers      ml.GPULayersList
+ 	MultiUserCache bool
++	ImageMinTokens int
+ 
+ 	// Legacy fields - not used with the Ollama engine
+ 	ProjectorPath string
+@@ -1514,6 +1515,12 @@ func (s *llmServer) Completion(ctx context.Context, req CompletionRequest, fn fu
+ 			if err := json.Unmarshal(evt, &c); err != nil {
+ 				return fmt.Errorf("error unmarshalling llm prediction response: %v", err)
+ 			}
++
++			chunkPreview := c.Content
++			if len(chunkPreview) > 120 {
++				chunkPreview = chunkPreview[:120] + "..."
++			}
++			logutil.Trace("llm completion chunk", "done", c.Done, "content_len", len(c.Content), "preview", chunkPreview)
+ 			switch {
+ 			case strings.TrimSpace(c.Content) == lastToken:
+ 				tokenRepeat++
+diff --git a/runner/llamarunner/cache.go b/runner/llamarunner/cache.go
+index 9ed1c292..bfa076ed 100644
+--- a/runner/llamarunner/cache.go
++++ b/runner/llamarunner/cache.go
+@@ -21,6 +21,9 @@ type InputCache struct {
+ 	multiUserCache bool
+ 
+ 	lc *llama.Context
++
++	// track if the underlying model supports safe KV shifting
++	canShift bool
+ }
+ 
+ func NewInputCache(lc *llama.Context, kvSize int, numSlots int, multiUserCache bool) (*InputCache, error) {
+@@ -37,11 +40,26 @@ func NewInputCache(lc *llama.Context, kvSize int, numSlots int, multiUserCache b
+ 		}
+ 	}
+ 
++	var canShift bool
++	if lc != nil {
++		canShift = lc.KvCacheCanShift()
++		if canShift {
++			if model := lc.Model(); model != nil {
++				nPos := model.NPosPerEmbedding()
++				if nPos != 1 {
++					slog.Debug("kv cache shift disabled for multi-position embeddings", "n_pos_per_embd", nPos)
++					canShift = false
++				}
++			}
++		}
++	}
++
+ 	return &InputCache{
+ 		numCtx:         kvSize / numSlots,
+ 		slots:          slots,
+ 		multiUserCache: multiUserCache,
+ 		lc:             lc,
++		canShift:       canShift,
+ 	}, nil
+ }
+ 
+@@ -237,7 +255,7 @@ func (c *InputCache) ShiftCacheSlot(slot *InputCacheSlot, numKeep int) error {
+ 
+ 	var shiftFailed bool
+ 
+-	if c.lc.KvCacheCanShift() {
++	if c.canShift {
+ 		// For models that support shifting, attempt to shift the KV cache
+ 		if !c.lc.KvCacheSeqRm(slot.Id, numKeep, numKeep+discard) {
+ 			shiftFailed = true
+diff --git a/runner/llamarunner/image.go b/runner/llamarunner/image.go
+index 9fc97081..388fdd8a 100644
+--- a/runner/llamarunner/image.go
++++ b/runner/llamarunner/image.go
+@@ -24,7 +24,7 @@ type ImageContext struct {
+ 	imageHash maphash.Hash
+ }
+ 
+-func NewImageContext(llamaContext *llama.Context, modelPath string) (*ImageContext, error) {
++func NewImageContext(llamaContext *llama.Context, modelPath string, imageMinTokens int) (*ImageContext, error) {
+ 	arch, err := llama.GetModelArch(modelPath)
+ 	if err != nil {
+ 		return nil, fmt.Errorf("unable to determine vision architecture: %w (%s)", err, modelPath)
+@@ -32,7 +32,7 @@ func NewImageContext(llamaContext *llama.Context, modelPath string) (*ImageConte
+ 
+ 	var c ImageContext
+ 	if arch == "clip" {
+-		c.mtmd, err = llama.NewMtmdContext(llamaContext, modelPath)
++		c.mtmd, err = llama.NewMtmdContext(llamaContext, modelPath, imageMinTokens)
+ 	} else {
+ 		return nil, fmt.Errorf("unknown vision model architecture: %s", arch)
+ 	}
+@@ -97,7 +97,7 @@ func (c *ImageContext) BatchSize(configuredBatchSize int) int {
+ }
+ 
+ func (c *ImageContext) EmbedSize(llamaContext *llama.Context) int {
+-	return llamaContext.Model().NEmbd()
++	return llamaContext.Model().NEmbdInput()
+ }
+ 
+ type imageCache struct {
+diff --git a/runner/llamarunner/runner.go b/runner/llamarunner/runner.go
+index 87b43256..61518a20 100644
+--- a/runner/llamarunner/runner.go
++++ b/runner/llamarunner/runner.go
+@@ -28,6 +28,25 @@ import (
+ 	"github.com/ollama/ollama/runner/common"
+ )
+ 
++const (
++	assistantPreface        = "assistant\n"
++	prefacePreviewRuneLimit = 64
++	maxIgnoredLeadingEOG    = 3
++)
++
++func previewForPrefaceLog(s string) string {
++	if s == "" {
++		return s
++	}
++
++	runes := []rune(s)
++	if len(runes) <= prefacePreviewRuneLimit {
++		return s
++	}
++
++	return string(runes[:prefacePreviewRuneLimit]) + "..."
++}
++
+ // input is an element of the prompt to process, either
+ // a token or an image embedding (generated from a vision projector)
+ type input struct {
+@@ -44,6 +63,9 @@ type Sequence struct {
+ 	// number of tokens predicted so far
+ 	numPredicted int
+ 
++	// number of leading end-of-generation tokens ignored before emitting text
++	ignoredEOG int
++
+ 	// prompt inputs left to evaluate
+ 	inputs []input
+ 
+@@ -53,6 +75,18 @@ type Sequence struct {
+ 	// tokens that have been generated but not returned yet (e.g. for stop sequences)
+ 	pendingResponses []string
+ 
++	// true once we have emitted at least one chunk of assistant text
++	textEmitted bool
++
++	// buffer to strip the ChatML assistant preface before surfacing text
++	prefaceBuffer string
++
++	// prevent duplicate logging before first visible token
++	prefaceLogged bool
++
++	// true once the ChatML assistant preface has been trimmed
++	trimmedAssistantPreface bool
++
+ 	// input cache being used by this sequence
+ 	cache *InputCacheSlot
+ 
+@@ -73,6 +107,9 @@ type Sequence struct {
+ 	// stop sequences
+ 	stop []string
+ 
++	// stops temporarily disabled until first user-visible token is emitted
++	deferredStops []string
++
+ 	// number of inputs to keep at the beginning when shifting context window
+ 	numKeep int
+ 
+@@ -306,18 +343,116 @@ func flushPending(seq *Sequence) bool {
+ 		joined = joined[:len(joined)-1]
+ 	}
+ 
++	prefaceBufferBefore := seq.prefaceBuffer
++	raw := joined
++	joined = trimAssistantPreface(seq, joined)
++
++	if !seq.textEmitted && !seq.prefaceLogged {
++		slog.Debug("assistant preface flush", "raw_len", len(raw), "raw_preview", previewForPrefaceLog(raw), "trimmed_len", len(joined), "trimmed_preview", previewForPrefaceLog(joined), "preface_buffer_before_len", len(prefaceBufferBefore), "preface_buffer_after_len", len(seq.prefaceBuffer), "trimmed_preface", seq.trimmedAssistantPreface, "deferred_stops", len(seq.deferredStops))
++		seq.prefaceLogged = true
++	}
++
+ 	if len(joined) == 0 {
+ 		return true
+ 	}
+ 
++	if !seq.textEmitted {
++		seq.restoreDeferredStops()
++	}
++
+ 	select {
+ 	case seq.responses <- joined:
++		seq.textEmitted = true
+ 		return true
+ 	case <-seq.quit:
+ 		return false
+ 	}
+ }
+ 
++func (seq *Sequence) deferStop(stop string) {
++	if len(seq.stop) == 0 {
++		return
++	}
++
++	filtered := seq.stop[:0]
++	for _, candidate := range seq.stop {
++		if candidate == stop {
++			seq.deferredStops = append(seq.deferredStops, candidate)
++			continue
++		}
++		filtered = append(filtered, candidate)
++	}
++
++	seq.stop = filtered
++}
++
++func (seq *Sequence) restoreDeferredStops() {
++	if len(seq.deferredStops) == 0 {
++		return
++	}
++
++	seq.stop = append(seq.stop, seq.deferredStops...)
++	seq.deferredStops = nil
++}
++
++func trimAssistantPreface(seq *Sequence, chunk string) string {
++	if seq.trimmedAssistantPreface {
++		return chunk
++	}
++
++	if chunk == "" && seq.prefaceBuffer == "" {
++		return ""
++	}
++
++	combined := seq.prefaceBuffer + chunk
++	match := assistantPrefaceMatchLen(combined)
++
++	if len(combined) < len(assistantPreface) && match == len(combined) {
++		seq.prefaceBuffer = combined
++		return ""
++	}
++
++	if strings.HasPrefix(combined, assistantPreface) {
++		seq.trimmedAssistantPreface = true
++		seq.prefaceBuffer = ""
++		return combined[len(assistantPreface):]
++	}
++
++	// If the generated text diverges from the expected preface, flush everything as-is.
++	seq.trimmedAssistantPreface = true
++	seq.prefaceBuffer = ""
++	return combined
++}
++
++func assistantPrefaceMatchLen(s string) int {
++	max := len(assistantPreface)
++	if len(s) < max {
++		max = len(s)
++	}
++
++	for i := 0; i < max; i++ {
++		if s[i] != assistantPreface[i] {
++			return i
++		}
++	}
++
++	return max
++}
++
++func hasOnlyAssistantPreface(seq *Sequence) bool {
++	if seq.trimmedAssistantPreface {
++		return false
++	}
++
++	combined := seq.prefaceBuffer + strings.Join(seq.pendingResponses, "")
++	if combined == "" {
++		return false
++	}
++
++	match := assistantPrefaceMatchLen(combined)
++	return match == len(combined) && len(combined) <= len(assistantPreface)
++}
++
+ func (s *Server) removeSequence(seqIndex int, reason llm.DoneReason) {
+ 	seq := s.seqs[seqIndex]
+ 
+@@ -509,12 +644,18 @@ func (s *Server) processBatch(tokenBatch *llama.Batch, embedBatch *llama.Batch)
+ 			continue
+ 		}
+ 
+-		// sample a token
+-		token := seq.samplingCtx.Sample(s.lc, seq.iBatch)
+-		seq.samplingCtx.Accept(token, true)
+-		piece := s.model.TokenToPiece(token)
+-
+-		seq.numPredicted++
++		// sample a token but only accept once we know it will be kept
++		var token int
++		for {
++			token = seq.samplingCtx.Sample(s.lc, seq.iBatch)
++			if s.model.TokenIsEog(token) && !seq.textEmitted && seq.ignoredEOG < maxIgnoredLeadingEOG {
++				seq.ignoredEOG++
++				slog.Debug("ignoring leading eog", "count", seq.ignoredEOG)
++				continue
++			}
++			break
++		}
++		seq.inputs = []input{{token: token}}
+ 
+ 		// if it's an end of sequence token, break
+ 		if s.model.TokenIsEog(token) {
+@@ -526,8 +667,9 @@ func (s *Server) processBatch(tokenBatch *llama.Batch, embedBatch *llama.Batch)
+ 			continue
+ 		}
+ 
+-		seq.inputs = []input{{token: token}}
+-
++		seq.samplingCtx.Accept(token, true)
++		seq.numPredicted++
++		piece := s.model.TokenToPiece(token)
+ 		seq.pendingResponses = append(seq.pendingResponses, piece)
+ 		sequence := strings.Join(seq.pendingResponses, "")
+ 
+@@ -538,6 +680,7 @@ func (s *Server) processBatch(tokenBatch *llama.Batch, embedBatch *llama.Batch)
+ 			origLen := len(seq.pendingResponses)
+ 			seq.pendingResponses, tokenTruncated = common.TruncateStop(seq.pendingResponses, stop)
+ 			newLen := len(seq.pendingResponses)
++			truncatedSequenceEmpty := len(seq.pendingResponses) == 0 || hasOnlyAssistantPreface(seq)
+ 
+ 			// Update the cache based on the tokens that will be returned:
+ 			// - We have 1 token more than is currently in the cache because
+@@ -553,6 +696,13 @@ func (s *Server) processBatch(tokenBatch *llama.Batch, embedBatch *llama.Batch)
+ 			}
+ 			seq.cache.Inputs = seq.cache.Inputs[:tokenLen]
+ 
++			if truncatedSequenceEmpty && !seq.textEmitted {
++				// Skip treating a leading stop sequence as completion so generation can continue.
++				slog.Debug("skipping leading stop", "stop", stop)
++				seq.deferStop(stop)
++				continue
++			}
++
+ 			s.removeSequence(i, llm.DoneReasonStop)
+ 			continue
+ 		}
+@@ -692,6 +842,8 @@ func (s *Server) completion(w http.ResponseWriter, r *http.Request) {
+ 					http.Error(w, fmt.Sprintf("failed to encode final response: %v", err), http.StatusInternalServerError)
+ 				}
+ 
++				flusher.Flush()
++
+ 				return
+ 			}
+ 		}
+@@ -786,6 +938,7 @@ func (s *Server) loadModel(
+ 	flashAttention bool,
+ 	threads int,
+ 	multiUserCache bool,
++	imageMinTokens int,
+ ) {
+ 	var err error
+ 	s.model, err = llama.LoadModelFromFile(mpath, params)
+@@ -795,6 +948,7 @@ func (s *Server) loadModel(
+ 
+ 	ctxParams := llama.NewContextParams(kvSize, s.batchSize*s.parallel, s.parallel, threads, flashAttention, kvCacheType)
+ 	s.lc, err = llama.NewContextWithModel(s.model, ctxParams)
++
+ 	if err != nil {
+ 		panic(err)
+ 	}
+@@ -808,7 +962,7 @@ func (s *Server) loadModel(
+ 
+ 	if ppath != "" {
+ 		var err error
+-		s.image, err = NewImageContext(s.lc, ppath)
++		s.image, err = NewImageContext(s.lc, ppath, imageMinTokens)
+ 		if err != nil {
+ 			panic(err)
+ 		}
+@@ -876,7 +1030,7 @@ func (s *Server) load(w http.ResponseWriter, r *http.Request) {
+ 		}
+ 
+ 		s.status = llm.ServerStatusLoadingModel
+-		go s.loadModel(params, s.modelPath, req.LoraPath, req.ProjectorPath, req.KvSize, req.KvCacheType, req.FlashAttention, req.NumThreads, req.MultiUserCache)
++		go s.loadModel(params, s.modelPath, req.LoraPath, req.ProjectorPath, req.KvSize, req.KvCacheType, req.FlashAttention, req.NumThreads, req.MultiUserCache, req.ImageMinTokens)
+ 
+ 	case llm.LoadOperationClose:
+ 		// No-op for us
+diff --git a/server/prompt.go b/server/prompt.go
+index 21759198..51035e4a 100644
+--- a/server/prompt.go
++++ b/server/prompt.go
+@@ -101,6 +101,8 @@ func chatPrompt(ctx context.Context, m *Model, tokenize tokenizeFunc, opts *api.
+ 		return "", nil, err
+ 	}
+ 
++	slog.Debug("rendered chat prompt", "model", m.Name, "prompt", p, "image_count", len(images), "messages", len(msgs[currMsgIdx:]))
++
+ 	return p, images, nil
+ }
+ 
+diff --git a/server/routes.go b/server/routes.go
+index 28d70d62..f56807ed 100644
+--- a/server/routes.go
++++ b/server/routes.go
+@@ -2284,6 +2284,12 @@ func (s *Server) ChatHandler(c *gin.Context) {
+ 		resp.Message.Content = sbContent.String()
+ 		resp.Message.Thinking = sbThinking.String()
+ 
++		aggregatePreview := resp.Message.Content
++		if len(aggregatePreview) > 200 {
++			aggregatePreview = aggregatePreview[:200] + "..."
++		}
++		logutil.Trace("chat aggregate response", "content_len", len(resp.Message.Content), "thinking_len", len(resp.Message.Thinking), "preview", aggregatePreview)
++
+ 		if len(toolCalls) > 0 {
+ 			resp.Message.ToolCalls = toolCalls
+ 		}

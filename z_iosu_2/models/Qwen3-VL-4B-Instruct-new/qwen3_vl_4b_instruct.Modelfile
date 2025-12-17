@@ -1,0 +1,13 @@
+﻿FROM C:\IA\tools\ollama\Z_Iosu\models\Qwen3-VL-4B-Instruct-new
+
+TEMPLATE """{{- if .System }}<|im_start|>system
+{{ .System }}<|im_end|>
+{{ end }}<|im_start|>user
+{{ .Prompt }}<|im_end|>
+<|im_start|>assistant
+"""
+PARAMETER temperature 0.2
+PARAMETER num_ctx 4096
+PARAMETER num_gpu -1
+PARAMETER stop "<|im_end|>"
+PARAMETER stop "<|im_start|>"
