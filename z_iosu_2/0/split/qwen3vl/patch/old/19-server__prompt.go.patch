@@ -1,0 +1,19 @@
+commit fcd2d784b8edc21f950e520c1093869666408f58
+Author: iosub <iosub@gabiges.com>
+Date:   Thu Nov 13 19:26:08 2025 -0500
+
+    Backup snapshot 2025-11-12
+
+diff --git a/server/prompt.go b/server/prompt.go
+index 21759198..51035e4a 100644
+--- a/server/prompt.go
++++ b/server/prompt.go
+@@ -101,6 +101,8 @@ func chatPrompt(ctx context.Context, m *Model, tokenize tokenizeFunc, opts *api.
+ 		return "", nil, err
+ 	}
+ 
++	slog.Debug("rendered chat prompt", "model", m.Name, "prompt", p, "image_count", len(images), "messages", len(msgs[currMsgIdx:]))
++
+ 	return p, images, nil
+ }
+ 

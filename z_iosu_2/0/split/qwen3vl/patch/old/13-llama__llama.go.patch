@@ -1,0 +1,89 @@
+commit fcd2d784b8edc21f950e520c1093869666408f58
+Author: iosub <iosub@gabiges.com>
+Date:   Thu Nov 13 19:26:08 2025 -0500
+
+    Backup snapshot 2025-11-12
+
+diff --git a/llama/llama.go b/llama/llama.go
+index a5e1a36a..126defe3 100644
+--- a/llama/llama.go
++++ b/llama/llama.go
+@@ -201,13 +201,8 @@ func (c *Context) GetEmbeddingsSeq(seqId int) []float32 {
+ 		return nil
+ 	}
+ 
+-	stride := int(C.llama_get_embeddings_stride(c.c))
+-	if stride <= 0 {
+-		return nil
+-	}
+-
+-	embeddings := make([]float32, stride)
+-	_ = copy(embeddings, unsafe.Slice((*float32)(e), stride))
++	embeddings := make([]float32, c.Model().NEmbdInput())
++	_ = copy(embeddings, unsafe.Slice((*float32)(e), c.Model().NEmbdInput()))
+ 	return embeddings
+ }
+ 
+@@ -217,13 +212,8 @@ func (c *Context) GetEmbeddingsIth(i int) []float32 {
+ 		return nil
+ 	}
+ 
+-	stride := int(C.llama_get_embeddings_stride(c.c))
+-	if stride <= 0 {
+-		return nil
+-	}
+-
+-	embeddings := make([]float32, stride)
+-	_ = copy(embeddings, unsafe.Slice((*float32)(e), stride))
++	embeddings := make([]float32, c.Model().NEmbdInput())
++	_ = copy(embeddings, unsafe.Slice((*float32)(e), c.Model().NEmbdInput()))
+ 	return embeddings
+ }
+ 
+@@ -301,6 +291,10 @@ func (m *Model) NumVocab() int {
+ 	return int(C.llama_vocab_n_tokens(m.Vocab()))
+ }
+ 
++func (m *Model) NPosPerEmbedding() int {
++	return int(C.llama_model_n_pos_per_embd(m.c))
++}
++
+ func (m *Model) TokenIsEog(token int) bool {
+ 	return bool(C.llama_vocab_is_eog(m.Vocab(), C.llama_token(token)))
+ }
+@@ -489,6 +483,10 @@ func (m *Model) Tokenize(text string, addSpecial bool, parseSpecial bool) ([]int
+ }
+ 
+ func (m *Model) NEmbd() int {
++	return int(C.llama_model_n_embd(m.c))
++}
++
++func (m *Model) NEmbdInput() int {
+ 	return int(C.llama_model_n_embd_inp(m.c))
+ }
+ 
+@@ -497,11 +495,14 @@ type MtmdContext struct {
+ 	c *C.struct_mtmd_context
+ }
+ 
+-func NewMtmdContext(llamaContext *Context, modelPath string) (*MtmdContext, error) {
++func NewMtmdContext(llamaContext *Context, modelPath string, imageMinTokens int) (*MtmdContext, error) {
+ 	mp := C.CString(modelPath)
+ 	defer C.free(unsafe.Pointer(mp))
+ 	// TODO: Support non-default params
+ 	cp := C.mtmd_context_params_default()
++	if imageMinTokens > 0 {
++		cp.image_min_tokens = C.int(imageMinTokens)
++	}
+ 
+ 	// NOTE: The model and projector embedding lengths are checked during init
+ 	c := C.mtmd_init_from_file(mp, C.llama_get_model(llamaContext.c), cp)
+@@ -539,7 +540,7 @@ func (c *MtmdContext) MultimodalTokenize(llamaContext *Context, data []byte) ([]
+ 		return nil, errors.New("unable to tokenize mtmd embedding from image")
+ 	}
+ 	nChunks := C.mtmd_input_chunks_size(ic)
+-	numEmbed := llamaContext.Model().NEmbd()
++	numEmbed := llamaContext.Model().NEmbdInput()
+ 	outChunks := make([]MtmdChunk, 0)
+ 	for i := range int(nChunks) {
+ 		chunk := C.mtmd_input_chunks_get(ic, C.size_t(i))
