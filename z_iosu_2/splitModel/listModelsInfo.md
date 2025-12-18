@@ -10,3 +10,6 @@ Incluye PR #18042 (GLM4V vision encoder): https://github.com/ggml-org/llama.cpp/
 UPSTREAM=https://github.com/ggml-org/llama.cpp.git
 
 FETCH_HEAD=ec98e2002
+
+
+https://github.com/DevCheck-StockholmUni
