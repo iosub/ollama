@@ -13,3 +13,6 @@ FETCH_HEAD=ec98e2002
 
 
 https://github.com/DevCheck-StockholmUni
+
+
+https://github.com/iosub/ollama/tree/feat/mrope-main
