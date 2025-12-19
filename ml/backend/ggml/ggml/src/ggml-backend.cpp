@@ -1183,7 +1183,31 @@ void ggml_backend_sched_split_graph(ggml_backend_sched_t sched, struct ggml_cgra
         for (int b = 0; b < sched->n_backends && *cur_backend_id == -1; b++) {
             ggml_backend_sched_set_if_supported(sched, node, b, cur_backend_id);
         }
-        GGML_ASSERT(*cur_backend_id != -1);
+        if (*cur_backend_id == -1) {
+            fprintf(stderr, "%s: node %d (%s, %s) has no backend\n", __func__, i, ggml_op_name(node->op), node->name);
+            fprintf(stderr, "%s: sched->n_backends=%d\n", __func__, sched->n_backends);
+            for (int b = 0; b < sched->n_backends; b++) {
+                ggml_backend_t be = sched->backends[b];
+                fprintf(stderr, "%s: backend[%d]=%s supports_op=%d\n", __func__, b, ggml_backend_name(be), (int) ggml_backend_supports_op(be, node));
+                for (int j = 0; j < GGML_MAX_SRC; j++) {
+                    struct ggml_tensor * src = node->src[j];
+                    if (src == NULL) {
+                        continue;
+                    }
+
+                    ggml_backend_buffer_t buf = src->view_src ? src->view_src->buffer : src->buffer;
+                    const char * buf_name = buf ? ggml_backend_buffer_name(buf) : "<NULL>";
+                    const char * buft_name = (buf && buf->buft) ? ggml_backend_buft_name(buf->buft) : "<NULL>";
+
+                    fprintf(stderr,
+                        "%s:  src[%d]=%s op=%s buf=%s buft=%s assigned_backend_id=%d supported_buft_on_backend[%d]=%d\n",
+                        __func__, j, (src->name[0] != '\0') ? src->name : "<noname>", ggml_op_name(src->op),
+                        buf_name, buft_name, tensor_backend_id(src), b,
+                        (int) ggml_backend_sched_buffer_supported(sched, src, b));
+                }
+            }
+            GGML_ASSERT(*cur_backend_id != -1);
+        }
     }
 
     // pass 5: split graph, find tensors that need to be copied

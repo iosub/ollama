@@ -1216,6 +1216,11 @@ ggml_tensor * llm_graph_context::build_inp_embd(ggml_tensor * tok_embd) const {
         ggml_set_input(inp->tokens);
         res->t_tokens = inp->tokens;
 
+        // Ensure tokens live on the CPU backend. For some models, token embedding weights may be forced
+        // to CPU/host buffers (e.g. when CUDA_Host is not compatible). If tokens are auto-assigned to CUDA,
+        // the GET_ROWS node ends up with mixed-backend inputs and can fail scheduling.
+        ggml_backend_sched_set_tensor_backend(sched, inp->tokens, backend_cpu);
+
         cur = ggml_get_rows(ctx0, tok_embd, inp->tokens);
 
         // apply lora for embedding tokens if needed

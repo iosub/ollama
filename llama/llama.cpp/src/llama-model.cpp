@@ -344,6 +344,14 @@ static buft_list_t make_cpu_buft_list(const std::vector<ggml_backend_dev_t> & de
             ggml_backend_buffer_type_t buft = ggml_backend_dev_host_buffer_type(dev);
             if (buft) {
                 buft_list.emplace_back(dev, buft);
+
+                // If the host buffer type can't support a particular weight (e.g. quantized token embeddings),
+                // prefer falling back to the device default buffer type (e.g. CUDA0) rather than CPU.
+                // This prevents early graph scheduling failures for GPU-offloaded graphs.
+                ggml_backend_buffer_type_t dev_buft = ggml_backend_dev_buffer_type(dev);
+                if (dev_buft && dev_buft != ggml_backend_cpu_buffer_type()) {
+                    buft_list.emplace_back(dev, dev_buft);
+                }
                 break;
             }
         }

@@ -10,18 +10,17 @@ package ggml
 // extern void sink(int level, char *text, void *user_data);
 // static struct ggml_backend_feature * first_feature(ggml_backend_get_features_t fp, ggml_backend_reg_t reg) { return fp(reg); }
 // static struct ggml_backend_feature * next_feature(struct ggml_backend_feature * feature) { return &feature[1]; }
-/*
-typedef enum { COMPILER_CLANG, COMPILER_GNUC, COMPILER_UNKNOWN } COMPILER;
-static COMPILER compiler_name(void) {
-#if defined(__clang__)
-	return COMPILER_CLANG;
-#elif defined(__GNUC__)
-	return COMPILER_GNUC;
-#else
-	return COMPILER_UNKNOWN;
-#endif
-}
-*/
+//
+// typedef enum { COMPILER_CLANG, COMPILER_GNUC, COMPILER_UNKNOWN } COMPILER;
+// static COMPILER compiler_name(void) {
+// #if defined(__clang__)
+// 	return COMPILER_CLANG;
+// #elif defined(__GNUC__)
+// 	return COMPILER_GNUC;
+// #else
+// 	return COMPILER_UNKNOWN;
+// #endif
+// }
 import "C"
 
 import (
