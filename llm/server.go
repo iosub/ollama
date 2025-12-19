@@ -155,7 +155,7 @@ func NewLlamaServer(systemInfo ml.SystemInfo, gpus []ml.DeviceInfo, modelPath st
 		}
 	}
 	if textProcessor == nil {
-		llamaModel, err = llama.LoadModelFromFile(modelPath, llama.ModelParams{VocabOnly: true})
+		llamaModel, err = llama.LoadModelFromFile(modelPath, nil, llama.ModelParams{VocabOnly: true})
 		if err != nil {
 			return nil, err
 		}

@@ -51,8 +51,34 @@ func (c *ImageContext) Free(modelPath string) {
 		return
 	}
 
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Clear image cache to prevent stale data
+	c.ClearCacheUnsafe()
+
 	if c.mtmd != nil {
 		c.mtmd.Free()
+		c.mtmd = nil
+	}
+}
+
+// ClearCache clears all cached image embeddings (thread-safe)
+func (c *ImageContext) ClearCache() {
+	if c == nil {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.ClearCacheUnsafe()
+}
+
+// ClearCacheUnsafe clears cache without locking (caller must hold mu)
+func (c *ImageContext) ClearCacheUnsafe() {
+	for i := range c.images {
+		c.images[i].key = 0
+		c.images[i].val = nil
+		c.images[i].lastUsed = time.Time{}
 	}
 }
 
@@ -93,11 +119,31 @@ func (c *ImageContext) BatchSize(configuredBatchSize int) int {
 		return 0
 	}
 
+	// For M-RoPE models (Qwen2-VL, Qwen3-VL), we need a larger batch to fit
+	// entire images. Use 8192 to be safe for large images.
+	if c.UsesMRoPE() {
+		const mropeBatchSize = 8192
+		if configuredBatchSize < mropeBatchSize {
+			slog.Info("M-RoPE batch size increased for large images", "configured", configuredBatchSize, "actual", mropeBatchSize)
+			return mropeBatchSize
+		}
+	}
+
 	return configuredBatchSize
 }
 
 func (c *ImageContext) EmbedSize(llamaContext *llama.Context) int {
-	return llamaContext.Model().NEmbd()
+	// For multimodal models, use NEmbdInp() which returns the vision projector
+	// embedding dimension instead of NEmbd() which returns the text model dimension.
+	return llamaContext.Model().NEmbdInp()
+}
+
+// UsesMRoPE returns true if the vision model requires M-RoPE (Qwen2-VL, Qwen3-VL)
+func (c *ImageContext) UsesMRoPE() bool {
+	if c == nil || c.mtmd == nil {
+		return false
+	}
+	return c.mtmd.UsesMRoPE()
 }
 
 type imageCache struct {

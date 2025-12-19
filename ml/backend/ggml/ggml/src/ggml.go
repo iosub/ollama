@@ -51,6 +51,98 @@ func sink(level C.int, text *C.char, _ unsafe.Pointer) {
 	}
 }
 
+func isEnvBoolTrue(key string) bool {
+	if s, ok := os.LookupEnv(key); ok {
+		s = strings.TrimSpace(strings.Trim(s, "\"'"))
+		if s == "" {
+			return false
+		}
+		b, err := strconv.ParseBool(s)
+		if err != nil {
+			return false
+		}
+		return b
+	}
+
+	return false
+}
+
+func hasBackendPluginExtension(name string) bool {
+	name = strings.ToLower(name)
+	switch runtime.GOOS {
+	case "windows":
+		return strings.HasSuffix(name, ".dll")
+	case "darwin":
+		return strings.HasSuffix(name, ".dylib")
+	default:
+		// In practice these should be unversioned .so files, but allow
+		// version-suffixed .so.* to be safe.
+		return strings.HasSuffix(name, ".so") || strings.Contains(name, ".so.")
+	}
+}
+
+func isVulkanBackendName(lowerName string) bool {
+	// Be conservative: only match the explicit Vulkan plugin naming patterns.
+	return strings.Contains(lowerName, "vulkan") || strings.Contains(lowerName, "ggml-vk")
+}
+
+func loadBackendPlugin(path string) {
+	cpath := C.CString(path)
+	defer C.free(unsafe.Pointer(cpath))
+	_ = C.ggml_backend_load(cpath)
+}
+
+func loadBackendsFromDirFiltered(dir string) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		slog.Debug("failed to read backend directory", "dir", dir, "error", err)
+		return
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+
+		name := entry.Name()
+		lname := strings.ToLower(name)
+		if !strings.HasPrefix(lname, "ggml-") || !hasBackendPluginExtension(lname) {
+			continue
+		}
+
+		// Not a backend plugin; it is a shared dependency.
+		if strings.HasPrefix(lname, "ggml-base") {
+			continue
+		}
+
+		// Avoid loading CPU micro-architecture variants explicitly; ggml has a CPU
+		// backend already linked in, and loading incompatible variants can fail.
+		if strings.HasPrefix(lname, "ggml-cpu-") {
+			continue
+		}
+
+		// Respect OLLAMA_VULKAN=0 by not loading the Vulkan plugin at all.
+		if isVulkanBackendName(lname) {
+			continue
+		}
+
+		loadBackendPlugin(filepath.Join(dir, name))
+	}
+
+	// Preserve ggml's out-of-tree backend loading behavior.
+	if backendPath, ok := os.LookupEnv("GGML_BACKEND_PATH"); ok {
+		backendPath = strings.TrimSpace(backendPath)
+		if backendPath != "" {
+			// Respect OLLAMA_VULKAN=0 even if a user points GGML_BACKEND_PATH at
+			// the Vulkan plugin explicitly.
+			if isVulkanBackendName(strings.ToLower(filepath.Base(backendPath))) {
+				return
+			}
+			loadBackendPlugin(backendPath)
+		}
+	}
+}
+
 var OnceLoad = sync.OnceFunc(func() {
 	exe, err := os.Executable()
 	if err != nil {
@@ -77,6 +169,7 @@ var OnceLoad = sync.OnceFunc(func() {
 
 	libPaths = filepath.SplitList(paths)
 	visited := make(map[string]struct{}, len(libPaths))
+	enableVulkan := isEnvBoolTrue("OLLAMA_VULKAN")
 	for _, path := range libPaths {
 		abspath, err := filepath.Abs(path)
 		if err != nil {
@@ -90,12 +183,17 @@ var OnceLoad = sync.OnceFunc(func() {
 		}
 
 		if _, ok := visited[abspath]; !ok {
-			func() {
-				slog.Debug("ggml backend load all from path", "path", abspath)
-				cpath := C.CString(abspath)
-				defer C.free(unsafe.Pointer(cpath))
-				C.ggml_backend_load_all_from_path(cpath)
-			}()
+			if enableVulkan {
+				func() {
+					slog.Debug("ggml backend load all from path", "path", abspath)
+					cpath := C.CString(abspath)
+					defer C.free(unsafe.Pointer(cpath))
+					C.ggml_backend_load_all_from_path(cpath)
+				}()
+			} else {
+				slog.Debug("ggml backend load from path (vulkan disabled)", "path", abspath)
+				loadBackendsFromDirFiltered(abspath)
+			}
 
 			visited[abspath] = struct{}{}
 		}

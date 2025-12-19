@@ -1,0 +1,36 @@
+diff --git a/runner/llamarunner/cache_test.go b/runner/llamarunner/cache_test.go
+index c0656dd9..207c6d5e 100644
+--- a/runner/llamarunner/cache_test.go
++++ b/runner/llamarunner/cache_test.go
+@@ -6,6 +6,9 @@ import (
+ )
+ 
+ func TestCountCommon(t *testing.T) {
++	sharedEmb1 := []float32{0.1, 0.2, 0.3}
++	sharedEmb2 := []float32{0.2, 0.3, 0.4}
++
+ 	tests := []struct {
+ 		name     string
+ 		t1       []input
+@@ -26,8 +29,8 @@ func TestCountCommon(t *testing.T) {
+ 		},
+ 		{
+ 			name:     "Embeddings Prefix",
+-			t1:       []input{{embed: []float32{0.1, 0.2, 0.3}}},
+-			t2:       []input{{embed: []float32{0.1, 0.2, 0.3}}, {embed: []float32{0.4, 0.5, 0.6}}, {embed: []float32{0.7}}},
++			t1:       []input{{embed: sharedEmb1}},
++			t2:       []input{{embed: sharedEmb1}, {embed: []float32{0.4, 0.5, 0.6}}, {embed: []float32{0.7}}},
+ 			expected: 1,
+ 		},
+ 		{
+@@ -38,8 +41,8 @@ func TestCountCommon(t *testing.T) {
+ 		},
+ 		{
+ 			name:     "Mixed",
+-			t1:       []input{{token: 1}, {embed: []float32{0.2, 0.3, 0.4}}},
+-			t2:       []input{{token: 1}, {embed: []float32{0.2, 0.3, 0.4}}, {token: 5}},
++			t1:       []input{{token: 1}, {embed: sharedEmb2}},
++			t2:       []input{{token: 1}, {embed: sharedEmb2}, {token: 5}},
+ 			expected: 2,
+ 		},
+ 		{

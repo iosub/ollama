@@ -1,0 +1,13 @@
+diff --git a/llm/server.go b/llm/server.go
+index a89027b0..8bbcdc6a 100644
+--- a/llm/server.go
++++ b/llm/server.go
+@@ -155,7 +155,7 @@ func NewLlamaServer(systemInfo ml.SystemInfo, gpus []ml.DeviceInfo, modelPath st
+ 		}
+ 	}
+ 	if textProcessor == nil {
+-		llamaModel, err = llama.LoadModelFromFile(modelPath, llama.ModelParams{VocabOnly: true})
++		llamaModel, err = llama.LoadModelFromFile(modelPath, nil, llama.ModelParams{VocabOnly: true})
+ 		if err != nil {
+ 			return nil, err
+ 		}
