@@ -1,0 +1,15 @@
+commit fcd2d784b8edc21f950e520c1093869666408f58
+Author: iosub <iosub@gabiges.com>
+Date:   Thu Nov 13 19:26:08 2025 -0500
+
+    Backup snapshot 2025-11-12
+
+diff --git a/.gitignore b/.gitignore
+index eabf94c2..97ea4a77 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -15,3 +15,4 @@ __debug_bin*
+ llama/build
+ llama/vendor
+ /ollama
++Z_Iosu/logs2/

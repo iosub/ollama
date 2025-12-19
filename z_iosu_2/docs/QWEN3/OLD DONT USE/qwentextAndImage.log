@@ -1,0 +1,108 @@
+lama_kv_cache:        CPU KV buffer size =   396.46 MiB
+time=2025-11-05T01:15:59.367-05:00 level=DEBUG source=server.go:1295 msg="model load progress 1.00"
+llama_kv_cache: size =  396.46 MiB ( 10024 cells,  36 layers,  1/1 seqs), K (q4_0):  198.23 MiB, V (q4_0):  198.23 MiB
+llama_context: enumerating backends
+llama_context: backend_ptrs.size() = 1
+llama_context: max_nodes = 3192
+llama_context: reserving full memory module
+llama_context: worst-case: n_tokens = 512, n_seqs = 1, n_outputs = 1
+graph_reserve: reserving a graph for ubatch with n_tokens =  512, n_seqs =  1, n_outputs =  512
+graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+graph_reserve: reserving a graph for ubatch with n_tokens =  512, n_seqs =  1, n_outputs =  512
+llama_context:        CPU compute buffer size =   312.75 MiB
+llama_context: graph nodes  = 1267
+llama_context: graph splits = 1
+clip_model_loader: model name:   Qwen3-Vl-8B-Instruct
+clip_model_loader: description:
+clip_model_loader: GGUF version: 3
+clip_model_loader: alignment:    32
+clip_model_loader: n_tensors:    352
+clip_model_loader: n_kv:         31
+
+clip_model_loader: has vision encoder
+clip_ctx: CLIP using CPU backend
+load_hparams: projector:          qwen3vl_merger
+load_hparams: n_embd:             1152
+load_hparams: n_head:             16
+load_hparams: n_ff:               4304
+load_hparams: n_layer:            27
+load_hparams: ffn_op:             gelu
+load_hparams: projection_dim:     4096
+
+--- vision hparams ---
+load_hparams: image_size:         1024
+load_hparams: patch_size:         16
+load_hparams: has_llava_proj:     0
+load_hparams: minicpmv_version:   0
+load_hparams: proj_scale_factor:  0
+load_hparams: n_wa_pattern:       0
+load_hparams: spatial_merge_size: 2
+
+load_hparams: model size:         1105.32 MiB
+load_hparams: metadata size:      0.12 MiB
+time=2025-11-05T01:15:59.618-05:00 level=DEBUG source=server.go:1298 msg="model load completed, waiting for server to become available" status="llm server loading model"
+alloc_compute_meta:        CPU compute buffer size =     3.00 MiB
+time=2025-11-05T01:16:00.369-05:00 level=INFO source=server.go:1289 msg="llama runner started in 2.56 seconds"
+time=2025-11-05T01:16:00.369-05:00 level=INFO source=sched.go:493 msg="loaded runners" count=1
+time=2025-11-05T01:16:00.369-05:00 level=INFO source=server.go:1251 msg="waiting for llama runner to start responding"
+time=2025-11-05T01:16:00.369-05:00 level=INFO source=server.go:1289 msg="llama runner started in 2.56 seconds"
+time=2025-11-05T01:16:00.369-05:00 level=DEBUG source=sched.go:505 msg="finished setting up" runner.name=hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M runner.size="5.8 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=19292 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89 runner.num_ctx=10024
+[GIN] 2025/11/05 - 01:16:00 | 200 |    2.7757339s |       127.0.0.1 | POST     "/api/generate"
+time=2025-11-05T01:16:00.369-05:00 level=DEBUG source=sched.go:513 msg="context for request finished"
+time=2025-11-05T01:16:00.369-05:00 level=DEBUG source=sched.go:283 msg="runner with non-zero duration has gone idle, adding timer" runner.name=hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M runner.size="5.8 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=19292 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89 runner.num_ctx=10024 duration=5m0s
+time=2025-11-05T01:16:00.370-05:00 level=DEBUG source=sched.go:301 msg="after processing request finished event" runner.name=hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M runner.size="5.8 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=19292 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89 runner.num_ctx=10024 refCount=0
+time=2025-11-05T01:16:11.972-05:00 level=DEBUG source=sched.go:602 msg="evaluating already loaded" model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89
+time=2025-11-05T01:16:11.973-05:00 level=DEBUG source=server.go:1401 msg="completion request" images=1 prompt=83 format=""
+time=2025-11-05T01:16:11.973-05:00 level=TRACE source=server.go:1402 msg="completion request" prompt="<|im_start|>user\n[img-0]\"\"  extrae todos los datos<|im_end|>\n<|im_start|>assistant\n"
+time=2025-11-05T01:16:12.076-05:00 level=DEBUG source=llama.go:541 msg="chunk tokens" index=0 numTokens=1
+time=2025-11-05T01:16:12.076-05:00 level=DEBUG source=llama.go:541 msg="chunk tokens" index=1 numTokens=736
+time=2025-11-05T01:16:35.109-05:00 level=DEBUG source=llama.go:541 msg="chunk tokens" index=2 numTokens=1
+time=2025-11-05T01:16:35.109-05:00 level=DEBUG source=llama.go:580 msg="image tokenization chunks" totalChunks=738
+time=2025-11-05T01:16:35.109-05:00 level=DEBUG source=image.go:145 msg="storing image embeddings in cache" entry=0 used=0001-01-01T00:00:00.000Z
+time=2025-11-05T01:16:35.110-05:00 level=DEBUG source=cache.go:104 msg="loading cache slot" id=0 cache=0 prompt=753 used=0 remaining=753     
+
+
+load_hparams: model size:         1105.32 MiB
+load_hparams: metadata size:      0.12 MiB
+time=2025-11-05T01:15:59.618-05:00 level=DEBUG source=server.go:1298 msg="model load completed, waiting for server to become available" status="llm server loading model"
+alloc_compute_meta:        CPU compute buffer size =     3.00 MiB
+time=2025-11-05T01:16:00.369-05:00 level=INFO source=server.go:1289 msg="llama runner started in 2.56 seconds"
+time=2025-11-05T01:16:00.369-05:00 level=INFO source=sched.go:493 msg="loaded runners" count=1
+time=2025-11-05T01:16:00.369-05:00 level=INFO source=server.go:1251 msg="waiting for llama runner to start responding"
+time=2025-11-05T01:16:00.369-05:00 level=INFO source=server.go:1289 msg="llama runner started in 2.56 seconds"
+time=2025-11-05T01:16:00.369-05:00 level=DEBUG source=sched.go:505 msg="finished setting up" runner.name=hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M runner.size="5.8 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=19292 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89 runner.num_ctx=10024
+[GIN] 2025/11/05 - 01:16:00 | 200 |    2.7757339s |       127.0.0.1 | POST     "/api/generate"
+time=2025-11-05T01:16:00.369-05:00 level=DEBUG source=sched.go:513 msg="context for request finished"
+time=2025-11-05T01:16:00.369-05:00 level=DEBUG source=sched.go:283 msg="runner with non-zero duration has gone idle, adding timer" runner.name=hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M runner.size="5.8 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=19292 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89 runner.num_ctx=10024 duration=5m0s
+time=2025-11-05T01:16:00.370-05:00 level=DEBUG source=sched.go:301 msg="after processing request finished event" runner.name=hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M runner.size="5.8 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=19292 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89 runner.num_ctx=10024 refCount=0
+time=2025-11-05T01:16:11.972-05:00 level=DEBUG source=sched.go:602 msg="evaluating already loaded" model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89
+time=2025-11-05T01:16:11.973-05:00 level=DEBUG source=server.go:1401 msg="completion request" images=1 prompt=83 format=""
+time=2025-11-05T01:16:11.973-05:00 level=TRACE source=server.go:1402 msg="completion request" prompt="<|im_start|>user\n[img-0]\"\"  extrae todos los datos<|im_end|>\n<|im_start|>assistant\n"
+time=2025-11-05T01:16:12.076-05:00 level=DEBUG source=llama.go:541 msg="chunk tokens" index=0 numTokens=1
+time=2025-11-05T01:16:12.076-05:00 level=DEBUG source=llama.go:541 msg="chunk tokens" index=1 numTokens=736
+time=2025-11-05T01:16:35.109-05:00 level=DEBUG source=llama.go:541 msg="chunk tokens" index=2 numTokens=1
+time=2025-11-05T01:16:35.109-05:00 level=DEBUG source=llama.go:580 msg="image tokenization chunks" totalChunks=738
+time=2025-11-05T01:16:35.109-05:00 level=DEBUG source=image.go:145 msg="storing image embeddings in cache" entry=0 used=0001-01-01T00:00:00.000Z
+time=2025-11-05T01:16:35.110-05:00 level=DEBUG source=cache.go:104 msg="loading cache slot" id=0 cache=0 prompt=753 used=0 remaining=753       
+[GIN] 2025/11/05 - 01:17:07 | 200 |   55.7460172s |       127.0.0.1 | POST     "/api/chat"
+time=2025-11-05T01:17:07.662-05:00 level=DEBUG source=sched.go:378 msg="context for request finished" runner.name=hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M runner.size="5.8 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=19292 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89 runner.num_ctx=10024
+time=2025-11-05T01:17:07.662-05:00 level=DEBUG source=sched.go:283 msg="runner with non-zero duration has gone idle, adding timer" runner.name=hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M runner.size="5.8 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=19292 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89 runner.num_ctx=10024 duration=5m0s
+time=2025-11-05T01:17:07.662-05:00 level=DEBUG source=sched.go:301 msg="after processing request finished event" runner.name=hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M runner.size="5.8 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=19292 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89 runner.num_ctx=10024 refCount=0
+time=2025-11-05T01:17:56.032-05:00 level=DEBUG source=sched.go:602 msg="evaluating already loaded" model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89
+time=2025-11-05T01:17:56.033-05:00 level=DEBUG source=server.go:1401 msg="completion request" images=1 prompt=717 format=""
+time=2025-11-05T01:17:56.034-05:00 level=TRACE source=server.go:1402 msg="completion request" prompt="<|im_start|>user\n[img-0]\"\"  extrae todos los datos<|im_end|>\n<|im_start|>assistant\nThe user wants to extract all the data from the image, which means they want to see the full text content including any associated metadata (like QR codes) that is present in the image. This is typically done when you are working with a dataset and need to retrieve the complete information (text and metadata such as QR code) contained within the image. The user's request implies that this action should be performed while interacting with a dataset and requires retrieving all the data (including text and metadata like QR code) embedded within the image.<|im_end|>\n<|im_start|>user\nextract de data<|im_end|>\n<|im_start|>assistant\n"
+time=2025-11-05T01:17:56.035-05:00 level=DEBUG source=image.go:120 msg="loading image embeddings from cache" entry=0
+time=2025-11-05T01:17:56.036-05:00 level=DEBUG source=cache.go:104 msg="loading cache slot" id=0 cache=859 prompt=872 used=859 remaining=13    
+[GIN] 2025/11/05 - 01:18:02 | 200 |    6.3273688s |       127.0.0.1 | POST     "/api/chat"
+time=2025-11-05T01:18:02.303-05:00 level=DEBUG source=sched.go:378 msg="context for request finished" runner.name=hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M runner.size="5.8 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=19292 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89 runner.num_ctx=10024
+time=2025-11-05T01:18:02.303-05:00 level=DEBUG source=sched.go:283 msg="runner with non-zero duration has gone idle, adding timer" runner.name=hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M runner.size="5.8 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=19292 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89 runner.num_ctx=10024 duration=5m0s
+time=2025-11-05T01:18:02.303-05:00 level=DEBUG source=sched.go:301 msg="after processing request finished event" runner.name=hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M runner.size="5.8 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=19292 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89 runner.num_ctx=10024 refCount=0
+time=2025-11-05T01:18:31.954-05:00 level=DEBUG source=sched.go:602 msg="evaluating already loaded" model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89
+time=2025-11-05T01:18:31.955-05:00 level=DEBUG source=server.go:1401 msg="completion request" images=1 prompt=1059 format=""
+time=2025-11-05T01:18:31.955-05:00 level=TRACE source=server.go:1402 msg="completion request" prompt="<|im_start|>user\n[img-0]\"\"  extrae todos los datos<|im_end|>\n<|im_start|>assistant\nThe user wants to extract all the data from the image, which means they want to see the full text content including any associated metadata (like QR codes) that is present in the image. This is typically done when you are working with a dataset and need to retrieve the complete information (text and metadata such as QR code) contained within the image. The user's request implies that this action should be performed while interacting with a dataset and requires retrieving all the data (including text and metadata like QR code) embedded within the image.<|im_end|>\n<|im_start|>user\nextract de data<|im_end|>\n<|im_start|>assistant\n**Faktura**\n\nThe provided text \"Faktura\" is Spanish for \"Invoice\" or \"Bill\". In this context, it is intended to be performed while interacting with a dataset and requires retrieving all the data (including text and metadata like QR code) embedded within the image.<|im_end|>\n<|im_start|>user\nocr all the image<|im_end|>\n<|im_start|>assistant\n"
+time=2025-11-05T01:18:31.959-05:00 level=DEBUG source=image.go:120 msg="loading image embeddings from cache" entry=0
+time=2025-11-05T01:18:31.960-05:00 level=DEBUG source=cache.go:104 msg="loading cache slot" id=0 cache=930 prompt=944 used=930 remaining=14    
+[GIN] 2025/11/05 - 01:18:38 | 200 |    6.1449841s |       127.0.0.1 | POST     "/api/chat"
+time=2025-11-05T01:18:38.045-05:00 level=DEBUG source=sched.go:378 msg="context for request finished" runner.name=hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M runner.size="5.8 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=19292 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89 runner.num_ctx=10024
+time=2025-11-05T01:18:38.045-05:00 level=DEBUG source=sched.go:283 msg="runner with non-zero duration has gone idle, adding timer" runner.name=hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M runner.size="5.8 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=19292 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89 runner.num_ctx=10024 duration=5m0s
+time=2025-11-05T01:18:38.045-05:00 level=DEBUG source=sched.go:301 msg="after processing request finished event" runner.name=hf.co/unsloth/Qwen3-VL-8B-Instruct-GGUF:Q4_K_M runner.size="5.8 GiB" runner.vram="0 B" runner.parallel=1 runner.pid=19292 runner.model=C:\Users\iosuc\.ollama\models\blobs\sha256-108e7ff92b78eefd3db4741885104acba514255c11b617d3c7b197a5f46efe89 runner.num_ctx=10024 refCount=0
