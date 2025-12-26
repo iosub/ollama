@@ -692,7 +692,11 @@ float * llama_context::get_embeddings_ith(int32_t i) {
             throw std::runtime_error(format("corrupt output buffer (j=%" PRId64 ", n_outputs=%d)", j, n_outputs));
         }
 
-        return embd + j*model.hparams.n_embd;
+        // For multimodal models, use the actual embedding dimension
+        const uint64_t n_embd_stride = model.hparams.n_embd_inp() > model.hparams.n_embd
+                                       ? model.hparams.n_embd_inp()
+                                       : model.hparams.n_embd;
+        return embd + j*n_embd_stride;
     } catch (const std::exception & err) {
         LLAMA_LOG_ERROR("%s: invalid embeddings id %d, reason: %s\n", __func__, i, err.what());
 #ifndef NDEBUG
@@ -963,8 +967,11 @@ int llama_context::encode(const llama_batch & batch_inp) {
                     // extract token embeddings
                     GGML_ASSERT(embd != nullptr);
 
-                    GGML_ASSERT(n_tokens*n_embd <= (int64_t) embd_size);
-                    ggml_backend_tensor_get_async(backend_embd, t_embd, embd, 0, n_tokens*n_embd*sizeof(float));
+                    // Use actual tensor dimension for multimodal models
+                    const uint32_t n_embd_actual = t_embd->ne[0];
+
+                    GGML_ASSERT(n_tokens*n_embd_actual <= (int64_t) embd_size);
+                    ggml_backend_tensor_get_async(backend_embd, t_embd, embd, 0, n_tokens*n_embd_actual*sizeof(float));
                 } break;
             case LLAMA_POOLING_TYPE_MEAN:
             case LLAMA_POOLING_TYPE_CLS:
@@ -1231,12 +1238,15 @@ int llama_context::decode(const llama_batch & batch_inp) {
                     {
                         // extract token embeddings
                         GGML_ASSERT(embd != nullptr);
-                        float * embd_out = embd + n_outputs_prev*n_embd;
+
+                        // Use actual tensor dimension for multimodal models
+                        const uint32_t n_embd_actual = t_embd->ne[0];
+                        float * embd_out = embd + n_outputs_prev*n_embd_actual;
 
                         if (n_outputs) {
                             GGML_ASSERT( n_outputs_prev + n_outputs <= n_outputs_all);
-                            GGML_ASSERT((n_outputs_prev + n_outputs)*n_embd <= (int64_t) embd_size);
-                            ggml_backend_tensor_get_async(backend_embd, t_embd, embd_out, 0, n_outputs*n_embd*sizeof(float));
+                            GGML_ASSERT((n_outputs_prev + n_outputs)*n_embd_actual <= (int64_t) embd_size);
+                            ggml_backend_tensor_get_async(backend_embd, t_embd, embd_out, 0, n_outputs*n_embd_actual*sizeof(float));
                         }
                     } break;
                 case LLAMA_POOLING_TYPE_MEAN:
@@ -1359,7 +1369,14 @@ uint32_t llama_context::output_reserve(int32_t n_outputs) {
     }
 
     logits_size = has_logits ? n_vocab*n_outputs_max : 0;
-    embd_size   = has_embd   ?  n_embd*n_outputs_max : 0;
+
+    // For multimodal models with vision projectors, use n_embd_inp() which
+    // represents the maximum input embedding dimension
+    uint32_t n_embd_buf = n_embd;
+    if (model.hparams.n_embd_inp() > n_embd) {
+        n_embd_buf = model.hparams.n_embd_inp();
+    }
+    embd_size   = has_embd   ?  n_embd_buf*n_outputs_max : 0;
 
     if (output_ids.empty()) {
         // init, never resized afterwards
@@ -1412,7 +1429,12 @@ uint32_t llama_context::output_reserve(int32_t n_outputs) {
 
 void llama_context::output_reorder() {
     const uint64_t n_vocab = model.vocab.n_tokens();
-    const uint64_t n_embd  = model.hparams.n_embd;
+
+    // For multimodal models, use the actual embedding dimension that was
+    // allocated in embd_size, not just the text model's n_embd
+    const uint64_t n_embd_actual = model.hparams.n_embd_inp() > model.hparams.n_embd
+                                   ? model.hparams.n_embd_inp()
+                                   : model.hparams.n_embd;
 
     for (size_t s = 0; s < output_swaps.size(); ++s) {
         const uint64_t i0 = output_swaps[s].i0;
@@ -1425,8 +1447,8 @@ void llama_context::output_reorder() {
         }
 
         if (embd_size > 0) {
-            for (uint64_t k = 0; k < n_embd; k++) {
-                std::swap(embd[i0*n_embd + k], embd[i1*n_embd + k]);
+            for (uint64_t k = 0; k < n_embd_actual; k++) {
+                std::swap(embd[i0*n_embd_actual + k], embd[i1*n_embd_actual + k]);
             }
         }
     }
@@ -1964,7 +1986,11 @@ size_t llama_context::state_write_data(llama_io_write_i & io) {
     {
         LLAMA_LOG_DEBUG("%s: - writing embeddings\n", __func__);
 
-        const uint64_t embd_size = std::min((uint64_t) this->embd_size, (uint64_t) n_outputs * model.hparams.n_embd);
+        // For multimodal models, use n_embd_inp() which accounts for vision embeddings
+        const uint64_t n_embd_effective = model.hparams.n_embd_inp() > model.hparams.n_embd
+                                          ? model.hparams.n_embd_inp()
+                                          : model.hparams.n_embd;
+        const uint64_t embd_size = std::min((uint64_t) this->embd_size, (uint64_t) n_outputs * n_embd_effective);
 
         io.write(&embd_size, sizeof(embd_size));
 

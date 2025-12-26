@@ -1,0 +1,1423 @@
+From 6fcc39b89e269cd39d55f45763da7fecac277a50 Mon Sep 17 00:00:00 2001
+From: Yair <yair.zarfati@gmail.com>
+Date: Wed, 22 Oct 2025 12:23:31 +0300
+Subject: [PATCH 1/2] support qwen3-vl series
+
+---
+ .gitignore                     |   1 +
+ check_model.py                 |   0
+ convert_hf_to_gguf.py          | 237 +++++++++++++++++++++++++++-
+ ggml/src/ggml-cpu/ops.cpp      |   1 +
+ gguf-py/gguf/constants.py      |  52 ++++++
+ gguf-py/gguf/gguf_writer.py    |   6 +
+ gguf-py/gguf/tensor_mapping.py |  15 ++
+ src/llama-arch.cpp             |  41 +++++
+ src/llama-arch.h               |   2 +
+ src/llama-graph.cpp            |   4 +-
+ src/llama-model.cpp            | 163 ++++++++++++++++---
+ tools/mtmd/clip-impl.h         |   2 +
+ tools/mtmd/clip.cpp            | 280 +++++++++++++++++++++++++++++++--
+ tools/mtmd/mtmd.cpp            |   2 +-
+ tools/server/server.cpp        |   5 +
+ 15 files changed, 765 insertions(+), 46 deletions(-)
+ create mode 100644 check_model.py
+
+diff --git a/.gitignore b/.gitignore
+index c7d000978571a..347104cb9d138 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -20,6 +20,7 @@
+ *.so
+ *.swp
+ *.tmp
++*.patch
+ 
+ # IDE / OS
+ 
+diff --git a/check_model.py b/check_model.py
+new file mode 100644
+index 0000000000000..e69de29bb2d1d
+diff --git a/convert_hf_to_gguf.py b/convert_hf_to_gguf.py
+index ed99dc8477231..007def48c1e71 100755
+--- a/convert_hf_to_gguf.py
++++ b/convert_hf_to_gguf.py
+@@ -3538,6 +3538,147 @@ def modify_tensors(self, data_torch: Tensor, name: str, bid: int | None) -> Iter
+         return super().modify_tensors(data_torch, name, bid)
+ 
+ 
++@ModelBase.register("Qwen3VLForConditionalGeneration", "Qwen3VLMoeForConditionalGeneration")
++class Qwen3VLVisionModel(MmprojModel):
++    def __init__(self, *args, **kwargs):
++        super().__init__(*args, **kwargs)
++        assert self.has_vision_encoder
++        assert self.hparams_vision is not None
++
++        # Compute image_size if not present
++        if "image_size" not in self.hparams_vision:
++            # For Qwen3VL/Qwen3VLMoe, compute from num_position_embeddings
++            num_pos = self.hparams_vision.get("num_position_embeddings", 2304)
++            patch_size = self.hparams_vision.get("patch_size", 16)
++            # num_position_embeddings = (image_size / patch_size) ** 2
++            # So image_size = sqrt(num_position_embeddings) * patch_size
++            import math
++            image_size = int(math.sqrt(num_pos) * patch_size)
++            self.hparams_vision["image_size"] = image_size
++
++        # Rename config values for compatibility
++        self.hparams_vision["num_attention_heads"] = self.hparams_vision.get("num_heads")
++        self.hparams_vision["num_hidden_layers"] = self.hparams_vision.get("depth")
++
++        self.deepstack_layers: list[int] = list(self.hparams_vision.get("deepstack_visual_indexes", []))
++
++    def set_gguf_parameters(self):
++        super().set_gguf_parameters()
++        self.gguf_writer.add_clip_projector_type(gguf.VisionProjectorType.QWEN3VL)
++
++        if self.hparams_vision is not None:
++            merge_size = self.hparams_vision.get("spatial_merge_size")
++            if merge_size is not None:
++                self.gguf_writer.add_vision_spatial_merge_size(int(merge_size))
++
++            hidden_act = (self.hparams_vision.get("hidden_act") or "").lower()
++            if hidden_act:
++                if "gelu" in hidden_act:
++                    self.gguf_writer.add_vision_use_gelu(True)
++                elif hidden_act == "silu":
++                    self.gguf_writer.add_vision_use_silu(True)
++                else:
++                    raise ValueError(f"Unsupported hidden_act: {hidden_act}")
++
++        # Use text config's rms_norm_eps for vision attention layernorm eps (similar to qwen2vl)
++        rms_norm_eps = self.global_config.get("rms_norm_eps")
++        if rms_norm_eps is None:
++            # Try text_config
++            text_config = self.global_config.get("text_config", {})
++            rms_norm_eps = text_config.get("rms_norm_eps", 1e-6)
++        self.gguf_writer.add_vision_attention_layernorm_eps(rms_norm_eps)
++
++        if self.deepstack_layers:
++            self.gguf_writer.add_vision_deepstack_layers(self.deepstack_layers)
++
++    def modify_tensors(self, data_torch: Tensor, name: str, bid: int | None) -> Iterable[tuple[str, Tensor]]:
++        # Skip text model tensors - they go in the text model file
++        if name.startswith("model.language_model.") or name.startswith("lm_head."):
++            return []
++        
++        if name.startswith("model.visual."):
++            name = name.replace("model.visual.", "visual.", 1)
++
++        if name.startswith("visual.deepstack_merger_list."):
++            prefix, rest = name.split(".", maxsplit=3)[2:]
++            idx = int(prefix)
++            target = rest
++
++            tensor_type: gguf.MODEL_TENSOR
++            if target.startswith("norm."):
++                tensor_type = gguf.MODEL_TENSOR.V_DS_NORM
++                suffix = target.split(".", 1)[1]
++            elif target.startswith("linear_fc1."):
++                tensor_type = gguf.MODEL_TENSOR.V_DS_FC1
++                suffix = target.split(".", 1)[1]
++            elif target.startswith("linear_fc2."):
++                tensor_type = gguf.MODEL_TENSOR.V_DS_FC2
++                suffix = target.split(".", 1)[1]
++            else:
++                raise ValueError(f"Unexpected deepstack tensor: {name}")
++
++            new_name = self.format_tensor_name(tensor_type, idx, suffix=f".{suffix}")
++            return [(new_name, data_torch)]
++
++        if name.startswith("visual.merger."):
++            suffix = name.split(".", 2)[2]
++            if suffix.startswith("linear_fc"):
++                fc_idx_str, tail = suffix.split(".", 1)
++                fc_num = int(fc_idx_str.replace("linear_fc", ""))
++                # Qwen3VLMoe has linear_fc1 and linear_fc2
++                # Map to indices 0 and 2 (matching Qwen2VL which uses indices 0 and 2)
++                if fc_num == 1:
++                    fc_idx = 0
++                elif fc_num == 2:
++                    fc_idx = 2
++                else:
++                    raise ValueError(f"unexpected fc index {fc_num} in {name}")
++                new_name = self.format_tensor_name(gguf.MODEL_TENSOR.V_MMPROJ, fc_idx, suffix=f".{tail}")
++            elif suffix.startswith("norm."):
++                new_name = self.format_tensor_name(gguf.MODEL_TENSOR.V_POST_NORM, suffix=f".{suffix.split('.', 1)[1]}")
++            else:
++                raise ValueError(f"Unexpected merger tensor: {name}")
++            return [(new_name, data_torch)]
++
++        if name == "visual.patch_embed.proj.weight":
++            # split Conv3D into Conv2Ds along temporal dimension
++            c1, c2, kt, _, _ = data_torch.shape
++            del c1, c2
++            if kt != 2:
++                raise ValueError("Current implementation only supports temporal_patch_size of 2")
++            return [
++                (gguf.TENSOR_NAMES[gguf.MODEL_TENSOR.V_ENC_EMBD_PATCH] + ".weight", data_torch[:, :, 0, ...]),
++                (gguf.TENSOR_NAMES[gguf.MODEL_TENSOR.V_ENC_EMBD_PATCH] + ".weight.1", data_torch[:, :, 1, ...]),
++            ]
++
++        if name == "visual.patch_embed.proj.bias":
++            # Include the bias - it's used by the C++ code
++            return [(gguf.TENSOR_NAMES[gguf.MODEL_TENSOR.V_ENC_EMBD_PATCH] + ".bias", data_torch)]
++
++        if name.startswith("visual."):
++            if ".qkv." in name:
++                if data_torch.ndim == 2:
++                    c3, _ = data_torch.shape
++                else:
++                    c3 = data_torch.shape[0]
++                if c3 % 3 != 0:
++                    raise ValueError(f"Unexpected QKV shape for {name}: {data_torch.shape}")
++                c = c3 // 3
++                wq = data_torch[:c]
++                wk = data_torch[c: c * 2]
++                wv = data_torch[c * 2:]
++                base = name.replace("qkv", "{placeholder}")
++                return [
++                    (self.map_tensor_name(base.format(placeholder="q")), wq),
++                    (self.map_tensor_name(base.format(placeholder="k")), wk),
++                    (self.map_tensor_name(base.format(placeholder="v")), wv),
++                ]
++
++            return [(self.map_tensor_name(name), data_torch)]
++
++        # Fall back to parent class for other tensors
++        return super().modify_tensors(data_torch, name, bid)
++
+ @ModelBase.register("InternVisionModel")
+ class InternVisionModel(MmprojModel):
+     def set_gguf_parameters(self):
+@@ -3678,7 +3819,43 @@ def set_gguf_parameters(self):
+     def modify_tensors(self, data_torch: Tensor, name: str, bid: int | None) -> Iterable[tuple[str, Tensor]]:
+         # process the experts separately
+         name = name.replace("language_model.", "") # InternVL
+-        if name.startswith("mlp") or name.startswith("vision_model") or name.startswith("model.vision_tower") or name.startswith("model.multi_modal_projector"):
++
++        # handle aggregated expert tensors
++        # GGUF stores dimensions reversed from PyTorch, so:
++        # PyTorch (A,B,C) -> GGUF writes [C,B,A] -> GGML reads ne={C,B,A}
++        # Input shapes from HF: (n_expert, n_ff_exp, n_embd) or (n_expert, n_embd, n_ff_exp)
++        # Expected GGML ne: {n_embd, n_ff_exp, n_expert} for gate/up, {n_ff_exp, n_embd, n_expert} for down
++        if name.endswith("mlp.experts.down_proj") or name.endswith("mlp.experts.down_proj.weight"):
++            mapped = f"{name}.weight" if not name.endswith(".weight") else name
++            # Input: (n_expert=128, n_ff_exp=768, n_embd=2048)
++            # Want GGML ne: {n_ff_exp, n_embd, n_expert} = {768, 2048, 128}
++            # Need PyTorch: (128, 2048, 768) [reversed of GGML]
++            # So: permute(0, 2, 1): (128, 768, 2048) -> (128, 2048, 768)
++            permuted = data_torch.permute(0, 2, 1).contiguous()
++            return [(self.map_tensor_name(mapped), permuted)]
++
++        if name.endswith("mlp.experts.gate_up_proj") or name.endswith("mlp.experts.gate_up_proj.weight"):
++            if data_torch.ndim < 3 or data_torch.shape[-1] % 2 != 0:
++                raise ValueError(f"Unexpected gate_up_proj shape for {name}: {tuple(data_torch.shape)}")
++            split_dim = data_torch.shape[-1] // 2
++            gate = data_torch[..., :split_dim].contiguous()
++            up = data_torch[..., split_dim:].contiguous()
++            # Input gate/up: (n_expert=128, n_embd=2048, n_ff_exp=768)
++            # Want GGML ne: {n_embd, n_ff_exp, n_expert} = {2048, 768, 128}
++            # Need PyTorch: (128, 768, 2048) [reversed of GGML]
++            # So: permute(0, 2, 1): (128, 2048, 768) -> (128, 768, 2048)
++            base_name = name.removesuffix(".weight")
++            base = base_name.rsplit('.', 1)[0]
++            mapped_gate = f"{base}.gate_proj.weight"
++            mapped_up = f"{base}.up_proj.weight"
++            perm_gate = gate.permute(0, 2, 1).contiguous()
++            perm_up = up.permute(0, 2, 1).contiguous()
++            return [
++                (self.map_tensor_name(mapped_gate), perm_gate),
++                (self.map_tensor_name(mapped_up), perm_up),
++            ]
++
++        if name.startswith("mlp") or name.startswith("vision_model") or name.startswith("model.vision_tower") or name.startswith("model.multi_modal_projector") or name.startswith("model.visual"):
+             # skip visual tensors
+             return []
+         if name.find("experts") != -1:
+@@ -3826,6 +4003,64 @@ def set_vocab(self):
+         super().set_vocab()
+ 
+ 
++@ModelBase.register("Qwen3VLForConditionalGeneration")
++class Qwen3VLTextModel(Qwen3Model):
++    model_arch = gguf.MODEL_ARCH.QWEN3VL
++
++    def set_gguf_parameters(self):
++        super().set_gguf_parameters()
++
++        # Handle MRoPE (Multi-axis Rotary Position Embedding) for Qwen3-VL
++        text_config = self.hparams.get("text_config", {})
++        rope_scaling = text_config.get("rope_scaling") or {}
++
++        if rope_scaling.get("mrope_section"):
++            # mrope_section contains [time, height, width] dimensions
++            mrope_section = rope_scaling["mrope_section"]
++            # Pad to 4 dimensions [time, height, width, extra]
++            while len(mrope_section) < 4:
++                mrope_section.append(0)
++            self.gguf_writer.add_rope_dimension_sections(mrope_section[:4])
++
++            logger.info(f"MRoPE sections: {mrope_section[:4]}")
++
++    def modify_tensors(self, data_torch: Tensor, name: str, bid: int | None) -> Iterable[tuple[str, Tensor]]:
++        # Skip vision tensors - they go in the mmproj file
++        if name.startswith("model.visual."):
++            return []
++        
++        return super().modify_tensors(data_torch, name, bid)
++
++
++@ModelBase.register("Qwen3VLMoeForConditionalGeneration")
++class Qwen3VLMoeTextModel(Qwen3MoeModel):
++    model_arch = gguf.MODEL_ARCH.QWEN3VLMOE
++
++    def set_gguf_parameters(self):
++        super().set_gguf_parameters()
++
++        # Handle MRoPE (Multi-axis Rotary Position Embedding) for Qwen3-VL
++        text_config = self.hparams.get("text_config", {})
++        rope_scaling = text_config.get("rope_scaling") or {}
++
++        if rope_scaling.get("mrope_section"):
++            # mrope_section contains [time, height, width] dimensions
++            mrope_section = rope_scaling["mrope_section"]
++            # Pad to 4 dimensions [time, height, width, extra]
++            while len(mrope_section) < 4:
++                mrope_section.append(0)
++            self.gguf_writer.add_rope_dimension_sections(mrope_section[:4])
++
++            logger.info(f"MRoPE sections: {mrope_section[:4]}")
++
++    def modify_tensors(self, data_torch: Tensor, name: str, bid: int | None) -> Iterable[tuple[str, Tensor]]:
++        # Skip vision tensors - they go in the mmproj file
++        if name.startswith("model.visual."):
++            return []
++        
++        return super().modify_tensors(data_torch, name, bid)
++
++
+ @ModelBase.register("GPT2LMHeadModel")
+ class GPT2Model(TextModel):
+     model_arch = gguf.MODEL_ARCH.GPT2
+diff --git a/ggml/src/ggml-cpu/ops.cpp b/ggml/src/ggml-cpu/ops.cpp
+index b52f0f8472cfe..16dc118605297 100644
+--- a/ggml/src/ggml-cpu/ops.cpp
++++ b/ggml/src/ggml-cpu/ops.cpp
+@@ -5509,6 +5509,7 @@ static void ggml_mrope_cache_init(
+         }
+ 
+         float theta = theta_t;
++
+         if (sector >= sections[0] && sector < sec_w) {
+             theta = theta_h;
+         }
+diff --git a/gguf-py/gguf/constants.py b/gguf-py/gguf/constants.py
+index 1b71fb3749aaa..59800bb80b614 100644
+--- a/gguf-py/gguf/constants.py
++++ b/gguf-py/gguf/constants.py
+@@ -111,6 +111,7 @@ class LLM:
+         EXPERTS_PER_GROUP                 = "{arch}.experts_per_group"
+         MOE_EVERY_N_LAYERS                = "{arch}.moe_every_n_layers"
+         NEXTN_PREDICT_LAYERS              = "{arch}.nextn_predict_layers"
++        DEEPSTACK_LAYERS                  = "{arch}.deepstack_layers"
+         POOLING_TYPE                      = "{arch}.pooling_type"
+         LOGIT_SCALE                       = "{arch}.logit_scale"
+         DECODER_START_TOKEN_ID            = "{arch}.decoder_start_token_id"
+@@ -277,6 +278,7 @@ class ClipVision:
+         USE_GELU            = "clip.use_gelu"
+         USE_SILU            = "clip.use_silu"
+         N_WA_PATTERN        = "clip.vision.n_wa_pattern" # used by qwen2.5vl
++        DEEPSTACK_LAYERS    = "clip.vision.deepstack_layers"
+ 
+         class Attention:
+             HEAD_COUNT      = "clip.vision.attention.head_count"
+@@ -350,6 +352,8 @@ class MODEL_ARCH(IntEnum):
+     QWEN2VL          = auto()
+     QWEN3            = auto()
+     QWEN3MOE         = auto()
++    QWEN3VL          = auto()
++    QWEN3VLMOE       = auto()
+     PHI2             = auto()
+     PHI3             = auto()
+     PHIMOE           = auto()
+@@ -430,6 +434,7 @@ class VISION_PROJECTOR_TYPE(IntEnum):
+     GLM_EDGE  = auto()
+     MERGER    = auto()
+     GEMMA3    = auto()
++    QWEN3VL   = auto()
+ 
+ 
+ class MODEL_TENSOR(IntEnum):
+@@ -640,6 +645,9 @@ class MODEL_TENSOR(IntEnum):
+     V_RESMPL_QUERY       = auto() # minicpmv
+     V_TOK_EMBD_IMG_BREAK = auto() # pixtral
+     V_MM_PATCH_MERGER    = auto() # mistral small 3.1
++    V_DS_NORM            = auto() # qwen3vl deepstack norm
++    V_DS_FC1             = auto() # qwen3vl deepstack fc1
++    V_DS_FC2             = auto() # qwen3vl deepstack fc2
+     # audio (mtmd)
+     A_ENC_EMBD_POS       = auto()
+     A_ENC_CONV1D         = auto()
+@@ -695,6 +703,8 @@ class MODEL_TENSOR(IntEnum):
+     MODEL_ARCH.QWEN2VL:          "qwen2vl",
+     MODEL_ARCH.QWEN3:            "qwen3",
+     MODEL_ARCH.QWEN3MOE:         "qwen3moe",
++    MODEL_ARCH.QWEN3VL:          "qwen3vl",
++    MODEL_ARCH.QWEN3VLMOE:       "qwen3vlmoe",
+     MODEL_ARCH.PHI2:             "phi2",
+     MODEL_ARCH.PHI3:             "phi3",
+     MODEL_ARCH.PHIMOE:           "phimoe",
+@@ -776,6 +786,7 @@ class MODEL_TENSOR(IntEnum):
+     VISION_PROJECTOR_TYPE.GLM_EDGE:  "adapter",
+     VISION_PROJECTOR_TYPE.MERGER:    "qwen2vl_merger",
+     VISION_PROJECTOR_TYPE.GEMMA3:    "gemma3",
++    VISION_PROJECTOR_TYPE.QWEN3VL:   "qwen3vl_merger",
+ }
+ 
+ TENSOR_NAMES: dict[MODEL_TENSOR, str] = {
+@@ -986,6 +997,9 @@ class MODEL_TENSOR(IntEnum):
+     MODEL_TENSOR.V_RESMPL_QUERY:            "resampler.query",
+     MODEL_TENSOR.V_TOK_EMBD_IMG_BREAK:      "v.token_embd.img_break", # pixtral
+     MODEL_TENSOR.V_MM_PATCH_MERGER:         "mm.patch_merger", # mistral small 3.1
++    MODEL_TENSOR.V_DS_NORM:                 "v.deepstack.{bid}.norm",
++    MODEL_TENSOR.V_DS_FC1:                  "v.deepstack.{bid}.fc1",
++    MODEL_TENSOR.V_DS_FC2:                  "v.deepstack.{bid}.fc2",
+     # audio (mtmd)
+     MODEL_TENSOR.A_ENC_EMBD_POS:            "a.position_embd",
+     MODEL_TENSOR.A_ENC_CONV1D:              "a.conv1d.{bid}",
+@@ -1054,6 +1068,9 @@ class MODEL_TENSOR(IntEnum):
+         MODEL_TENSOR.V_RESMPL_QUERY,
+         MODEL_TENSOR.V_TOK_EMBD_IMG_BREAK,
+         MODEL_TENSOR.V_MM_PATCH_MERGER,
++        MODEL_TENSOR.V_DS_NORM,
++        MODEL_TENSOR.V_DS_FC1,
++        MODEL_TENSOR.V_DS_FC2,
+         # audio
+         MODEL_TENSOR.A_ENC_EMBD_POS,
+         MODEL_TENSOR.A_ENC_CONV1D,
+@@ -1495,6 +1512,40 @@ class MODEL_TENSOR(IntEnum):
+         MODEL_TENSOR.FFN_DOWN_EXP,
+         MODEL_TENSOR.FFN_UP_EXP,
+     ],
++    MODEL_ARCH.QWEN3VL: [
++        MODEL_TENSOR.TOKEN_EMBD,
++        MODEL_TENSOR.OUTPUT_NORM,
++        MODEL_TENSOR.OUTPUT,
++        MODEL_TENSOR.ROPE_FREQS,
++        MODEL_TENSOR.ATTN_NORM,
++        MODEL_TENSOR.ATTN_Q,
++        MODEL_TENSOR.ATTN_Q_NORM,
++        MODEL_TENSOR.ATTN_K,
++        MODEL_TENSOR.ATTN_K_NORM,
++        MODEL_TENSOR.ATTN_V,
++        MODEL_TENSOR.ATTN_OUT,
++        MODEL_TENSOR.FFN_NORM,
++        MODEL_TENSOR.FFN_GATE,
++        MODEL_TENSOR.FFN_DOWN,
++        MODEL_TENSOR.FFN_UP,
++    ],
++    MODEL_ARCH.QWEN3VLMOE: [
++        MODEL_TENSOR.TOKEN_EMBD,
++        MODEL_TENSOR.OUTPUT_NORM,
++        MODEL_TENSOR.OUTPUT,
++        MODEL_TENSOR.ATTN_NORM,
++        MODEL_TENSOR.ATTN_Q,
++        MODEL_TENSOR.ATTN_Q_NORM,
++        MODEL_TENSOR.ATTN_K,
++        MODEL_TENSOR.ATTN_K_NORM,
++        MODEL_TENSOR.ATTN_V,
++        MODEL_TENSOR.ATTN_OUT,
++        MODEL_TENSOR.FFN_NORM,
++        MODEL_TENSOR.FFN_GATE_INP,
++        MODEL_TENSOR.FFN_GATE_EXP,
++        MODEL_TENSOR.FFN_DOWN_EXP,
++        MODEL_TENSOR.FFN_UP_EXP,
++    ],
+     MODEL_ARCH.PLAMO: [
+         MODEL_TENSOR.TOKEN_EMBD,
+         MODEL_TENSOR.OUTPUT_NORM,
+@@ -3055,6 +3106,7 @@ class VisionProjectorType:
+     LLAMA4 = "llama4"
+     QWEN2VL = "qwen2vl_merger"
+     QWEN25VL = "qwen2.5vl_merger"
++    QWEN3VL = "qwen3vl_merger"
+     ULTRAVOX = "ultravox"
+     INTERNVL = "internvl"
+     QWEN2A = "qwen2a" # audio
+diff --git a/gguf-py/gguf/gguf_writer.py b/gguf-py/gguf/gguf_writer.py
+index d52d4f40f7884..ae6cab9b33ac7 100644
+--- a/gguf-py/gguf/gguf_writer.py
++++ b/gguf-py/gguf/gguf_writer.py
+@@ -782,6 +782,9 @@ def add_moe_every_n_layers(self, value: int) -> None:
+     def add_nextn_predict_layers(self, count: int) -> None:
+         self.add_uint32(Keys.LLM.NEXTN_PREDICT_LAYERS.format(arch=self.arch), count)
+ 
++    def add_deepstack_layers(self, layers: Sequence[int]) -> None:
++        self.add_array(Keys.LLM.DEEPSTACK_LAYERS.format(arch=self.arch), layers)
++
+     def add_swin_norm(self, value: bool) -> None:
+         self.add_bool(Keys.LLM.SWIN_NORM.format(arch=self.arch), value)
+ 
+@@ -1071,6 +1074,9 @@ def add_vision_projector_scale_factor(self, value: int) -> None:
+     def add_vision_n_wa_pattern(self, value: int) -> None:
+         self.add_uint32(Keys.ClipVision.N_WA_PATTERN, value)
+ 
++    def add_vision_deepstack_layers(self, layers: Sequence[int]) -> None:
++        self.add_array(Keys.ClipVision.DEEPSTACK_LAYERS, layers)
++
+     # audio models
+ 
+     def add_audio_projection_dim(self, value: int) -> None:
+diff --git a/gguf-py/gguf/tensor_mapping.py b/gguf-py/gguf/tensor_mapping.py
+index d7dcd8efb8426..6d5f224218bbd 100644
+--- a/gguf-py/gguf/tensor_mapping.py
++++ b/gguf-py/gguf/tensor_mapping.py
+@@ -1185,6 +1185,7 @@ class TensorNameMap:
+             "model.vision_model.embeddings.position_embedding", # SmolVLM
+             "vision_model.positional_embedding_vlm", # llama 4
+             "vision_tower.patch_embed.pos_emb", # kimi-vl
++            "visual.pos_embed", # qwen3vlmoe
+         ),
+ 
+         MODEL_TENSOR.V_ENC_ATTN_Q: (
+@@ -1281,6 +1282,7 @@ class TensorNameMap:
+             "vision_encoder.transformer.layers.{bid}.feed_forward.w3", # pixtral
+             "vision_model.model.layers.{bid}.mlp.fc1", # llama4
+             "visual.blocks.{bid}.mlp.fc1", # qwen2vl
++            "visual.blocks.{bid}.mlp.linear_fc1", # qwen3vlmoe
+             "visual.blocks.{bid}.mlp.up_proj", # qwen2.5vl
+             "vision_tower.encoder.blocks.{bid}.mlp.fc0", # kimi-vl (fc0/fc1)
+         ),
+@@ -1300,6 +1302,7 @@ class TensorNameMap:
+             "vision_encoder.transformer.layers.{bid}.feed_forward.w2", # pixtral
+             "vision_model.model.layers.{bid}.mlp.fc2", # llama4
+             "visual.blocks.{bid}.mlp.fc2", # qwen2vl
++            "visual.blocks.{bid}.mlp.linear_fc2", # qwen3vlmoe
+             "visual.blocks.{bid}.mlp.down_proj", # qwen2.5vl
+             "vision_tower.encoder.blocks.{bid}.mlp.fc1", # kimi-vl (fc0/fc1)
+         ),
+@@ -1397,6 +1400,18 @@ class TensorNameMap:
+             "patch_merger.merging_layer", # mistral
+         ),
+ 
++        MODEL_TENSOR.V_DS_NORM: (
++            "model.visual.deepstack_merger_list.{bid}.norm",
++        ),
++
++        MODEL_TENSOR.V_DS_FC1: (
++            "model.visual.deepstack_merger_list.{bid}.linear_fc1",
++        ),
++
++        MODEL_TENSOR.V_DS_FC2: (
++            "model.visual.deepstack_merger_list.{bid}.linear_fc2",
++        ),
++
+         # audio (mtmd)
+ 
+         MODEL_TENSOR.A_ENC_EMBD_POS: (
+diff --git a/src/llama-arch.cpp b/src/llama-arch.cpp
+index 8ca769c5fd2ef..b12f455eecd96 100644
+--- a/src/llama-arch.cpp
++++ b/src/llama-arch.cpp
+@@ -32,6 +32,8 @@ static const std::map<llm_arch, const char *> LLM_ARCH_NAMES = {
+     { LLM_ARCH_QWEN2VL,          "qwen2vl"          },
+     { LLM_ARCH_QWEN3,            "qwen3"            },
+     { LLM_ARCH_QWEN3MOE,         "qwen3moe"         },
++    { LLM_ARCH_QWEN3_VL,         "qwen3vl"          },
++    { LLM_ARCH_QWEN3_VL_MOE,     "qwen3vlmoe"       },
+     { LLM_ARCH_PHI2,             "phi2"             },
+     { LLM_ARCH_PHI3,             "phi3"             },
+     { LLM_ARCH_PHIMOE,           "phimoe"           },
+@@ -779,6 +781,45 @@ static const std::map<llm_arch, std::map<llm_tensor, const char *>> LLM_TENSOR_N
+             { LLM_TENSOR_FFN_UP_EXPS,        "blk.%d.ffn_up_exps" },
+         },
+     },
++    {
++        LLM_ARCH_QWEN3_VL,
++        {
++            { LLM_TENSOR_TOKEN_EMBD,      "token_embd" },
++            { LLM_TENSOR_OUTPUT_NORM,     "output_norm" },
++            { LLM_TENSOR_OUTPUT,          "output" },
++            { LLM_TENSOR_ATTN_NORM,       "blk.%d.attn_norm" },
++            { LLM_TENSOR_ATTN_Q,          "blk.%d.attn_q" },
++            { LLM_TENSOR_ATTN_Q_NORM,     "blk.%d.attn_q_norm" },
++            { LLM_TENSOR_ATTN_K,          "blk.%d.attn_k" },
++            { LLM_TENSOR_ATTN_K_NORM,     "blk.%d.attn_k_norm" },
++            { LLM_TENSOR_ATTN_V,          "blk.%d.attn_v" },
++            { LLM_TENSOR_ATTN_OUT,        "blk.%d.attn_output" },
++            { LLM_TENSOR_FFN_NORM,        "blk.%d.ffn_norm" },
++            { LLM_TENSOR_FFN_GATE,        "blk.%d.ffn_gate" },
++            { LLM_TENSOR_FFN_DOWN,        "blk.%d.ffn_down" },
++            { LLM_TENSOR_FFN_UP,          "blk.%d.ffn_up" },
++        },
++    },
++    {
++        LLM_ARCH_QWEN3_VL_MOE,
++        {
++            { LLM_TENSOR_TOKEN_EMBD,         "token_embd" },
++            { LLM_TENSOR_OUTPUT_NORM,        "output_norm" },
++            { LLM_TENSOR_OUTPUT,             "output" },
++            { LLM_TENSOR_ATTN_NORM,          "blk.%d.attn_norm" },
++            { LLM_TENSOR_ATTN_Q,             "blk.%d.attn_q" },
++            { LLM_TENSOR_ATTN_Q_NORM,        "blk.%d.attn_q_norm" },
++            { LLM_TENSOR_ATTN_K,             "blk.%d.attn_k" },
++            { LLM_TENSOR_ATTN_K_NORM,        "blk.%d.attn_k_norm" },
++            { LLM_TENSOR_ATTN_V,             "blk.%d.attn_v" },
++            { LLM_TENSOR_ATTN_OUT,           "blk.%d.attn_output" },
++            { LLM_TENSOR_FFN_NORM,           "blk.%d.ffn_norm" },
++            { LLM_TENSOR_FFN_GATE_INP,       "blk.%d.ffn_gate_inp" },
++            { LLM_TENSOR_FFN_GATE_EXPS,      "blk.%d.ffn_gate_exps" },
++            { LLM_TENSOR_FFN_DOWN_EXPS,      "blk.%d.ffn_down_exps" },
++            { LLM_TENSOR_FFN_UP_EXPS,        "blk.%d.ffn_up_exps" },
++        },
++    },
+     {
+         LLM_ARCH_PHI2,
+         {
+diff --git a/src/llama-arch.h b/src/llama-arch.h
+index dea725c1a753a..a1795281ac138 100644
+--- a/src/llama-arch.h
++++ b/src/llama-arch.h
+@@ -36,6 +36,8 @@ enum llm_arch {
+     LLM_ARCH_QWEN2VL,
+     LLM_ARCH_QWEN3,
+     LLM_ARCH_QWEN3MOE,
++    LLM_ARCH_QWEN3_VL,
++    LLM_ARCH_QWEN3_VL_MOE,
+     LLM_ARCH_PHI2,
+     LLM_ARCH_PHI3,
+     LLM_ARCH_PHIMOE,
+diff --git a/src/llama-graph.cpp b/src/llama-graph.cpp
+index 41fa6894377ea..4ff558cce89b7 100644
+--- a/src/llama-graph.cpp
++++ b/src/llama-graph.cpp
+@@ -206,7 +206,7 @@ void llm_graph_input_cls::set_input(const llama_ubatch * ubatch) {
+ 
+         const bool last = (
+              cparams.pooling_type == LLAMA_POOLING_TYPE_LAST ||
+-            (cparams.pooling_type == LLAMA_POOLING_TYPE_RANK && arch == LLM_ARCH_QWEN3) // qwen3 reranking & embedding models use last token
++            (cparams.pooling_type == LLAMA_POOLING_TYPE_RANK && (arch == LLM_ARCH_QWEN3 || arch == LLM_ARCH_QWEN3_VL)) // qwen3 reranking & embedding models use last token
+         );
+ 
+         for (int i = 0; i < n_tokens; ++i) {
+@@ -1999,7 +1999,7 @@ void llm_graph_context::build_pooling(
+                 }
+ 
+                 // softmax for qwen3 reranker
+-                if (arch == LLM_ARCH_QWEN3) {
++                if (arch == LLM_ARCH_QWEN3 || arch == LLM_ARCH_QWEN3_VL) {
+                     cur = ggml_soft_max(ctx0, cur);
+                 }
+             } break;
+diff --git a/src/llama-model.cpp b/src/llama-model.cpp
+index e460996330080..4af82b3cd7db4 100644
+--- a/src/llama-model.cpp
++++ b/src/llama-model.cpp
+@@ -1013,10 +1013,31 @@ void llama_model::load_hparams(llama_model_loader & ml) {
+                     default: type = LLM_TYPE_UNKNOWN;
+                 }
+             } break;
++        case LLM_ARCH_QWEN3_VL:
++            {
++                ml.get_key_or_arr(LLM_KV_ROPE_DIMENSION_SECTIONS, hparams.rope_sections, 4, true);
++                ml.get_key(LLM_KV_ATTENTION_LAYERNORM_RMS_EPS, hparams.f_norm_rms_eps);
++                switch (hparams.n_layer) {
++                    case 36: type = LLM_TYPE_4B; break;
++                    default: type = LLM_TYPE_UNKNOWN;
++                }
++            } break;
+         case LLM_ARCH_QWEN3MOE:
+             {
+                 ml.get_key(LLM_KV_EXPERT_FEED_FORWARD_LENGTH,        hparams.n_ff_exp, false);
+ 
++                ml.get_key(LLM_KV_ATTENTION_LAYERNORM_RMS_EPS, hparams.f_norm_rms_eps);
++                switch (hparams.n_layer) {
++                    case 48: type = LLM_TYPE_30B_A3B; break;
++                    case 94: type = LLM_TYPE_235B_A22B; break;
++                    default: type = LLM_TYPE_UNKNOWN;
++                }
++            } break;
++        case LLM_ARCH_QWEN3_VL_MOE:
++            {
++                ml.get_key_or_arr(LLM_KV_ROPE_DIMENSION_SECTIONS, hparams.rope_sections, 4, true);
++                ml.get_key(LLM_KV_EXPERT_FEED_FORWARD_LENGTH,        hparams.n_ff_exp, false);
++
+                 ml.get_key(LLM_KV_ATTENTION_LAYERNORM_RMS_EPS, hparams.f_norm_rms_eps);
+                 switch (hparams.n_layer) {
+                     case 48: type = LLM_TYPE_30B_A3B; break;
+@@ -3298,12 +3319,13 @@ bool llama_model::load_tensors(llama_model_loader & ml) {
+                         layer.ffn_up   = create_tensor(tn(LLM_TENSOR_FFN_UP,   "weight", i), {n_embd,   n_ff}, 0);
+                     }
+                 } break;
+-            case LLM_ARCH_QWEN3MOE:
+-                {
+-                    tok_embd = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), {n_embd, n_vocab}, 0);
++        case LLM_ARCH_QWEN3MOE:
++        case LLM_ARCH_QWEN3_VL_MOE:
++            {
++                tok_embd = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), {n_embd, n_vocab}, 0);
+ 
+-                    // output
+-                    output_norm = create_tensor(tn(LLM_TENSOR_OUTPUT_NORM, "weight"), {n_embd}, 0);
++                // output
++                output_norm = create_tensor(tn(LLM_TENSOR_OUTPUT_NORM, "weight"), {n_embd}, 0);
+                     output      = create_tensor(tn(LLM_TENSOR_OUTPUT,      "weight"), {n_embd, n_vocab}, TENSOR_NOT_REQUIRED);
+                     // if output is NULL, init from the input tok embed
+                     if (output == NULL) {
+@@ -3342,6 +3364,40 @@ bool llama_model::load_tensors(llama_model_loader & ml) {
+                         layer.ffn_up_exps   = create_tensor(tn(LLM_TENSOR_FFN_UP_EXPS,   "weight", i), {  n_embd, n_ff_exp, n_expert}, 0);
+                     }
+                 } break;
++        case LLM_ARCH_QWEN3_VL:
++            {
++                // Same as QWEN3 (dense model)
++                tok_embd = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), {n_embd, n_vocab}, 0);
++
++                // output
++                output_norm = create_tensor(tn(LLM_TENSOR_OUTPUT_NORM, "weight"), {n_embd}, 0);
++                output      = create_tensor(tn(LLM_TENSOR_OUTPUT,      "weight"), {n_embd, n_vocab}, TENSOR_NOT_REQUIRED);
++
++                // if output is NULL, init from the input tok embed
++                if (output == NULL) {
++                    output = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), {n_embd, n_vocab}, TENSOR_DUPLICATED);
++                }
++
++                for (int i = 0; i < n_layer; ++i) {
++                    auto & layer = layers[i];
++
++                    layer.attn_norm = create_tensor(tn(LLM_TENSOR_ATTN_NORM, "weight", i), {n_embd}, 0);
++
++                    layer.wq = create_tensor(tn(LLM_TENSOR_ATTN_Q,   "weight", i), {n_embd, n_embd_head_k * n_head}, 0);
++                    layer.wk = create_tensor(tn(LLM_TENSOR_ATTN_K,   "weight", i), {n_embd, n_embd_gqa}, 0);
++                    layer.wv = create_tensor(tn(LLM_TENSOR_ATTN_V,   "weight", i), {n_embd, n_embd_gqa}, 0);
++                    layer.wo = create_tensor(tn(LLM_TENSOR_ATTN_OUT, "weight", i), {n_embd_head_k * n_head, n_embd}, 0);
++
++                    layer.attn_k_norm = create_tensor(tn(LLM_TENSOR_ATTN_K_NORM, "weight", i), {n_embd_head_k}, 0);
++                    layer.attn_q_norm = create_tensor(tn(LLM_TENSOR_ATTN_Q_NORM, "weight", i), {n_embd_head_k}, 0);
++
++                    layer.ffn_norm = create_tensor(tn(LLM_TENSOR_FFN_NORM, "weight", i), {n_embd}, 0);
++
++                    layer.ffn_gate = create_tensor(tn(LLM_TENSOR_FFN_GATE, "weight", i), {n_embd,   n_ff}, 0);
++                    layer.ffn_down = create_tensor(tn(LLM_TENSOR_FFN_DOWN, "weight", i), {  n_ff, n_embd}, 0);
++                    layer.ffn_up   = create_tensor(tn(LLM_TENSOR_FFN_UP,   "weight", i), {n_embd,   n_ff}, 0);
++                }
++            } break;
+             case LLM_ARCH_PHI2:
+                 {
+                     tok_embd = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), {n_embd, n_vocab}, 0);
+@@ -6364,6 +6420,13 @@ void llama_model::print_info() const {
+         LLAMA_LOG_INFO("%s: freq_scale_train = %g\n",     __func__, hparams.rope_freq_scale_train);
+         LLAMA_LOG_INFO("%s: n_ctx_orig_yarn  = %u\n",     __func__, hparams.n_ctx_orig_yarn);
+         LLAMA_LOG_INFO("%s: rope_finetuned   = %s\n",     __func__, hparams.rope_finetuned ? "yes" : "unknown");
++        // MRoPE (Multi-axis Rotary Position Embedding) sections
++        if (hparams.rope_sections[0] != 0 || hparams.rope_sections[1] != 0 ||
++            hparams.rope_sections[2] != 0 || hparams.rope_sections[3] != 0) {
++            LLAMA_LOG_INFO("%s: mrope sections   = [%d, %d, %d, %d]\n", __func__,
++                hparams.rope_sections[0], hparams.rope_sections[1],
++                hparams.rope_sections[2], hparams.rope_sections[3]);
++        }
+         if (!classifier_labels.empty()) {
+             LLAMA_LOG_INFO("%s: n_cls_out        = %u\n", __func__, hparams.n_cls_out);
+ 
+@@ -6429,7 +6492,7 @@ void llama_model::print_info() const {
+         LLAMA_LOG_INFO("%s: n_ff_shexp       = %d\n",     __func__, hparams.n_ff_shexp);
+     }
+ 
+-    if (arch == LLM_ARCH_QWEN3MOE || arch == LLM_ARCH_OPENAI_MOE) {
++    if (arch == LLM_ARCH_QWEN3MOE || arch == LLM_ARCH_QWEN3_VL || arch == LLM_ARCH_QWEN3_VL_MOE || arch == LLM_ARCH_OPENAI_MOE) {
+         LLAMA_LOG_INFO("%s: n_ff_exp         = %d\n",     __func__, hparams.n_ff_exp);
+     }
+ 
+@@ -9361,6 +9424,9 @@ struct llm_build_qwen3 : public llm_graph_context {
+ 
+         auto * inp_attn = build_attn_inp_kv();
+ 
++        int sections[4];
++        std::copy(std::begin(hparams.rope_sections), std::begin(hparams.rope_sections) + 4, sections);
++
+         ggml_tensor * inp_out_ids = build_inp_out_ids();
+ 
+         for (int il = 0; il < n_layer; ++il) {
+@@ -9391,20 +9457,36 @@ struct llm_build_qwen3 : public llm_graph_context {
+                 Qcur = build_norm(Qcur, model.layers[il].attn_q_norm, NULL, LLM_NORM_RMS, il);
+                 cb(Qcur, "Qcur_normed", il);
+ 
+-                Qcur = ggml_rope_ext(
+-                        ctx0, Qcur, inp_pos, nullptr,
+-                        n_rot, rope_type, n_ctx_orig, freq_base, freq_scale,
+-                        ext_factor, attn_factor, beta_fast, beta_slow
+-                        );
++                if (rope_type == LLAMA_ROPE_TYPE_MROPE) {
++                    Qcur = ggml_rope_multi(
++                            ctx0, Qcur, inp_pos, nullptr,
++                            n_rot, sections, rope_type, n_ctx_orig, freq_base, freq_scale,
++                            ext_factor, attn_factor, beta_fast, beta_slow
++                            );
++                } else {
++                    Qcur = ggml_rope_ext(
++                            ctx0, Qcur, inp_pos, nullptr,
++                            n_rot, rope_type, n_ctx_orig, freq_base, freq_scale,
++                            ext_factor, attn_factor, beta_fast, beta_slow
++                            );
++                }
+ 
+                 Kcur = build_norm(Kcur, model.layers[il].attn_k_norm, NULL, LLM_NORM_RMS, il);
+                 cb(Kcur, "Kcur_normed", il);
+ 
+-                Kcur = ggml_rope_ext(
+-                        ctx0, Kcur, inp_pos, nullptr,
+-                        n_rot, rope_type, n_ctx_orig, freq_base, freq_scale,
+-                        ext_factor, attn_factor, beta_fast, beta_slow
+-                        );
++                if (rope_type == LLAMA_ROPE_TYPE_MROPE) {
++                    Kcur = ggml_rope_multi(
++                            ctx0, Kcur, inp_pos, nullptr,
++                            n_rot, sections, rope_type, n_ctx_orig, freq_base, freq_scale,
++                            ext_factor, attn_factor, beta_fast, beta_slow
++                            );
++                } else {
++                    Kcur = ggml_rope_ext(
++                            ctx0, Kcur, inp_pos, nullptr,
++                            n_rot, rope_type, n_ctx_orig, freq_base, freq_scale,
++                            ext_factor, attn_factor, beta_fast, beta_slow
++                            );
++                }
+ 
+                 cb(Qcur, "Qcur", il);
+                 cb(Kcur, "Kcur", il);
+@@ -9482,6 +9564,9 @@ struct llm_build_qwen3moe : public llm_graph_context {
+ 
+         auto * inp_attn = build_attn_inp_kv();
+ 
++        int sections[4];
++        std::copy(std::begin(hparams.rope_sections), std::begin(hparams.rope_sections) + 4, sections);
++
+         ggml_tensor * inp_out_ids = build_inp_out_ids();
+ 
+         for (int il = 0; il < n_layer; ++il) {
+@@ -9512,20 +9597,36 @@ struct llm_build_qwen3moe : public llm_graph_context {
+                 Qcur = build_norm(Qcur, model.layers[il].attn_q_norm, NULL, LLM_NORM_RMS, il);
+                 cb(Qcur, "Qcur_normed", il);
+ 
+-                Qcur = ggml_rope_ext(
+-                        ctx0, Qcur, inp_pos, nullptr,
+-                        n_rot, rope_type, n_ctx_orig, freq_base, freq_scale,
+-                        ext_factor, attn_factor, beta_fast, beta_slow
+-                        );
++                if (rope_type == LLAMA_ROPE_TYPE_MROPE) {
++                    Qcur = ggml_rope_multi(
++                            ctx0, Qcur, inp_pos, nullptr,
++                            n_rot, sections, rope_type, n_ctx_orig, freq_base, freq_scale,
++                            ext_factor, attn_factor, beta_fast, beta_slow
++                            );
++                } else {
++                    Qcur = ggml_rope_ext(
++                            ctx0, Qcur, inp_pos, nullptr,
++                            n_rot, rope_type, n_ctx_orig, freq_base, freq_scale,
++                            ext_factor, attn_factor, beta_fast, beta_slow
++                            );
++                }
+ 
+                 Kcur = build_norm(Kcur, model.layers[il].attn_k_norm, NULL, LLM_NORM_RMS, il);
+                 cb(Kcur, "Kcur_normed", il);
+ 
+-                Kcur = ggml_rope_ext(
+-                        ctx0, Kcur, inp_pos, nullptr,
+-                        n_rot, rope_type, n_ctx_orig, freq_base, freq_scale,
+-                        ext_factor, attn_factor, beta_fast, beta_slow
+-                        );
++                if (rope_type == LLAMA_ROPE_TYPE_MROPE) {
++                    Kcur = ggml_rope_multi(
++                            ctx0, Kcur, inp_pos, nullptr,
++                            n_rot, sections, rope_type, n_ctx_orig, freq_base, freq_scale,
++                            ext_factor, attn_factor, beta_fast, beta_slow
++                            );
++                } else {
++                    Kcur = ggml_rope_ext(
++                            ctx0, Kcur, inp_pos, nullptr,
++                            n_rot, rope_type, n_ctx_orig, freq_base, freq_scale,
++                            ext_factor, attn_factor, beta_fast, beta_slow
++                            );
++                }
+ 
+                 cb(Qcur, "Qcur", il);
+                 cb(Kcur, "Kcur", il);
+@@ -19866,6 +19967,14 @@ ggml_cgraph * llama_model::build_graph(const llm_graph_params & params) const {
+             {
+                 llm = std::make_unique<llm_build_qwen3moe>(*this, params);
+             } break;
++        case LLM_ARCH_QWEN3_VL:
++            {
++                llm = std::make_unique<llm_build_qwen3>(*this, params);
++            } break;
++        case LLM_ARCH_QWEN3_VL_MOE:
++            {
++                llm = std::make_unique<llm_build_qwen3moe>(*this, params);
++            } break;
+         case LLM_ARCH_PHI2:
+             {
+                 llm = std::make_unique<llm_build_phi2>(*this, params);
+@@ -20378,6 +20487,8 @@ llama_rope_type llama_model_rope_type(const llama_model * model) {
+             return LLAMA_ROPE_TYPE_NEOX;
+ 
+         case LLM_ARCH_QWEN2VL:
++        case LLM_ARCH_QWEN3_VL:
++        case LLM_ARCH_QWEN3_VL_MOE:
+             return LLAMA_ROPE_TYPE_MROPE;
+ 
+         // all model arches should be listed explicitly here
+diff --git a/tools/mtmd/clip-impl.h b/tools/mtmd/clip-impl.h
+index 1669fad99b36b..9ffc0884a2183 100644
+--- a/tools/mtmd/clip-impl.h
++++ b/tools/mtmd/clip-impl.h
+@@ -127,6 +127,7 @@ enum projector_type {
+     PROJECTOR_TYPE_MINICPMV,
+     PROJECTOR_TYPE_GLM_EDGE,
+     PROJECTOR_TYPE_QWEN2VL,
++    PROJECTOR_TYPE_QWEN3VLMOE,
+     PROJECTOR_TYPE_GEMMA3,
+     PROJECTOR_TYPE_IDEFICS3,
+     PROJECTOR_TYPE_PIXTRAL,
+@@ -150,6 +151,7 @@ static std::map<projector_type, std::string> PROJECTOR_TYPE_NAMES = {
+     { PROJECTOR_TYPE_GLM_EDGE,  "adapter"},
+     { PROJECTOR_TYPE_QWEN2VL,   "qwen2vl_merger"},
+     { PROJECTOR_TYPE_QWEN25VL,  "qwen2.5vl_merger"},
++    { PROJECTOR_TYPE_QWEN3VLMOE,  "qwen3vl_merger"},
+     { PROJECTOR_TYPE_GEMMA3,    "gemma3"},
+     { PROJECTOR_TYPE_IDEFICS3,  "idefics3"},
+     { PROJECTOR_TYPE_PIXTRAL,   "pixtral"},
+diff --git a/tools/mtmd/clip.cpp b/tools/mtmd/clip.cpp
+index f2abf88523843..a867edf03b662 100644
+--- a/tools/mtmd/clip.cpp
++++ b/tools/mtmd/clip.cpp
+@@ -195,6 +195,7 @@ struct clip_hparams {
+     int32_t attn_window_size = 0;
+     int32_t n_wa_pattern = 0;
+     int32_t spatial_merge_size = 0;
++    std::vector<int32_t> deepstack_layers; // qwen3vl multi-level feature fusion
+ 
+     // audio
+     int32_t n_mel_bins = 0; // whisper preprocessor
+@@ -359,6 +360,16 @@ struct clip_model {
+     ggml_tensor * mm_norm_pre_w = nullptr;
+     ggml_tensor * mm_norm_mid_w = nullptr;
+ 
++    // qwen3vl deepstack (multi-level feature fusion)
++    struct deepstack_merger {
++        ggml_tensor * norm_w = nullptr;
++        ggml_tensor * fc1_w = nullptr;
++        ggml_tensor * fc1_b = nullptr;
++        ggml_tensor * fc2_w = nullptr;
++        ggml_tensor * fc2_b = nullptr;
++    };
++    std::vector<deepstack_merger> deepstack_mergers;
++
+     bool audio_has_avgpool() const {
+         return proj_type == PROJECTOR_TYPE_QWEN2A
+             || proj_type == PROJECTOR_TYPE_VOXTRAL;
+@@ -651,7 +662,6 @@ struct clip_graph {
+ 
+     // Qwen2VL and Qwen2.5VL use M-RoPE
+     ggml_cgraph * build_qwen2vl() {
+-        GGML_ASSERT(model.patch_bias == nullptr);
+         GGML_ASSERT(model.class_embedding == nullptr);
+ 
+         const int batch_size       = 1;
+@@ -675,6 +685,9 @@ struct clip_graph {
+         // second conv dimension
+         {
+             auto inp_1 = ggml_conv_2d(ctx0, model.patch_embeddings_1, inp_raw, patch_size, patch_size, 0, 0, 1, 1);
++
++            // For all Qwen2VL/2.5VL/3VL: add the two conv outputs
++            // This is spatial merging for 2VL/2.5VL and temporal for 3VL
+             inp = ggml_add(ctx0, inp, inp_1);
+ 
+             inp = ggml_permute(ctx0, inp, 1, 2, 0, 3);  // [w, h, c, b] -> [c, w, h, b]
+@@ -691,6 +704,13 @@ struct clip_graph {
+         }
+ 
+         ggml_tensor * inpL           = inp;
++        
++        // Add patch bias if present (Qwen3-VL has it, Qwen2VL doesn't)
++        // After reshaping, inpL shape: [n_embd, n_patches, batch_size]
++        // patch_bias shape: [n_embd]
++        if (model.patch_bias) {
++            inpL = ggml_add(ctx0, inpL, model.patch_bias);
++        }
+         ggml_tensor * window_mask    = nullptr;
+         ggml_tensor * window_idx     = nullptr;
+         ggml_tensor * inv_window_idx = nullptr;
+@@ -699,11 +719,49 @@ struct clip_graph {
+         ggml_set_name(positions, "positions");
+         ggml_set_input(positions);
+ 
++        // Qwen3VL uses learned position embeddings in addition to MRoPE
++        // Unlike Qwen2VL (MRoPE only), Qwen3VL has BOTH learned pos embeddings AND MRoPE
++        if (ctx->proj_type() == PROJECTOR_TYPE_QWEN3VLMOE && model.position_embeddings) {
++            // Position embeddings need to be interpolated to match image size
++            // model.position_embeddings shape: [n_embd, num_position_embeddings]
++            // where num_position_embeddings = 2304 (48x48 grid)
++
++            // For images that don't match the 48x48 grid, we need to interpolate
++            // Current image has n_patches_x × n_patches_y patches after spatial merge
++
++            // Step 1: Reshape from [n_embd, 2304] to [n_embd, 48, 48, 1]
++            const int pos_embd_grid_size = 48; // sqrt(2304) = 48
++            ggml_tensor * pos_embd_2d = ggml_reshape_4d(ctx0, model.position_embeddings,
++                                                         n_embd, pos_embd_grid_size, pos_embd_grid_size, 1);
++
++            // Step 2: Bilinear interpolation to match current image size [n_embd, n_patches_x, n_patches_y, 1]
++            // This uses weighted interpolation between floor/ceiling grid positions
++            // Similar to fast_pos_embed_interpolate in HuggingFace/SGLang implementations
++            ggml_tensor * pos_embd_interp = ggml_interpolate(ctx0, pos_embd_2d,
++                                                              n_embd, n_patches_x, n_patches_y, 1,
++                                                              GGML_SCALE_MODE_BILINEAR);
++
++            // Step 3: Reshape to [n_embd, n_pos, 1] to match inpL shape
++            pos_embd_interp = ggml_reshape_3d(ctx0, pos_embd_interp, n_embd, n_pos, 1);
++
++            // Step 4: Add position embeddings to input (NOT concatenate)
++            // Architecture uses addition for fusion, not concatenation like some implementations
++            // inpL shape: [n_embd, n_pos, batch_size]
++            // pos_embd_interp shape: [n_embd, n_pos, 1]
++            inpL = ggml_add(ctx0, inpL, pos_embd_interp);
++        }
++
+         // pre-layernorm
+         if (model.pre_ln_w) {
+             inpL = build_norm(inpL, model.pre_ln_w, model.pre_ln_b, norm_t, eps, -1);
+         }
+ 
++        // DeepStack: prepare storage for multi-level features
++        std::vector<ggml_tensor*> deepstack_features;
++        if (ctx->proj_type() == PROJECTOR_TYPE_QWEN3VLMOE && !hparams.deepstack_layers.empty()) {
++            deepstack_features.reserve(hparams.deepstack_layers.size());
++        }
++
+         if (use_window_attn) {
+             // handle window attention inputs
+             inv_window_idx = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, n_pos / 4);
+@@ -792,6 +850,16 @@ struct clip_graph {
+             cb(cur, "layer_out", il);
+ 
+             inpL = cur;
++
++            // DeepStack: collect features from specified layers
++            if (!hparams.deepstack_layers.empty()) {
++                for (size_t i = 0; i < hparams.deepstack_layers.size(); i++) {
++                    if (il == hparams.deepstack_layers[i]) {
++                        deepstack_features.push_back(inpL);
++                        break;
++                    }
++                }
++            }
+         }
+ 
+         // post-layernorm
+@@ -799,9 +867,15 @@ struct clip_graph {
+             inpL = build_norm(inpL, model.post_ln_w, model.post_ln_b, norm_t, eps, n_layer);
+         }
+ 
+-        // multimodal projection
++        // multimodal projection with spatial merging
+         ggml_tensor * embeddings = inpL;
+-        embeddings = ggml_reshape_3d(ctx0, embeddings, n_embd * 4, n_pos / 4, batch_size);
++
++        // Spatial merge: group patches together (default 2x2=4 for Qwen2VL/3VL)
++        const int merge_factor = hparams.spatial_merge_size > 0
++            ? hparams.spatial_merge_size * hparams.spatial_merge_size
++            : 4;
++
++        embeddings = ggml_reshape_3d(ctx0, embeddings, n_embd * merge_factor, n_pos / merge_factor, batch_size);
+ 
+         embeddings = ggml_mul_mat(ctx0, model.mm_0_w, embeddings);
+         embeddings = ggml_add(ctx0, embeddings, model.mm_0_b);
+@@ -813,6 +887,40 @@ struct clip_graph {
+         embeddings = ggml_mul_mat(ctx0, model.mm_1_w, embeddings);
+         embeddings = ggml_add(ctx0, embeddings, model.mm_1_b);
+ 
++        // DeepStack: apply mergers and fuse multi-level features
++        if (!deepstack_features.empty() && deepstack_features.size() == model.deepstack_mergers.size()) {
++            LOG_INF("%s: DeepStack fusion: %zu features collected\n", __func__, deepstack_features.size());
++            for (size_t i = 0; i < deepstack_features.size(); i++) {
++                auto & merger = model.deepstack_mergers[i];
++                ggml_tensor * feat = deepstack_features[i];
++
++                LOG_INF("%s: DeepStack feature %zu shape: [%lld, %lld, %lld]\n", __func__, i, feat->ne[0], feat->ne[1], feat->ne[2]);
++
++                // Apply spatial merge to the DeepStack feature (same as main path)
++                feat = ggml_reshape_3d(ctx0, feat, n_embd * merge_factor, n_pos / merge_factor, batch_size);
++                LOG_INF("%s: DeepStack feature %zu after spatial merge: [%lld, %lld, %lld]\n", __func__, i, feat->ne[0], feat->ne[1], feat->ne[2]);
++
++                // Apply merger network: norm -> fc1 -> gelu -> fc2
++                LOG_INF("%s: DeepStack merger %zu weights: norm_w=[%lld], fc1_w=[%lld,%lld], fc2_w=[%lld,%lld]\n",
++                        __func__, i, merger.norm_w->ne[0], merger.fc1_w->ne[0], merger.fc1_w->ne[1], merger.fc2_w->ne[0], merger.fc2_w->ne[1]);
++
++                feat = ggml_rms_norm(ctx0, feat, eps);
++                feat = ggml_mul(ctx0, feat, merger.norm_w);
++
++                feat = ggml_mul_mat(ctx0, merger.fc1_w, feat);
++                feat = ggml_add(ctx0, feat, merger.fc1_b);
++                feat = ggml_gelu(ctx0, feat);
++
++                feat = ggml_mul_mat(ctx0, merger.fc2_w, feat);
++                feat = ggml_add(ctx0, feat, merger.fc2_b);
++
++                LOG_INF("%s: DeepStack feature %zu after merger: [%lld, %lld, %lld]\n", __func__, i, feat->ne[0], feat->ne[1], feat->ne[2]);
++
++                // Add to the main embeddings (fuse multi-level features)
++                embeddings = ggml_add(ctx0, embeddings, feat);
++            }
++        }
++
+         if (use_window_attn) {
+             window_idx = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, n_pos / 4);
+             ggml_set_name(window_idx, "window_idx");
+@@ -2100,6 +2208,7 @@ static ggml_cgraph * clip_image_build_graph(clip_ctx * ctx, const clip_image_f32
+             } break;
+         case PROJECTOR_TYPE_QWEN2VL:
+         case PROJECTOR_TYPE_QWEN25VL:
++        case PROJECTOR_TYPE_QWEN3VLMOE:
+             {
+                 res = graph.build_qwen2vl();
+             } break;
+@@ -2411,6 +2520,21 @@ struct clip_model_loader {
+                         hparams.image_size = 1024;
+                         hparams.warmup_image_size = hparams.patch_size * 8;
+                     } break;
++                case PROJECTOR_TYPE_QWEN3VLMOE:
++                    {
++                        // max image size = sqrt(max_pixels) = 3584
++                        // ref: https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct/blob/main/preprocessor_config.json
++                        // however, the model use unreasonable memory past 1024 size, we force it to 1024 otherwise it's unusable
++                        // ref: https://huggingface.co/Qwen/Qwen2-VL-2B-Instruct/discussions/10
++                        hparams.image_size = 1024;
++                        hparams.warmup_image_size = hparams.patch_size * 8;
++
++                        // Load spatial merge size (typically 2 for Qwen3VL)
++                        get_u32(KEY_SPATIAL_MERGE_SIZE, hparams.spatial_merge_size, false);
++
++                        // Load DeepStack layer indices for multi-level feature fusion
++                        get_arr_int("clip.vision.deepstack_layers", hparams.deepstack_layers, false);
++                    } break;
+                 case PROJECTOR_TYPE_QWEN25VL:
+                     {
+                         // max image size = sqrt(max_pixels)
+@@ -2459,6 +2583,15 @@ struct clip_model_loader {
+                 LOG_INF("%s: minicpmv_version:   %d\n", __func__, hparams.minicpmv_version);
+                 LOG_INF("%s: proj_scale_factor:  %d\n", __func__, hparams.proj_scale_factor);
+                 LOG_INF("%s: n_wa_pattern:       %d\n", __func__, hparams.n_wa_pattern);
++                if (hparams.spatial_merge_size > 0) {
++                    LOG_INF("%s: spatial_merge_size: %d\n", __func__, hparams.spatial_merge_size);
++                }
++                if (!hparams.deepstack_layers.empty()) {
++                    LOG_INF("%s: deepstack_layers:   ", __func__);
++                    for (size_t i = 0; i < hparams.deepstack_layers.size(); i++) {
++                        LOG_CNT("%d%s", hparams.deepstack_layers[i], i < hparams.deepstack_layers.size() - 1 ? ", " : "\n");
++                    }
++                }
+             } else if (is_audio) {
+                 LOG_INF("\n--- audio hparams ---\n");
+                 LOG_INF("%s: n_mel_bins:         %d\n", __func__, hparams.n_mel_bins);
+@@ -2525,6 +2658,13 @@ struct clip_model_loader {
+         model.patch_embeddings_1 = get_tensor(TN_PATCH_EMBD_1, false);
+ 
+         model.position_embeddings = get_tensor(string_format(TN_POS_EMBD, prefix), false);
++        if (model.position_embeddings) {
++            LOG_INF("%s: position_embeddings loaded: [%lld, %lld]\n", __func__,
++                    model.position_embeddings->ne[0], model.position_embeddings->ne[1]);
++        } else {
++            LOG_INF("%s: WARNING: position_embeddings NOT FOUND (tensor: %s)\n", __func__,
++                    string_format(TN_POS_EMBD, prefix).c_str());
++        }
+ 
+         // layers
+         model.layers.resize(hparams.n_layer);
+@@ -2685,11 +2825,25 @@ struct clip_model_loader {
+                 } break;
+             case PROJECTOR_TYPE_QWEN2VL:
+             case PROJECTOR_TYPE_QWEN25VL:
++            case PROJECTOR_TYPE_QWEN3VLMOE:
+                 {
+                     model.mm_0_w = get_tensor(string_format(TN_LLAVA_PROJ, 0, "weight"));
+                     model.mm_0_b = get_tensor(string_format(TN_LLAVA_PROJ, 0, "bias"));
+                     model.mm_1_w = get_tensor(string_format(TN_LLAVA_PROJ, 2, "weight"));
+                     model.mm_1_b = get_tensor(string_format(TN_LLAVA_PROJ, 2, "bias"));
++
++                    // Load DeepStack merger weights for Qwen3VL multi-level fusion
++                    if (model.proj_type == PROJECTOR_TYPE_QWEN3VLMOE && !hparams.deepstack_layers.empty()) {
++                        model.deepstack_mergers.resize(hparams.deepstack_layers.size());
++                        for (size_t i = 0; i < hparams.deepstack_layers.size(); i++) {
++                            auto & merger = model.deepstack_mergers[i];
++                            merger.norm_w = get_tensor(string_format("v.deepstack.%d.norm.weight", (int)i), false);
++                            merger.fc1_w  = get_tensor(string_format("v.deepstack.%d.fc1.weight", (int)i), false);
++                            merger.fc1_b  = get_tensor(string_format("v.deepstack.%d.fc1.bias", (int)i), false);
++                            merger.fc2_w  = get_tensor(string_format("v.deepstack.%d.fc2.weight", (int)i), false);
++                            merger.fc2_b  = get_tensor(string_format("v.deepstack.%d.fc2.bias", (int)i), false);
++                        }
++                    }
+                 } break;
+             case PROJECTOR_TYPE_GEMMA3:
+                 {
+@@ -3554,7 +3708,8 @@ bool clip_image_preprocess(struct clip_ctx * ctx, const clip_image_u8 * img, str
+         res_imgs->grid_y = inst.grid_size.height;
+         return true;
+ 
+-    } else if (ctx->proj_type() == PROJECTOR_TYPE_QWEN2VL || ctx->proj_type() == PROJECTOR_TYPE_QWEN25VL) {
++    } else if (ctx->proj_type() == PROJECTOR_TYPE_QWEN2VL || ctx->proj_type() == PROJECTOR_TYPE_QWEN25VL || ctx->proj_type() == PROJECTOR_TYPE_QWEN3VLMOE) {
++        // Qwen3-VL uses Qwen2VLImageProcessorFast according to preprocessor_config.json
+         clip_image_u8 resized;
+         auto patch_size = params.patch_size * 2;
+         auto new_size = image_manipulation::calc_size_preserved_ratio(original_size, patch_size, params.image_size);
+@@ -3774,7 +3929,8 @@ const char * clip_patch_merge_type(const struct clip_ctx * ctx) {
+ int clip_n_output_tokens_x(const struct clip_ctx * ctx, struct clip_image_f32 * img) {
+     const auto & params = ctx->model.hparams;
+     const int n_total = clip_n_output_tokens(ctx, img);
+-    if (ctx->proj_type() == PROJECTOR_TYPE_QWEN2VL || ctx->proj_type() == PROJECTOR_TYPE_QWEN25VL) {
++    if (ctx->proj_type() == PROJECTOR_TYPE_QWEN2VL || ctx->proj_type() == PROJECTOR_TYPE_QWEN25VL || ctx->proj_type() == PROJECTOR_TYPE_QWEN3VLMOE) {
++        // Qwen3-VL uses same token calculation: patch_size * temporal_patch_size * merge_size = 16 * 2 / 2 = 16 effective
+         return img->nx / (params.patch_size * 2) + (int)(img->nx % params.patch_size > 0);
+     }
+     return n_total;
+@@ -3782,7 +3938,7 @@ int clip_n_output_tokens_x(const struct clip_ctx * ctx, struct clip_image_f32 *
+ 
+ int clip_n_output_tokens_y(const struct clip_ctx * ctx, struct clip_image_f32 * img) {
+     const auto & params = ctx->model.hparams;
+-    if (ctx->proj_type() == PROJECTOR_TYPE_QWEN2VL || ctx->proj_type() == PROJECTOR_TYPE_QWEN25VL) {
++    if (ctx->proj_type() == PROJECTOR_TYPE_QWEN2VL || ctx->proj_type() == PROJECTOR_TYPE_QWEN25VL || ctx->proj_type() == PROJECTOR_TYPE_QWEN3VLMOE) {
+         return img->ny / (params.patch_size * 2) + (int)(img->ny % params.patch_size > 0);
+     }
+     return 1;
+@@ -3838,6 +3994,7 @@ int clip_n_output_tokens(const struct clip_ctx * ctx, struct clip_image_f32 * im
+             } break;
+         case PROJECTOR_TYPE_QWEN2VL:
+         case PROJECTOR_TYPE_QWEN25VL:
++        case PROJECTOR_TYPE_QWEN3VLMOE:
+             {
+                 // dynamic size (2 conv, so double patch size)
+                 int patch_size = params.patch_size * 2;
+@@ -3999,6 +4156,8 @@ bool clip_image_batch_encode(clip_ctx * ctx, const int n_threads, const clip_ima
+     const clip_image_f32_batch & imgs = *imgs_c_ptr;
+     int batch_size = imgs.entries.size();
+ 
++    LOG_INF("%s: Starting encode, batch_size=%d, image size=%dx%d\n", __func__, batch_size, imgs.entries[0]->nx, imgs.entries[0]->ny);
++
+     // TODO @ngxson : implement batch size > 1 as a loop
+     //                we don't need true batching support because the cgraph will gonna be big anyway
+     if (batch_size != 1) {
+@@ -4006,10 +4165,15 @@ bool clip_image_batch_encode(clip_ctx * ctx, const int n_threads, const clip_ima
+     }
+ 
+     // build the inference graph
++    LOG_INF("%s: Clearing debug tensors\n", __func__);
+     ctx->debug_print_tensors.clear();
++    LOG_INF("%s: Resetting backend scheduler\n", __func__);
+     ggml_backend_sched_reset(ctx->sched.get());
++    LOG_INF("%s: Building graph\n", __func__);
+     ggml_cgraph * gf = clip_image_build_graph(ctx, imgs);
++    LOG_INF("%s: Allocating graph\n", __func__);
+     ggml_backend_sched_alloc_graph(ctx->sched.get(), gf);
++    LOG_INF("%s: Graph allocated\n", __func__);
+ 
+     // set inputs
+     const auto & model   = ctx->model;
+@@ -4152,10 +4316,10 @@ bool clip_image_batch_encode(clip_ctx * ctx, const int n_threads, const clip_ima
+                     for (int x = 0; x < pw; x += merge_ratio) {
+                         for (int dy = 0; dy < 2; dy++) {
+                             for (int dx = 0; dx < 2; dx++) {
+-                                positions[                  ptr] = y + dy;
+-                                positions[    num_patches + ptr] = x + dx;
+-                                positions[2 * num_patches + ptr] = y + dy;
+-                                positions[3 * num_patches + ptr] = x + dx;
++                                positions[              ptr] = y + dy;
++                                positions[    n_pos + ptr] = x + dx;
++                                positions[2 * n_pos + ptr] = y + dy;
++                                positions[3 * n_pos + ptr] = x + dx;
+                                 ptr++;
+                             }
+                         }
+@@ -4233,10 +4397,10 @@ bool clip_image_batch_encode(clip_ctx * ctx, const int n_threads, const clip_ima
+                                 auto remap = idx[ptr / mpow];
+                                 remap = (remap * mpow) + (ptr % mpow);
+ 
+-                                positions[                  remap] = y + dy;
+-                                positions[    num_patches + remap] = x + dx;
+-                                positions[2 * num_patches + remap] = y + dy;
+-                                positions[3 * num_patches + remap] = x + dx;
++                                positions[              remap] = y + dy;
++                                positions[    n_pos + remap] = x + dx;
++                                positions[2 * n_pos + remap] = y + dy;
++                                positions[3 * n_pos + remap] = x + dx;
+                                 ptr++;
+                             }
+                         }
+@@ -4245,6 +4409,88 @@ bool clip_image_batch_encode(clip_ctx * ctx, const int n_threads, const clip_ima
+ 
+                 set_input_i32("positions", positions);
+             } break;
++        case PROJECTOR_TYPE_QWEN3VLMOE:
++            {
++                // pw * ph = number of tokens output by ViT after apply patch merger
++                // ipw * ipw = number of vision token been processed inside ViT
++                const int merge_ratio = 2;
++                const int pw  = image_size_width  / patch_size / merge_ratio;
++                const int ph  = image_size_height / patch_size / merge_ratio;
++                const int ipw = image_size_width  / patch_size;
++                const int iph = image_size_height / patch_size;
++
++                std::vector<int> idx    (ph * pw);
++                std::vector<int> inv_idx(ph * pw);
++
++                if (use_window_attn) {
++                    const int attn_window_size = 112;
++                    const int grid_window = attn_window_size / patch_size / merge_ratio;
++                    int dst = 0;
++                    // [num_vision_tokens, num_vision_tokens] attention mask tensor
++                    std::vector<float> mask(pow(ipw * iph, 2), std::numeric_limits<float>::lowest());
++                    int mask_row = 0;
++
++                    for (int y = 0; y < ph; y += grid_window) {
++                        for (int x = 0; x < pw; x += grid_window) {
++                            const int win_h = std::min(grid_window, ph - y);
++                            const int win_w = std::min(grid_window, pw - x);
++                            const int dst_0 = dst;
++                            // group all tokens belong to the same window togather (to a continue range)
++                            for (int dy = 0; dy < win_h; dy++) {
++                                for (int dx = 0; dx < win_w; dx++) {
++                                    const int src = (y + dy) * pw + (x + dx);
++                                    GGML_ASSERT(src < (int)idx.size());
++                                    GGML_ASSERT(dst < (int)inv_idx.size());
++                                    idx    [src] = dst;
++                                    inv_idx[dst] = src;
++                                    dst++;
++                                }
++                            }
++
++                            for (int r=0; r < win_h * win_w * merge_ratio * merge_ratio; r++) {
++                                int row_offset = mask_row * (ipw * iph);
++                                std::fill(
++                                    mask.begin() + row_offset + (dst_0 * merge_ratio * merge_ratio),
++                                    mask.begin() + row_offset + (dst   * merge_ratio * merge_ratio),
++                                    0.0);
++                                mask_row++;
++                            }
++                        }
++                    }
++
++                    set_input_i32("window_idx",     idx);
++                    set_input_i32("inv_window_idx", inv_idx);
++                    set_input_f32("window_mask",    mask);
++                } else {
++                    for (int i = 0; i < ph * pw; i++) {
++                        idx[i] = i;
++                    }
++                }
++
++                const int mpow = merge_ratio * merge_ratio;
++                std::vector<int> positions(n_pos * 4);
++
++                int ptr = 0;
++                for (int y = 0; y < iph; y += merge_ratio) {
++                    for (int x = 0; x < ipw; x += merge_ratio) {
++                        for (int dy = 0; dy < 2; dy++) {
++                            for (int dx = 0; dx < 2; dx++) {
++                                auto remap = idx[ptr / mpow];
++                                remap = (remap * mpow) + (ptr % mpow);
++
++                                positions[              remap] = y + dy;
++                                positions[    n_pos + remap] = x + dx;
++                                positions[2 * n_pos + remap] = y + dy;
++                                positions[3 * n_pos + remap] = x + dx;
++                                ptr++;
++                            }
++                        }
++                    }
++                }
++
++                set_input_i32("positions", positions);
++                // Note: Learned position embeddings for Qwen3VL are interpolated in the graph builder
++            } break;
+         case PROJECTOR_TYPE_PIXTRAL:
+         case PROJECTOR_TYPE_KIMIVL:
+             {
+@@ -4334,7 +4580,9 @@ bool clip_image_batch_encode(clip_ctx * ctx, const int n_threads, const clip_ima
+         }
+     }
+ 
++    LOG_INF("%s: Starting graph compute\n", __func__);
+     auto status = ggml_backend_sched_graph_compute(ctx->sched.get(), gf);
++    LOG_INF("%s: Graph compute finished with status %d\n", __func__, status);
+     if (status != GGML_STATUS_SUCCESS) {
+         LOG_ERR("%s: ggml_backend_sched_graph_compute failed with error %d\n", __func__, status);
+         return false;
+@@ -4385,7 +4633,7 @@ int clip_n_mmproj_embd(const struct clip_ctx * ctx) {
+         case PROJECTOR_TYPE_GLM_EDGE:
+             return ctx->model.mm_model_mlp_3_w->ne[1];
+         case PROJECTOR_TYPE_QWEN2VL:
+-        case PROJECTOR_TYPE_QWEN25VL:
++        case PROJECTOR_TYPE_QWEN3VLMOE:
+             return ctx->model.mm_1_b->ne[0];
+         case PROJECTOR_TYPE_GEMMA3:
+             return ctx->model.mm_input_proj_w->ne[0];
+@@ -4421,7 +4669,7 @@ bool clip_is_glm(const struct clip_ctx * ctx) {
+ 
+ bool clip_is_qwen2vl(const struct clip_ctx * ctx) {
+     return ctx->proj_type() == PROJECTOR_TYPE_QWEN2VL
+-        || ctx->proj_type() == PROJECTOR_TYPE_QWEN25VL;
++        || ctx->proj_type() == PROJECTOR_TYPE_QWEN3VLMOE;
+ }
+ 
+ bool clip_is_llava(const struct clip_ctx * ctx) {
+diff --git a/tools/mtmd/mtmd.cpp b/tools/mtmd/mtmd.cpp
+index 4d487581ae0a0..9a0924f51e01c 100644
+--- a/tools/mtmd/mtmd.cpp
++++ b/tools/mtmd/mtmd.cpp
+@@ -258,7 +258,7 @@ struct mtmd_context {
+             // https://github.com/huggingface/transformers/blob/1cd110c6cb6a6237614130c470e9a902dbc1a4bd/docs/source/en/model_doc/pixtral.md
+             img_end = "[IMG_END]";
+ 
+-        } else if (proj == PROJECTOR_TYPE_QWEN2VL || proj == PROJECTOR_TYPE_QWEN25VL) {
++        } else if (proj == PROJECTOR_TYPE_QWEN2VL || proj == PROJECTOR_TYPE_QWEN25VL || proj == PROJECTOR_TYPE_QWEN3VLMOE) {
+             // <|vision_start|> ... (image embeddings) ... <|vision_end|>
+             img_beg = "<|vision_start|>";
+             img_end = "<|vision_end|>";
+diff --git a/tools/server/server.cpp b/tools/server/server.cpp
+index 8737fba124d50..cea6f824912f8 100644
+--- a/tools/server/server.cpp
++++ b/tools/server/server.cpp
+@@ -2708,6 +2708,11 @@ struct server_context {
+     bool launch_slot_with_task(server_slot & slot, server_task && task) {
+         slot.reset();
+ 
++        // clear the KV/RS cache for this slot to ensure clean state
++        SLT_DBG(slot, "%s", "clearing memory cache for new task\n");
++        llama_memory_seq_rm(llama_get_memory(ctx), slot.id, -1, -1);
++        slot.prompt.tokens.clear();
++
+         if (!are_lora_equal(task.params.lora, slot.lora)) {
+             // if lora has changed, check to see if the cache should be cleared
+             if (lora_should_clear_cache(slot.lora, task.params.lora)) {
+
+From ddbff2f1016ccf3b351ae47edd650e60a0ca0d06 Mon Sep 17 00:00:00 2001
+From: Yair <yair.zarfati@gmail.com>
+Date: Wed, 22 Oct 2025 15:37:30 +0300
+Subject: [PATCH 2/2] Revert "ci: include s390x release binaries (#16648)"
+
+This reverts commit fcb235b46618921cbd826acd49b553b5302233aa.
+---
+ .github/workflows/release.yml | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/.github/workflows/release.yml b/.github/workflows/release.yml
+index cab3ba9e68ee4..2ad381159409c 100644
+--- a/.github/workflows/release.yml
++++ b/.github/workflows/release.yml
+@@ -134,8 +134,6 @@ jobs:
+         include:
+           - build: 'x64'
+             os: ubuntu-22.04
+-          - build: 's390x-z15' # z15 because our CI runners are on z15
+-            os: ubuntu-22.04-s390x
+           # GGML_BACKEND_DL and GGML_CPU_ALL_VARIANTS are not currently supported on arm
+           # - build: 'arm64'
+           #   os: ubuntu-22.04-arm
