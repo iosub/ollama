@@ -68,6 +68,10 @@ func ParserForName(name string) Parser {
 		return &Nemotron3NanoParser{}
 	case "functiongemma":
 		return &FunctionGemmaParser{}
+	case "glm46v":
+		return &GLM46VParser{hasThinkingSupport: false}
+	case "glm46v-thinking":
+		return &GLM46VParser{hasThinkingSupport: true}
 	default:
 		return nil
 	}

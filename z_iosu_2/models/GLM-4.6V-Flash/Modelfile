@@ -1,0 +1,9 @@
+FROM hf.co/unsloth/GLM-4.6V-Flash-GGUF:Q4_K_M
+
+RENDERER glm46v
+PARSER glm46v
+
+PARAMETER stop <|user|>
+PARAMETER stop <|endoftext|>
+PARAMETER stop </tool_call>
+PARAMETER stop <|observation|>

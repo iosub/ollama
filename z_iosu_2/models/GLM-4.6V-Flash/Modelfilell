@@ -1,0 +1,10 @@
+FROM hf.co/lmstudio-community/GLM-4.6V-Flash-GGUF:Q4_K_M
+
+RENDERER glm46v
+PARSER glm46v
+
+PARAMETER stop <|user|>
+PARAMETER stop <|endoftext|>
+PARAMETER stop <|observation|>
+PARAMETER stop <|begin_of_box|>
+PARAMETER stop <|end_of_box|>

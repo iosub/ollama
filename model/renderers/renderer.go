@@ -80,6 +80,10 @@ func rendererForName(name string) Renderer {
 		return &Nemotron3NanoRenderer{}
 	case "functiongemma":
 		return &FunctionGemmaRenderer{}
+	case "glm46v":
+		return &GLM46VRenderer{enableThinking: false, useImgTags: RenderImgTags}
+	case "glm46v-thinking":
+		return &GLM46VRenderer{enableThinking: true, useImgTags: RenderImgTags}
 	default:
 		return nil
 	}
