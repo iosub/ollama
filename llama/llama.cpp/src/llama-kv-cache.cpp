@@ -966,7 +966,9 @@ void llama_kv_cache::apply_ubatch(const slot_info & sinfo, const llama_ubatch & 
 }
 
 bool llama_kv_cache::get_can_shift() const {
-    return true;
+    // seq_add() is only supported for n_pos_per_embd() == 1
+    // Vision models like Qwen3-VL use M-RoPE with n_pos_per_embd() > 1
+    return hparams.n_pos_per_embd() == 1;
 }
 
 uint32_t llama_kv_cache::get_size() const {

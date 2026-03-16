@@ -1,8 +1,8 @@
 package parsers
 
 import (
-	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"strings"
 	"unicode"
@@ -11,75 +11,76 @@ import (
 	"github.com/ollama/ollama/logutil"
 )
 
-const (
-	glm46vCollectingContent glm46vParserState = iota
-	glm46vCollectingThinkingContent
-	glm46vCollectingToolArgs
-	glm46vThinkingDoneEatingWhitespace
-	glm46vToolCallDoneEatingWhitespace
-)
-
-type glm46vParserState int
-
-const (
-	glm46vThinkOpenTag  = "<think>"
-	glm46vThinkCloseTag = "</think>"
-)
-
+// GLM46VParser handles GLM-4-6V's tool call formats:
+// - ReAct format: Action: function_name\nAction Input: {json}
+// - Markdown format: ```\nAction: function_name\nAction Input: {json}\n```
+// - Native format: function_name\n{json}
+//
+// And thinking format:
+// <think>thinking content</think>
 type GLM46VParser struct {
-	state              glm46vParserState
-	buffer             strings.Builder
-	tools              []api.Tool
-	toolNames          []string
-	hasThinkingSupport bool
-	currentToolName    string
-	jsonBraceCount     int
-	// For accumulating content when tools are available
-	pendingContent strings.Builder
-	foundToolCall  bool
+	state  GLM46VParserState
+	buffer strings.Builder
+	tools  []api.Tool
+	err    error // Store critical errors (like unknown tools)
 }
+
+type GLM46VParserState int
+
+const (
+	GLM46VCollectingContent GLM46VParserState = iota
+	GLM46VCollectingThinking
+	GLM46VCollectingToolCall
+)
+
+const (
+	glm46vThinkingOpenTag   = "<think>"
+	glm46vThinkingCloseTag  = "</think>"
+	glm46vActionPrefix      = "Action:"
+	glm46vActionInputPrefix = "Action Input:"
+)
 
 func (p *GLM46VParser) HasToolSupport() bool {
 	return true
 }
 
 func (p *GLM46VParser) HasThinkingSupport() bool {
-	return p.hasThinkingSupport
+	return true
 }
 
-func (p *GLM46VParser) setInitialState(lastMessage *api.Message) {
+func (p *GLM46VParser) setInitialState(lastMessage *api.Message, tools []api.Tool, thinkValue *api.ThinkValue) {
 	prefill := lastMessage != nil && lastMessage.Role == "assistant"
-	if !p.HasThinkingSupport() {
-		p.state = glm46vCollectingContent
+
+	// Check both model capability AND request preference
+	thinkingEnabled := thinkValue != nil && thinkValue.Bool()
+
+	// If tools are present, we don't start in thinking mode
+	if len(tools) > 0 {
+		p.state = GLM46VCollectingContent
+		return
+	}
+
+	if !thinkingEnabled {
+		p.state = GLM46VCollectingContent
 		return
 	}
 
 	if prefill && lastMessage.Content != "" {
-		p.state = glm46vCollectingContent
+		p.state = GLM46VCollectingContent
 		return
 	}
 
-	p.state = glm46vCollectingThinkingContent
+	p.state = GLM46VCollectingThinking
 }
 
 func (p *GLM46VParser) Init(tools []api.Tool, lastMessage *api.Message, thinkValue *api.ThinkValue) []api.Tool {
 	p.tools = tools
-	// Extract tool names for detection
-	p.toolNames = make([]string, len(tools))
-	for i, tool := range tools {
-		p.toolNames[i] = tool.Function.Name
-	}
-	if thinkValue != nil {
-		if v, ok := thinkValue.Value.(bool); ok && v {
-			p.hasThinkingSupport = true
-		} else if s, ok := thinkValue.Value.(string); ok && s != "" {
-			p.hasThinkingSupport = true
-		}
-	}
-	p.setInitialState(lastMessage)
+	p.err = nil
+	p.setInitialState(lastMessage, tools, thinkValue)
 	return tools
 }
 
+// Event types
 type glm46vEvent interface {
 	isGLM46VEvent()
 }
@@ -88,97 +89,49 @@ type glm46vEventContent struct {
 	content string
 }
 
-func (glm46vEventContent) isGLM46VEvent() {}
-
 type glm46vEventThinkingContent struct {
 	content string
 }
 
-func (glm46vEventThinkingContent) isGLM46VEvent() {}
-
 type glm46vEventToolCall struct {
-	name string
-	args string
+	toolCall api.ToolCall
 }
 
-func (glm46vEventToolCall) isGLM46VEvent() {}
+func (glm46vEventContent) isGLM46VEvent()         {}
+func (glm46vEventThinkingContent) isGLM46VEvent() {}
+func (glm46vEventToolCall) isGLM46VEvent()        {}
 
 func (p *GLM46VParser) Add(s string, done bool) (content string, thinking string, calls []api.ToolCall, err error) {
 	p.buffer.WriteString(s)
 	events := p.parseEvents()
 
+	// Check for critical errors
+	if p.err != nil {
+		return "", "", nil, p.err
+	}
+
+	var toolCalls []api.ToolCall
 	var contentSb strings.Builder
 	var thinkingSb strings.Builder
 	for _, event := range events {
 		switch event := event.(type) {
 		case glm46vEventToolCall:
-			toolCall := api.ToolCall{
-				Function: api.ToolCallFunction{
-					Name: event.name,
-				},
-			}
-			if event.args != "" {
-				// Try to parse as JSON, handling Python-style single quotes
-				argsStr := event.args
-				// Convert Python-style single quotes to double quotes for JSON
-				argsStr = convertPythonToJSON(argsStr)
-				if err := json.Unmarshal([]byte(argsStr), &toolCall.Function.Arguments); err != nil {
-					slog.Warn("glm46v tool call args parsing failed", "error", err, "args", event.args)
-					// Still include the tool call with empty args
-				}
-			}
-			calls = append(calls, toolCall)
-			// Mark that we found a tool call - discard any pending content
-			p.foundToolCall = true
-			p.pendingContent.Reset()
+			toolCalls = append(toolCalls, event.toolCall)
 		case glm46vEventThinkingContent:
 			thinkingSb.WriteString(event.content)
 		case glm46vEventContent:
-			// When tools are available, accumulate content instead of emitting immediately
-			if p.HasToolSupport() && len(p.toolNames) > 0 && !p.foundToolCall {
-				p.pendingContent.WriteString(event.content)
-			} else if !p.foundToolCall {
-				contentSb.WriteString(event.content)
-			}
-			// If foundToolCall is true, we discard content
+			contentSb.WriteString(event.content)
 		}
 	}
 
-	// If done and no tool call was found yet, do a final check on pending content
-	if done && !p.foundToolCall && p.pendingContent.Len() > 0 {
-		pendingStr := p.pendingContent.String()
-		// Final attempt to extract ReAct tool call from accumulated content
-		if toolName, args, _, found := p.extractReActFromPlainText(pendingStr); found {
-			slog.Log(context.TODO(), logutil.LevelTrace, "glm46v final ReAct extraction from pending", "toolName", toolName, "args", args)
-			toolCall := api.ToolCall{
-				Function: api.ToolCallFunction{
-					Name: toolName,
-				},
-			}
-			if args != "" {
-				argsStr := convertPythonToJSON(args)
-				if err := json.Unmarshal([]byte(argsStr), &toolCall.Function.Arguments); err != nil {
-					slog.Warn("glm46v tool call args parsing failed", "error", err, "args", args)
-				}
-			}
-			calls = append(calls, toolCall)
-			p.foundToolCall = true
-			p.pendingContent.Reset()
-		} else {
-			// No tool call found, emit pending content
-			contentSb.WriteString(pendingStr)
-			p.pendingContent.Reset()
-		}
-	}
-
-	return contentSb.String(), thinkingSb.String(), calls, nil
+	return contentSb.String(), thinkingSb.String(), toolCalls, nil
 }
 
 func (p *GLM46VParser) parseEvents() []glm46vEvent {
 	var all []glm46vEvent
 
 	keepLooping := true
-	for keepLooping {
+	for keepLooping && p.err == nil {
 		var events []glm46vEvent
 		events, keepLooping = p.eat()
 		if len(events) > 0 {
@@ -186,304 +139,43 @@ func (p *GLM46VParser) parseEvents() []glm46vEvent {
 		}
 	}
 
-	if len(all) > 0 {
-		slog.Log(context.TODO(), logutil.LevelTrace, "glm46v events parsed", "events", all, "state", p.state, "buffer", p.buffer.String())
-	}
-
 	return all
-}
-
-func (p *GLM46VParser) eatLeadingWhitespaceAndTransitionTo(nextState glm46vParserState) ([]glm46vEvent, bool) {
-	trimmed := strings.TrimLeftFunc(p.buffer.String(), unicode.IsSpace)
-	p.buffer.Reset()
-	if trimmed == "" {
-		return nil, false
-	}
-	p.state = nextState
-	p.buffer.WriteString(trimmed)
-	return nil, true
-}
-
-// containsToolName checks if the buffer contains a tool name in various formats:
-// - GLM-4 native: function_name\n{json}
-// - ReAct format: Action: function_name\nAction Input: {json}
-// - ReAct variant: function_name\nAction Input: {json}
-// - Markdown code block format: ```\nAction: function_name\nAction Input: {json}\n```
-func (p *GLM46VParser) containsToolName(buf string) (string, int, bool) {
-	for _, toolName := range p.toolNames {
-		// Check ReAct format: "Action: function_name" followed by "Action Input:"
-		reactPatterns := []string{
-			"\nAction: " + toolName + "\n",
-			"\nAction: " + toolName + "\r\n",
-			"Action: " + toolName + "\n",
-			"Action: " + toolName + "\r\n",
-		}
-		for _, pattern := range reactPatterns {
-			if idx := strings.Index(buf, pattern); idx >= 0 {
-				afterAction := buf[idx+len(pattern):]
-				if strings.HasPrefix(afterAction, "Action Input:") || strings.HasPrefix(strings.TrimLeft(afterAction, " \t"), "Action Input:") {
-					return toolName, idx, true
-				}
-			}
-		}
-
-		// Check ReAct variant: "function_name\nAction Input:"
-		variantPatterns := []string{
-			"\n" + toolName + "\nAction Input:",
-			"\n" + toolName + "\r\nAction Input:",
-			toolName + "\nAction Input:",
-		}
-		for _, pattern := range variantPatterns {
-			if idx := strings.Index(buf, pattern); idx >= 0 {
-				actualIdx := idx
-				if buf[idx] == '\n' {
-					actualIdx = idx + 1
-				}
-				return toolName, actualIdx, true
-			}
-		}
-
-		// Look for tool name on its own line followed by JSON (GLM-4 native format)
-		patterns := []string{"\n" + toolName + "\n{", "\n" + toolName + "\r\n{"}
-		for _, pattern := range patterns {
-			if idx := strings.Index(buf, pattern); idx >= 0 {
-				return toolName, idx + 1, true // +1 to skip the leading newline
-			}
-		}
-		// Also check if starts with tool name followed by newline and JSON
-		if strings.HasPrefix(buf, toolName+"\n{") || strings.HasPrefix(buf, toolName+"\r\n{") {
-			return toolName, 0, true
-		}
-	}
-	return "", -1, false
-}
-
-// extractReActFromPlainText extracts tool call from ReAct format in plain text (outside code blocks)
-// Format: Action: function_name\nAction Input: {json}
-func (p *GLM46VParser) extractReActFromPlainText(buf string) (toolName string, args string, contentBefore string, found bool) {
-	for _, tn := range p.toolNames {
-		// Look for "Action: toolname\nAction Input:" pattern
-		patterns := []string{
-			"\nAction: " + tn + "\nAction Input:",
-			"\nAction: " + tn + "\r\nAction Input:",
-			"Action: " + tn + "\nAction Input:",
-			"Action: " + tn + "\r\nAction Input:",
-		}
-		for _, pattern := range patterns {
-			if idx := strings.Index(buf, pattern); idx >= 0 {
-				// Found the pattern - extract the JSON args after "Action Input:"
-				argsStart := idx + len(pattern)
-				remaining := buf[argsStart:]
-				remaining = strings.TrimLeft(remaining, " \t")
-
-				// Find the JSON object - count braces
-				if len(remaining) > 0 && remaining[0] == '{' {
-					braceCount := 0
-					jsonEnd := -1
-					for i, c := range remaining {
-						if c == '{' {
-							braceCount++
-						} else if c == '}' {
-							braceCount--
-							if braceCount == 0 {
-								jsonEnd = i + 1
-								break
-							}
-						}
-					}
-					if jsonEnd > 0 {
-						args = strings.TrimSpace(remaining[:jsonEnd])
-						// Content before is everything before "Action:"
-						if idx > 0 && buf[idx] == '\n' {
-							contentBefore = buf[:idx]
-						} else {
-							contentBefore = buf[:idx]
-						}
-						return tn, args, contentBefore, true
-					}
-				}
-			}
-		}
-	}
-	return "", "", "", false
-}
-
-// extractToolCallFromMarkdown extracts tool call from markdown code block format
-// Format: ```\nAction: function_name\nAction Input: {json}\n``` or ```json\n...\n```
-func (p *GLM46VParser) extractToolCallFromMarkdown(buf string) (toolName string, args string, contentBefore string, found bool) {
-	// Look for code block start
-	codeBlockStarts := []string{"```\n", "```json\n", "```\r\n", "```json\r\n"}
-
-	for _, startMarker := range codeBlockStarts {
-		if startIdx := strings.Index(buf, startMarker); startIdx >= 0 {
-			// Find the closing ``` (can be preceded by newline or not)
-			codeStart := startIdx + len(startMarker)
-			remaining := buf[codeStart:]
-
-			// Try different closing patterns
-			endIdx := -1
-			closingLen := 0
-			for _, closer := range []string{"\n```", "\r\n```", "```"} {
-				if idx := strings.Index(remaining, closer); idx >= 0 {
-					if endIdx < 0 || idx < endIdx {
-						endIdx = idx
-						closingLen = len(closer)
-					}
-				}
-			}
-
-			if endIdx >= 0 {
-				// We have a complete code block
-				codeContent := remaining[:endIdx]
-				contentBefore = buf[:startIdx]
-
-				slog.Log(context.TODO(), logutil.LevelTrace, "glm46v markdown code block found", "codeContent", codeContent, "closingLen", closingLen)
-
-				// Check if it's ReAct format inside code block
-				for _, tn := range p.toolNames {
-					// Check "Action: toolname\nAction Input: {json}"
-					actionPrefix := "Action: " + tn + "\n"
-					if strings.HasPrefix(codeContent, actionPrefix) {
-						rest := codeContent[len(actionPrefix):]
-						if strings.HasPrefix(rest, "Action Input:") {
-							args = strings.TrimPrefix(rest, "Action Input:")
-							args = strings.TrimSpace(args)
-							return tn, args, contentBefore, true
-						}
-					}
-					// Check "Action: toolname\r\nAction Input: {json}"
-					actionPrefixCR := "Action: " + tn + "\r\n"
-					if strings.HasPrefix(codeContent, actionPrefixCR) {
-						rest := codeContent[len(actionPrefixCR):]
-						if strings.HasPrefix(rest, "Action Input:") {
-							args = strings.TrimPrefix(rest, "Action Input:")
-							args = strings.TrimSpace(args)
-							return tn, args, contentBefore, true
-						}
-					}
-					// Check without Action: prefix - just "toolname\nAction Input:"
-					if strings.HasPrefix(codeContent, tn+"\n") {
-						rest := codeContent[len(tn)+1:]
-						if strings.HasPrefix(rest, "Action Input:") {
-							args = strings.TrimPrefix(rest, "Action Input:")
-							args = strings.TrimSpace(args)
-							return tn, args, contentBefore, true
-						}
-					}
-				}
-			}
-		}
-	}
-	return "", "", "", false
 }
 
 func (p *GLM46VParser) eat() ([]glm46vEvent, bool) {
 	var events []glm46vEvent
-	buf := p.buffer.String()
+	bufStr := p.buffer.String()
+	if bufStr == "" {
+		return events, false
+	}
 
 	switch p.state {
-	case glm46vCollectingContent:
-		// When not in thinking mode, strip out any <think>...</think> tags the model might generate
-		if !p.hasThinkingSupport {
-			// Check for complete <think>...</think> pattern and remove it
-			if strings.Contains(buf, glm46vThinkOpenTag) && strings.Contains(buf, glm46vThinkCloseTag) {
-				startIdx := strings.Index(buf, glm46vThinkOpenTag)
-				endIdx := strings.Index(buf, glm46vThinkCloseTag) + len(glm46vThinkCloseTag)
-				if startIdx < endIdx {
-					before := buf[:startIdx]
-					trimmedBefore := strings.TrimSpace(before)
-					if len(trimmedBefore) > 0 {
-						events = append(events, glm46vEventContent{content: trimmedBefore})
-					}
-					after := strings.TrimLeft(buf[endIdx:], " \t\r\n")
-					p.buffer.Reset()
-					p.buffer.WriteString(after)
-					return events, len(after) > 0
-				}
-			} else if strings.Contains(buf, glm46vThinkOpenTag) {
-				// Have <think> but no </think> yet - wait for more
-				return events, false
-			}
-		}
+	case GLM46VCollectingThinking:
+		if strings.Contains(bufStr, glm46vThinkingCloseTag) {
+			// thinking[</think>] -> content
+			split := strings.SplitN(bufStr, glm46vThinkingCloseTag, 2)
+			thinking := split[0]
+			thinking = strings.TrimRightFunc(thinking, unicode.IsSpace)
 
-		// Check for tool call in XML format: <tool_call>name\n<arg_key>k</arg_key>\n<arg_value>v</arg_value>\n</tool_call>
-		if p.HasToolSupport() {
-			if strings.Contains(buf, "<tool_call>") {
-				startIdx := strings.Index(buf, "<tool_call>")
-				endIdx := strings.Index(buf, "</tool_call>")
+			remaining := split[1]
+			remaining = strings.TrimLeftFunc(remaining, unicode.IsSpace)
 
-				if endIdx > 0 {
-					endIdx += len("</tool_call>")
-					toolCallContent := buf[startIdx:endIdx]
+			p.buffer.Reset()
+			p.buffer.WriteString(remaining)
+			p.state = GLM46VCollectingContent
 
-					// Extract tool name and args from the XML-like block
-					name, args := p.extractXMLToolCall(toolCallContent)
-					if name != "" {
-						events = append(events, glm46vEventToolCall{
-							name: name,
-							args: args,
-						})
-					}
-
-					remaining := buf[endIdx:]
-					p.buffer.Reset()
-					p.buffer.WriteString(remaining)
-					p.state = glm46vToolCallDoneEatingWhitespace
-					return events, len(strings.TrimSpace(remaining)) > 0
-				} else {
-					// Incomplete tool call, but emit content before it if any
-					if startIdx > 0 {
-						unambiguous := buf[:startIdx]
-						p.buffer.Reset()
-						p.buffer.WriteString(buf[startIdx:])
-						events = append(events, glm46vEventContent{content: unambiguous})
-						return events, true
-					}
-					return events, false
-				}
-			}
-		}
-
-		// No tool call found, emit content normally
-		whitespaceLen := trailingWhitespaceLen(buf)
-		ambiguousStart := len(buf) - whitespaceLen
-
-		// If we see a partial <tool_call tag, wait
-		if strings.Contains(buf, "<tool") {
-			ambiguousStart = strings.Index(buf, "<tool")
-		}
-
-		unambiguous := buf[:ambiguousStart]
-		ambiguous := buf[ambiguousStart:]
-		p.buffer.Reset()
-		p.buffer.WriteString(ambiguous)
-		if len(unambiguous) > 0 {
-			events = append(events, glm46vEventContent{content: unambiguous})
-		}
-		return events, false
-
-	case glm46vCollectingToolArgs:
-		// Not used anymore as we parse the whole <tool_call> block at once
-		p.state = glm46vCollectingContent
-		return nil, true
-
-	case glm46vCollectingThinkingContent:
-		if strings.Contains(buf, glm46vThinkCloseTag) {
-			thinking, remaining := splitAtTag(&p.buffer, glm46vThinkCloseTag, true)
 			if len(thinking) > 0 {
 				events = append(events, glm46vEventThinkingContent{content: thinking})
 			}
-			if remaining == "" {
-				p.state = glm46vThinkingDoneEatingWhitespace
-			} else {
-				p.state = glm46vCollectingContent
-			}
 			return events, true
-		} else if overlapLen := overlap(buf, glm46vThinkCloseTag); overlapLen > 0 {
-			beforePartialTag := buf[:len(buf)-overlapLen]
+		} else if overlapLen := overlap(bufStr, glm46vThinkingCloseTag); overlapLen > 0 {
+			// partial </think>
+			beforePartialTag := bufStr[:len(bufStr)-overlapLen]
 			trailingLen := trailingWhitespaceLen(beforePartialTag)
-			unambiguous := beforePartialTag[:len(beforePartialTag)-trailingLen]
-			ambiguous := buf[len(unambiguous):]
+			ambiguousStart := len(beforePartialTag) - trailingLen
+
+			unambiguous := bufStr[:ambiguousStart]
+			ambiguous := bufStr[ambiguousStart:]
 			p.buffer.Reset()
 			p.buffer.WriteString(ambiguous)
 			if len(unambiguous) > 0 {
@@ -491,9 +183,12 @@ func (p *GLM46VParser) eat() ([]glm46vEvent, bool) {
 			}
 			return events, false
 		} else {
-			whitespaceLen := trailingWhitespaceLen(buf)
-			unambiguous := buf[:len(buf)-whitespaceLen]
-			ambiguous := buf[len(unambiguous):]
+			// otherwise it's thinking content
+			whitespaceLen := trailingWhitespaceLen(bufStr)
+			ambiguousStart := len(bufStr) - whitespaceLen
+
+			unambiguous := bufStr[:ambiguousStart]
+			ambiguous := bufStr[ambiguousStart:]
 			p.buffer.Reset()
 			p.buffer.WriteString(ambiguous)
 			if len(unambiguous) > 0 {
@@ -502,82 +197,437 @@ func (p *GLM46VParser) eat() ([]glm46vEvent, bool) {
 			return events, false
 		}
 
-	case glm46vThinkingDoneEatingWhitespace:
-		return p.eatLeadingWhitespaceAndTransitionTo(glm46vCollectingContent)
+	case GLM46VCollectingContent:
+		// Check which pattern appears first: thinking tag or tool call
+		thinkIdx := strings.Index(bufStr, glm46vThinkingOpenTag)
+		toolCallIdx := p.findToolCallStart(bufStr)
 
-	case glm46vToolCallDoneEatingWhitespace:
-		return p.eatLeadingWhitespaceAndTransitionTo(glm46vCollectingContent)
+		// Determine which comes first
+		var tagIdx int
+		var nextState GLM46VParserState
+		var skipLen int
 
-	default:
-		panic("unreachable")
+		if thinkIdx >= 0 && (toolCallIdx < 0 || thinkIdx < toolCallIdx) {
+			tagIdx = thinkIdx
+			skipLen = len(glm46vThinkingOpenTag)
+			nextState = GLM46VCollectingThinking
+		} else if toolCallIdx >= 0 {
+			tagIdx = toolCallIdx
+			skipLen = 0 // Tool call parsing handles its own prefix
+			nextState = GLM46VCollectingToolCall
+		} else {
+			tagIdx = -1
+		}
+
+		if tagIdx >= 0 {
+			// Found a tag - emit content before it
+			before := bufStr[:tagIdx]
+			if before != "" {
+				events = append(events, glm46vEventContent{content: before})
+			}
+
+			// Move past the tag
+			remaining := bufStr[tagIdx+skipLen:]
+			p.buffer.Reset()
+			p.buffer.WriteString(remaining)
+			p.state = nextState
+
+			logutil.Trace("glm46v: found tag", "before", before, "nextState", nextState)
+			return events, true
+		}
+
+		// No complete tag found - check for partial tags at end
+		thinkingOverlap := overlap(bufStr, glm46vThinkingOpenTag)
+		actionOverlap := overlap(bufStr, glm46vActionPrefix)
+		codeBlockOverlap := overlap(bufStr, "```")
+		maxOverlap := max(thinkingOverlap, max(actionOverlap, codeBlockOverlap))
+
+		if maxOverlap > 0 {
+			// Hold back potential partial tag
+			content := bufStr[:len(bufStr)-maxOverlap]
+			if content != "" {
+				events = append(events, glm46vEventContent{content: content})
+			}
+			// Keep the potential partial tag in buffer
+			p.buffer.Reset()
+			p.buffer.WriteString(bufStr[len(bufStr)-maxOverlap:])
+			logutil.Trace("glm46v: holding potential partial tag", "overlap", maxOverlap)
+			return events, false
+		}
+
+		// No partial tag - emit everything
+		if bufStr != "" {
+			events = append(events, glm46vEventContent{content: bufStr})
+			p.buffer.Reset()
+		}
+		return events, false
+
+	case GLM46VCollectingToolCall:
+		// Try to parse tool call from buffer
+		toolCall, remaining, found := p.parseToolCall(bufStr)
+		if found {
+			events = append(events, glm46vEventToolCall{toolCall: toolCall})
+			remaining = strings.TrimLeftFunc(remaining, unicode.IsSpace)
+			p.buffer.Reset()
+			p.buffer.WriteString(remaining)
+			p.state = GLM46VCollectingContent
+			return events, len(remaining) > 0
+		}
+
+		// Check if we have enough to determine there's no complete tool call
+		// If buffer doesn't seem to be forming a valid tool call, go back to content
+		if !p.mightBeToolCall(bufStr) {
+			p.state = GLM46VCollectingContent
+			return events, true
+		}
+
+		// Still collecting tool call content
+		return events, false
 	}
+
+	return events, false
 }
 
-func (p *GLM46VParser) extractXMLToolCall(xml string) (string, string) {
-	// xml looks like: <tool_call>name\n<arg_key>k</arg_key>\n<arg_value>v</arg_value>\n</tool_call>
-	name := ""
-	argsMap := make(map[string]interface{})
-
-	// Get name
-	startName := strings.Index(xml, "<tool_call>") + len("<tool_call>")
-	endName := strings.Index(xml, "\n")
-	if endName < 0 || endName < startName {
-		// Try to find the first <arg_key> if no newline
-		endName = strings.Index(xml, "<arg_key>")
+// findToolCallStart finds the index where a tool call pattern starts
+// Returns -1 if no tool call pattern found
+func (p *GLM46VParser) findToolCallStart(bufStr string) int {
+	// Check for markdown code block with ReAct format
+	if codeBlockIdx := strings.Index(bufStr, "```"); codeBlockIdx >= 0 {
+		afterBlock := bufStr[codeBlockIdx:]
+		// Check if it contains Action: pattern
+		if strings.Contains(afterBlock, glm46vActionPrefix) {
+			return codeBlockIdx
+		}
 	}
 
-	if endName > startName {
-		name = strings.TrimSpace(xml[startName:endName])
-	}
-
-	// Extract key/value pairs
-	tempXML := xml
-	for {
-		keyIdx := strings.Index(tempXML, "<arg_key>")
-		if keyIdx < 0 {
-			break
+	// Check for ReAct format: "Action: function_name"
+	for _, tool := range p.tools {
+		patterns := []string{
+			glm46vActionPrefix + " " + tool.Function.Name,
+			"\n" + glm46vActionPrefix + " " + tool.Function.Name,
 		}
-		keyEndIdx := strings.Index(tempXML, "</arg_key>")
-		if keyEndIdx < 0 {
-			break
-		}
-		key := strings.TrimSpace(tempXML[keyIdx+len("<arg_key>") : keyEndIdx])
-
-		valIdx := strings.Index(tempXML, "<arg_value>")
-		if valIdx < 0 {
-			break
-		}
-		valEndIdx := strings.Index(tempXML, "</arg_value>")
-		if valEndIdx < 0 {
-			break
-		}
-		valStr := strings.TrimSpace(tempXML[valIdx+len("<arg_value>") : valEndIdx])
-
-		// Attempt to parse valStr as JSON if it looks like it
-		var val interface{}
-		if (strings.HasPrefix(valStr, "{") && strings.HasSuffix(valStr, "}")) ||
-			(strings.HasPrefix(valStr, "[") && strings.HasSuffix(valStr, "]")) {
-			valStr = convertPythonToJSON(valStr)
-			if err := json.Unmarshal([]byte(valStr), &val); err != nil {
-				val = valStr
+		for _, pattern := range patterns {
+			if idx := strings.Index(bufStr, pattern); idx >= 0 {
+				// Adjust index to start at "Action:"
+				if bufStr[idx] == '\n' {
+					return idx + 1
+				}
+				return idx
 			}
-		} else {
-			val = valStr
 		}
-
-		argsMap[key] = val
-		tempXML = tempXML[valEndIdx+len("</arg_value>"):]
 	}
 
-	argsJSON, _ := json.Marshal(argsMap)
-	return name, string(argsJSON)
+	// Check for native format: function_name\n{
+	for _, tool := range p.tools {
+		patterns := []string{
+			"\n" + tool.Function.Name + "\n{",
+			"\n" + tool.Function.Name + "\r\n{",
+		}
+		for _, pattern := range patterns {
+			if idx := strings.Index(bufStr, pattern); idx >= 0 {
+				return idx + 1 // Skip the leading newline
+			}
+		}
+		// Check if starts with tool name
+		if strings.HasPrefix(bufStr, tool.Function.Name+"\n{") {
+			return 0
+		}
+	}
+
+	return -1
+}
+
+// mightBeToolCall checks if the buffer content could potentially become a tool call
+func (p *GLM46VParser) mightBeToolCall(bufStr string) bool {
+	// If we see Action: but no complete tool call yet, keep waiting
+	if strings.Contains(bufStr, glm46vActionPrefix) {
+		return true
+	}
+
+	// If we see a tool name but JSON isn't complete
+	for _, tool := range p.tools {
+		if strings.Contains(bufStr, tool.Function.Name) {
+			// Check if we have incomplete JSON (unbalanced braces)
+			braceCount := 0
+			for _, c := range bufStr {
+				if c == '{' {
+					braceCount++
+				} else if c == '}' {
+					braceCount--
+				}
+			}
+			if braceCount > 0 {
+				return true // Still waiting for closing braces
+			}
+		}
+	}
+
+	return false
+}
+
+// parseToolCall attempts to parse a complete tool call from the buffer
+func (p *GLM46VParser) parseToolCall(bufStr string) (api.ToolCall, string, bool) {
+	// Try markdown code block format first
+	if toolCall, remaining, found := p.parseMarkdownToolCall(bufStr); found {
+		return toolCall, remaining, true
+	}
+
+	// Try ReAct format: Action: function_name\nAction Input: {json}
+	if toolCall, remaining, found := p.parseReActToolCall(bufStr); found {
+		return toolCall, remaining, true
+	}
+
+	// Try native format: function_name\n{json}
+	if toolCall, remaining, found := p.parseNativeToolCall(bufStr); found {
+		return toolCall, remaining, true
+	}
+
+	return api.ToolCall{}, "", false
+}
+
+// parseMarkdownToolCall extracts tool call from markdown code block format
+// Format: ```\nAction: function_name\nAction Input: {json}\n```
+func (p *GLM46VParser) parseMarkdownToolCall(bufStr string) (api.ToolCall, string, bool) {
+	// Look for opening ```
+	codeBlockStarts := []string{"```\n", "```json\n", "```\r\n", "```json\r\n"}
+
+	for _, startMarker := range codeBlockStarts {
+		startIdx := strings.Index(bufStr, startMarker)
+		if startIdx < 0 {
+			continue
+		}
+
+		codeStart := startIdx + len(startMarker)
+		remaining := bufStr[codeStart:]
+
+		// Find closing ```
+		endIdx := -1
+		for _, closer := range []string{"\n```", "\r\n```"} {
+			if idx := strings.Index(remaining, closer); idx >= 0 {
+				if endIdx < 0 || idx < endIdx {
+					endIdx = idx
+				}
+			}
+		}
+
+		if endIdx < 0 {
+			continue // No closing tag yet
+		}
+
+		codeContent := remaining[:endIdx]
+		afterBlock := remaining[endIdx:]
+		// Skip past the closing ```
+		for _, closer := range []string{"\n```", "\r\n```"} {
+			if strings.HasPrefix(afterBlock, closer) {
+				afterBlock = afterBlock[len(closer):]
+				break
+			}
+		}
+
+		logutil.Trace("glm46v: found markdown code block", "content", codeContent)
+
+		// Parse ReAct format inside code block
+		for _, tool := range p.tools {
+			actionPattern := glm46vActionPrefix + " " + tool.Function.Name
+			if idx := strings.Index(codeContent, actionPattern); idx >= 0 {
+				afterAction := codeContent[idx+len(actionPattern):]
+				afterAction = strings.TrimLeft(afterAction, " \t\r\n")
+
+				if strings.HasPrefix(afterAction, glm46vActionInputPrefix) {
+					argsStr := strings.TrimPrefix(afterAction, glm46vActionInputPrefix)
+					argsStr = strings.TrimSpace(argsStr)
+
+					toolCall, err := p.createToolCall(tool.Function.Name, argsStr)
+					if err != nil {
+						slog.Warn("glm46v: failed to parse markdown tool call", "error", err)
+						continue
+					}
+					return toolCall, afterBlock, true
+				}
+			}
+		}
+	}
+
+	return api.ToolCall{}, "", false
+}
+
+// parseReActToolCall extracts tool call from ReAct format
+// Format: Action: function_name\nAction Input: {json}
+func (p *GLM46VParser) parseReActToolCall(bufStr string) (api.ToolCall, string, bool) {
+	for _, tool := range p.tools {
+		patterns := []string{
+			glm46vActionPrefix + " " + tool.Function.Name + "\n",
+			glm46vActionPrefix + " " + tool.Function.Name + "\r\n",
+		}
+
+		for _, pattern := range patterns {
+			idx := strings.Index(bufStr, pattern)
+			if idx < 0 {
+				continue
+			}
+
+			afterAction := bufStr[idx+len(pattern):]
+			afterAction = strings.TrimLeft(afterAction, " \t")
+
+			if !strings.HasPrefix(afterAction, glm46vActionInputPrefix) {
+				continue
+			}
+
+			argsStart := strings.TrimPrefix(afterAction, glm46vActionInputPrefix)
+			argsStart = strings.TrimLeft(argsStart, " \t")
+
+			// Extract JSON object
+			if len(argsStart) == 0 || argsStart[0] != '{' {
+				continue
+			}
+
+			argsStr, remaining, found := extractJSONObject(argsStart)
+			if !found {
+				continue
+			}
+
+			toolCall, err := p.createToolCall(tool.Function.Name, argsStr)
+			if err != nil {
+				slog.Warn("glm46v: failed to parse ReAct tool call", "error", err)
+				continue
+			}
+
+			logutil.Trace("glm46v: parsed ReAct tool call", "name", tool.Function.Name, "args", argsStr)
+			return toolCall, remaining, true
+		}
+	}
+
+	return api.ToolCall{}, "", false
+}
+
+// parseNativeToolCall extracts tool call from native format
+// Format: function_name\n{json}
+func (p *GLM46VParser) parseNativeToolCall(bufStr string) (api.ToolCall, string, bool) {
+	for _, tool := range p.tools {
+		patterns := []string{
+			tool.Function.Name + "\n{",
+			tool.Function.Name + "\r\n{",
+		}
+
+		for _, pattern := range patterns {
+			idx := strings.Index(bufStr, pattern)
+			if idx < 0 {
+				continue
+			}
+
+			// Find where JSON starts
+			jsonStart := idx + len(pattern) - 1 // Point to the '{'
+
+			argsStr, remaining, found := extractJSONObject(bufStr[jsonStart:])
+			if !found {
+				continue
+			}
+
+			toolCall, err := p.createToolCall(tool.Function.Name, argsStr)
+			if err != nil {
+				slog.Warn("glm46v: failed to parse native tool call", "error", err)
+				continue
+			}
+
+			logutil.Trace("glm46v: parsed native tool call", "name", tool.Function.Name, "args", argsStr)
+			return toolCall, remaining, true
+		}
+	}
+
+	return api.ToolCall{}, "", false
+}
+
+// extractJSONObject extracts a complete JSON object from the start of a string
+// Returns the JSON string, remaining content, and whether extraction was successful
+func extractJSONObject(s string) (string, string, bool) {
+	if len(s) == 0 || s[0] != '{' {
+		return "", "", false
+	}
+
+	braceCount := 0
+	inString := false
+	escape := false
+
+	for i, c := range s {
+		if escape {
+			escape = false
+			continue
+		}
+
+		if c == '\\' && inString {
+			escape = true
+			continue
+		}
+
+		if c == '"' {
+			inString = !inString
+			continue
+		}
+
+		if inString {
+			continue
+		}
+
+		if c == '{' {
+			braceCount++
+		} else if c == '}' {
+			braceCount--
+			if braceCount == 0 {
+				return s[:i+1], s[i+1:], true
+			}
+		}
+	}
+
+	return "", "", false // Incomplete JSON
+}
+
+// createToolCall creates an api.ToolCall from function name and args string
+func (p *GLM46VParser) createToolCall(functionName string, argsStr string) (api.ToolCall, error) {
+	// Validate tool exists
+	tool := p.findToolByName(functionName)
+	if tool == nil {
+		availableTools := make([]string, len(p.tools))
+		for i, t := range p.tools {
+			availableTools[i] = t.Function.Name
+		}
+		p.err = fmt.Errorf("model called unknown tool %q - available tools: %v (ensure tools are provided in API request)", functionName, availableTools)
+		slog.Error("GLM46V model attempted to call unregistered tool",
+			"tool", functionName,
+			"available_tools", availableTools,
+			"recommendation", "ensure tools array includes this tool in API request")
+		return api.ToolCall{}, p.err
+	}
+
+	toolCall := api.ToolCall{
+		Function: api.ToolCallFunction{
+			Name: tool.Function.Name,
+		},
+	}
+
+	if argsStr != "" {
+		// Convert Python-style single quotes to JSON double quotes
+		argsStr = convertPythonToJSON(argsStr)
+		if err := json.Unmarshal([]byte(argsStr), &toolCall.Function.Arguments); err != nil {
+			return api.ToolCall{}, fmt.Errorf("failed to parse tool call arguments: %w", err)
+		}
+	}
+
+	return toolCall, nil
+}
+
+func (p *GLM46VParser) findToolByName(name string) *api.Tool {
+	name = strings.TrimSpace(name)
+	for i := range p.tools {
+		if p.tools[i].Function.Name == name {
+			return &p.tools[i]
+		}
+	}
+	return nil
 }
 
 // convertPythonToJSON converts Python-style dict strings to valid JSON
 // Handles: {'key': 'value'} -> {"key": "value"}
 func convertPythonToJSON(s string) string {
-	// Simple conversion: replace single quotes with double quotes
-	// This is a basic approach - a more robust solution would use a proper parser
 	result := strings.Builder{}
 	inString := false
 	stringChar := byte(0)

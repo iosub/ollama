@@ -584,7 +584,8 @@ func (s *Server) processBatch(tokenBatch *llama.Batch, embedBatch *llama.Batch) 
 			}
 			if cachedTokens+pendingTokens+inputTokenCount > s.cache.numCtx {
 				if len(seq.pendingInputs) == 0 {
-					if !seq.shift {
+					// Check if shift is disabled OR if the model doesn't support shifting
+					if !seq.shift || !s.cache.lc.KvCacheCanShift() {
 						s.removeSequence(seqIdx, llm.DoneReasonLength)
 						break
 					}

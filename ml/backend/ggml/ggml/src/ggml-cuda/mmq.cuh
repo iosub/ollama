@@ -138,11 +138,11 @@ static int get_mmq_y_host(const int cc) {
 }
 
 static constexpr __device__ int get_iter_k([[maybe_unused]] const ggml_type type) {
-#if defined(BLACKWELL_MMA_AVAILABLE)
+#if defined(BLACKWELL_MMA_FP4_AVAILABLE)
     return type == GGML_TYPE_MXFP4 ? MMQ_ITER_K_MXFP4_FP4 : MMQ_ITER_K;
 #else
     return MMQ_ITER_K;
-#endif // defined(BLACKWELL_MMA_AVAILABLE)
+#endif // defined(BLACKWELL_MMA_FP4_AVAILABLE)
 }
 
 static constexpr __device__ int get_mmq_y_device() {
@@ -782,6 +782,7 @@ template <int mmq_y, bool need_check> static __device__ __forceinline__ void loa
     }
 }
 
+#ifdef BLACKWELL_MMA_FP4_AVAILABLE
 template <int mmq_y, bool need_check>
 static __device__ __forceinline__ void load_tiles_mxfp4_fp4(const char * __restrict__ x,
                                                             int * __restrict__ x_tile,
@@ -825,6 +826,7 @@ static __device__ __forceinline__ void load_tiles_mxfp4_fp4(const char * __restr
         }
     }
 }
+#endif // BLACKWELL_MMA_FP4_AVAILABLE
 
 template <int mmq_x, int mmq_y>
 static __device__ __forceinline__ void vec_dot_q8_0_q8_1_dp4a(
@@ -996,6 +998,7 @@ static __device__ __forceinline__ void vec_dot_q8_0_q8_1_mma(
 #endif // defined(AMD_MFMA_AVAILABLE) || defined(AMD_WMMA_AVAILABLE)
 }
 
+#ifdef BLACKWELL_MMA_FP4_AVAILABLE
 template <int mmq_x, int mmq_y>
 static __device__ __forceinline__ void vec_dot_mxfp4_mxfp4_mma(const int * __restrict__ x,
                                                                const int * __restrict__ y,
@@ -1067,6 +1070,7 @@ static __device__ __forceinline__ void vec_dot_mxfp4_mxfp4_mma(const int * __res
         }
     }
 }
+#endif // BLACKWELL_MMA_FP4_AVAILABLE
 
 template <int mmq_x, int mmq_y>
 static __device__ __forceinline__ void vec_dot_q8_1_q8_1_dp4a(
@@ -3246,13 +3250,13 @@ struct mmq_type_traits<mmq_x, mmq_y, need_check, GGML_TYPE_Q8_0> {
 template <int mmq_x, int mmq_y, bool need_check>
 struct mmq_type_traits<mmq_x, mmq_y, need_check, GGML_TYPE_MXFP4> {
     static constexpr int              vdr          = VDR_MXFP4_Q8_1_MMQ;
-#ifdef BLACKWELL_MMA_AVAILABLE
+#ifdef BLACKWELL_MMA_FP4_AVAILABLE
     static constexpr load_tiles_mmq_t load_tiles  = load_tiles_mxfp4_fp4<mmq_y, need_check>;
     static constexpr vec_dot_mmq_t    vec_dot_mma = vec_dot_mxfp4_mxfp4_mma<mmq_x, mmq_y>;
 #else
     static constexpr load_tiles_mmq_t load_tiles   = load_tiles_mxfp4<mmq_y, need_check>;
     static constexpr vec_dot_mmq_t    vec_dot_mma  = vec_dot_q8_0_q8_1_mma<mmq_x, mmq_y, MMQ_Q8_1_DS_LAYOUT_D4>;
-#endif // BLACKWELL_MMA_AVAILABLE
+#endif // BLACKWELL_MMA_FP4_AVAILABLE
     static constexpr vec_dot_mmq_t    vec_dot_dp4a = vec_dot_q8_0_q8_1_dp4a<mmq_x, mmq_y>;
 };
 
@@ -3385,12 +3389,12 @@ static __device__ __forceinline__ void mul_mat_q_process_tile(
     constexpr mmq_write_back_t write_back = mmq_write_back_dp4a<mmq_x, mmq_y, need_check>;
 #endif // defined(AMD_MFMA_AVAILABLE) || defined(TURING_MMA_AVAILABLE) || defined(AMD_WMMA_AVAILABLE)
 
-#if defined(BLACKWELL_MMA_AVAILABLE)
+#if defined(BLACKWELL_MMA_FP4_AVAILABLE)
     // FP4 tile stores 8 blocks
     constexpr int ne_block = (type == GGML_TYPE_MXFP4) ? 8 * QK_MXFP4 : 4 * QK8_1;
 #else
     constexpr int ne_block = 4 * QK8_1;
-#endif  // defined(BLACKWELL_MMA_AVAILABLE)
+#endif  // defined(BLACKWELL_MMA_FP4_AVAILABLE)
 
     constexpr int ITER_K          = get_iter_k(type);
     constexpr int blocks_per_iter = ITER_K / qk;

@@ -905,7 +905,7 @@ namespace ggml_cuda_mma {
                                                             const tile<8, 8, int> &  B,
                                                             uint32_t                 a_scale,
                                                             uint32_t                 b_scale) {
-#ifdef BLACKWELL_MMA_AVAILABLE
+#ifdef BLACKWELL_MMA_FP4_AVAILABLE
         const int * Axi = (const int *) A.x;
         const int * Bxi = (const int *) B.x;
         float *     Dxi = (float *) D.x;
@@ -918,7 +918,7 @@ namespace ggml_cuda_mma {
             : "r"(Axi[0]), "r"(Axi[1]), "r"(Axi[2]), "r"(Axi[3]), "r"(Bxi[0]), "r"(Bxi[1]), "r"(a_scale), "r"(b_scale));
 #else
         GGML_UNUSED_VARS(D, A, B, a_scale, b_scale);
-#endif  // BLACKWELL_MMA_AVAILABLE
+#endif  // BLACKWELL_MMA_FP4_AVAILABLE
     }
 
     static __device__ __forceinline__ void mma(

@@ -1,0 +1,14 @@
+﻿./ollama : [?2026h[?25l[1GΓáï [K[?25h[?2026l[?2026h[?25l[1GΓá╣ 
+[K[?25h[?2026l[?2026h[?25l[1GΓá╕ [K[?25h[?2026l[?2026h[?25l[1GΓá╝ 
+[K[?25h[?2026l[?2026h[?25l[1GΓá┤ [K[?25h[?2026l[?2026h[?25l[1GΓá┤ 
+[K[?25h[?2026l[?2026h[?25l[1GΓáº 
+[K[?25h[?2026l[?25l[?2026h[?25l[1G[K[?25h[?2026l[2K[1G[?25hError: 
+500 Internal Server Error: do load request: Post 
+"http://127.0.0.1:61825/load": EOF
+At line:1 char:47
++ ... ols\ollama; ./ollama run hf.co/matrixportalx/Qwen3-VL-4B-Instruct-her ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([?2026h[?25l...1825/load": EOF 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

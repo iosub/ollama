@@ -1054,12 +1054,13 @@ int llama_context::decode(const llama_batch & batch_inp) {
     const auto & vocab   = model.vocab;
     const auto & hparams = model.hparams;
 
-    const int64_t n_vocab = vocab.n_tokens();
-    const int64_t n_embd  = hparams.n_embd_inp();
+    const int64_t n_vocab    = vocab.n_tokens();
+    const int64_t n_embd_inp = hparams.n_embd_inp();  // input embedding size (includes deepstack)
+    const int64_t n_embd     = hparams.n_embd;        // output embedding size
 
     const bool output_all = false;
 
-    if (!balloc->init(batch_inp, vocab, memory.get(), n_embd, cparams.kv_unified ? LLAMA_MAX_SEQ : cparams.n_seq_max, output_all)) {
+    if (!balloc->init(batch_inp, vocab, memory.get(), n_embd_inp, cparams.kv_unified ? LLAMA_MAX_SEQ : cparams.n_seq_max, output_all)) {
         LLAMA_LOG_ERROR("%s: failed to initialize batch\n", __func__);
         return -1;
     }
@@ -1372,8 +1373,8 @@ uint32_t llama_context::output_reserve(int32_t n_outputs) {
     // For multimodal models with vision projectors, use n_embd_inp() which
     // represents the maximum input embedding dimension
     uint32_t n_embd_buf = n_embd;
-    if (model.hparams.n_embd_inp() > n_embd) {
-        n_embd_buf = model.hparams.n_embd_inp();
+    if (hparams.n_embd_inp() > n_embd) {
+        n_embd_buf = hparams.n_embd_inp();
     }
     embd_size   = has_embd   ?  n_embd_buf*n_outputs_max : 0;
 
@@ -1431,9 +1432,9 @@ void llama_context::output_reorder() {
 
     // For multimodal models, use the actual embedding dimension that was
     // allocated in embd_size, not just the text model's n_embd
-    const uint64_t n_embd_actual = model.hparams.n_embd_inp() > model.hparams.n_embd
-                                   ? model.hparams.n_embd_inp()
-                                   : model.hparams.n_embd;
+    const uint64_t n_embd = model.hparams.n_embd_inp() > model.hparams.n_embd
+                            ? model.hparams.n_embd_inp()
+                            : model.hparams.n_embd;
 
     for (size_t s = 0; s < output_swaps.size(); ++s) {
         const uint64_t i0 = output_swaps[s].i0;
@@ -1446,8 +1447,8 @@ void llama_context::output_reorder() {
         }
 
         if (embd_size > 0) {
-            for (uint64_t k = 0; k < n_embd_actual; k++) {
-                std::swap(embd[i0*n_embd_actual + k], embd[i1*n_embd_actual + k]);
+            for (uint64_t k = 0; k < n_embd; k++) {
+                std::swap(embd[i0*n_embd + k], embd[i1*n_embd + k]);
             }
         }
     }
@@ -1985,11 +1986,7 @@ size_t llama_context::state_write_data(llama_io_write_i & io) {
     {
         LLAMA_LOG_DEBUG("%s: - writing embeddings\n", __func__);
 
-        // For multimodal models, use n_embd_inp() which accounts for vision embeddings
-        const uint64_t n_embd_effective = model.hparams.n_embd_inp() > model.hparams.n_embd
-                                          ? model.hparams.n_embd_inp()
-                                          : model.hparams.n_embd;
-        const uint64_t embd_size = std::min((uint64_t) this->embd_size, (uint64_t) n_outputs * n_embd_effective);
+        const uint64_t embd_size = std::min((uint64_t) this->embd_size, (uint64_t) n_outputs * model.hparams.n_embd);
 
         io.write(&embd_size, sizeof(embd_size));
 
